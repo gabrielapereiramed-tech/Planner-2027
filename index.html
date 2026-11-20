@@ -3,37 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Teste de login</title>
+<title>Teste de sincronização</title>
 <style>
   :root {
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    --bg: #f5f5f4; --fg: #1c1917; --card: #ffffff; --accent: #2563eb; --input: #f5f5f4;
+    --bg: #f5f5f4; --fg: #1c1917; --card: #ffffff; --accent: #2563eb; --input: #f5f5f4; --muted: #78716c;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg: #1c1917; --fg: #f5f5f4; --card: #292524; --accent: #60a5fa; --input: #1c1917; color-scheme: dark; }
+    :root:not([data-theme="light"]) { --bg: #1c1917; --fg: #f5f5f4; --card: #292524; --accent: #60a5fa; --input: #1c1917; --muted: #a8a29e; color-scheme: dark; }
   }
-  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  body { margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
          font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); }
-  .card { background: var(--card); padding: 2rem; border-radius: 16px; text-align: center; max-width: 320px; width: 90%; }
-  input { display: block; width: 100%; box-sizing: border-box; font-size: 1rem; padding: 0.7rem; margin-top: 0.7rem;
-          border: 1px solid #a8a29e; border-radius: 10px; background: var(--input); color: var(--fg); }
-  button { font-size: 1rem; padding: 0.8rem 1.2rem; border: none; border-radius: 10px;
-           background: var(--accent); color: #fff; cursor: pointer; width: 100%; margin-top: 1rem; }
-  #status { margin-top: 1rem; font-size: 0.9rem; opacity: 0.8; min-height: 1.2em; }
+  .card { background: var(--card); padding: 1.5rem; border-radius: 16px; margin-top: 2rem;
+          max-width: 420px; width: 90%; }
+  h2 { margin-top: 0; text-align: center; }
+  .linha { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  input { flex: 1; min-width: 0; font-size: 1rem; padding: 0.7rem; border: 1px solid #a8a29e; border-radius: 10px;
+          background: var(--input); color: var(--fg); }
+  button { font-size: 1rem; padding: 0.7rem 1rem; border: none; border-radius: 10px;
+           background: var(--accent); color: #fff; cursor: pointer; }
+  button.secundario { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  button.pequeno { padding: 0.3rem 0.6rem; font-size: 0.85rem; background: transparent; color: #dc2626; border: 1px solid #dc2626; }
+  ul { list-style: none; padding: 0; margin: 1rem 0 0; }
+  li { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+       padding: 0.6rem 0; border-bottom: 1px solid #e7e5e4; }
+  .vazio { color: var(--muted); font-size: 0.9rem; text-align: center; margin-top: 1rem; }
+  #status { margin-top: 0.8rem; font-size: 0.85rem; color: var(--muted); min-height: 1.2em; text-align: center; }
+  .topo { display: flex; justify-content: space-between; align-items: center; }
 </style>
 </head>
 <body>
 <div class="card">
-  <h2>Teste de login</h2>
   <div id="conteudo"></div>
   <div id="status"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCThzs67EiYA7EFZTcmyrzQf0zlrf-Pwus",
@@ -46,20 +56,25 @@
 
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
+  const db = firebase.firestore();
   const conteudo = document.getElementById("conteudo");
   const status = document.getElementById("status");
+  let pararEscuta = null;
 
   function mostrarFormulario() {
+    if (pararEscuta) { pararEscuta(); pararEscuta = null; }
     conteudo.innerHTML =
-      "<input id='email' type='email' placeholder='E-mail' autocomplete='username'>" +
-      "<input id='senha' type='password' placeholder='Senha' autocomplete='current-password'>" +
-      "<button id='entrar'>Entrar</button>";
+      "<h2>Entrar</h2>" +
+      "<div class='linha'><input id='email' type='email' placeholder='E-mail' autocomplete='username'></div>" +
+      "<div class='linha'><input id='senha' type='password' placeholder='Senha' autocomplete='current-password'></div>" +
+      "<div class='linha'><button id='entrar' style='flex:1'>Entrar</button></div>";
     document.getElementById("entrar").onclick = async () => {
       const email = document.getElementById("email").value.trim();
       const senha = document.getElementById("senha").value;
       status.textContent = "Entrando...";
       try {
         await auth.signInWithEmailAndPassword(email, senha);
+        status.textContent = "";
       } catch (e) {
         status.textContent = "Erro: " + e.message;
       }
@@ -67,11 +82,47 @@
   }
 
   function mostrarLogado(user) {
+    const itens = db.collection("users").doc(user.uid).collection("itens");
+
     conteudo.innerHTML =
-      "<p><strong>Logado como</strong><br>" + user.email + "</p>" +
-      "<button id='sair'>Sair</button>";
+      "<div class='topo'><strong>" + user.email + "</strong><button id='sair' class='secundario'>Sair</button></div>" +
+      "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
+      "<ul id='lista'></ul>";
+
     document.getElementById("sair").onclick = () => auth.signOut();
-    status.textContent = "Login funcionando.";
+
+    async function adicionar() {
+      const campo = document.getElementById("novo");
+      const texto = campo.value.trim();
+      if (!texto) return;
+      campo.value = "";
+      try {
+        await itens.add({ texto: texto, criadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+        status.textContent = "Salvo na nuvem.";
+      } catch (e) {
+        status.textContent = "Erro ao salvar: " + e.message;
+      }
+    }
+    document.getElementById("adicionar").onclick = adicionar;
+    document.getElementById("novo").addEventListener("keydown", e => { if (e.key === "Enter") adicionar(); });
+
+    pararEscuta = itens.orderBy("criadoEm").onSnapshot(snap => {
+      const lista = document.getElementById("lista");
+      if (snap.empty) {
+        lista.outerHTML = "<p class='vazio'>Nenhum item ainda.</p>";
+        return;
+      }
+      const lis = snap.docs.map(doc => {
+        const texto = doc.data().texto.replace(/</g, "&lt;");
+        return "<li><span>" + texto + "</span><button class='pequeno' data-id='" + doc.id + "'>Excluir</button></li>";
+      });
+      document.getElementById("lista").innerHTML = lis.join("");
+      document.querySelectorAll("button[data-id]").forEach(b => {
+        b.onclick = () => itens.doc(b.dataset.id).delete();
+      });
+    }, e => {
+      status.textContent = "Erro ao carregar: " + e.message;
+    });
   }
 
   auth.onAuthStateChanged(user => user ? mostrarLogado(user) : mostrarFormulario());
