@@ -26,13 +26,13 @@
 </head>
 <body>
 <div class="card">
-  <h2 id="titulo">Teste de login</h2>
+  <h2>Teste de login</h2>
   <div id="conteudo"></div>
   <div id="status"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCThzs67EiYA7EFZTcmyrzQf0zlrf-Pwus",
@@ -54,7 +54,7 @@
     document.getElementById("entrar").onclick = async () => {
       status.textContent = "Abrindo login...";
       try {
-        await auth.signInWithRedirect(provider);
+        await auth.signInWithPopup(provider);
       } catch (e) {
         status.textContent = "Erro: " + e.message;
       }
@@ -70,7 +70,6 @@
     status.textContent = "Login funcionando.";
   }
 
-  auth.getRedirectResult().catch(e => { status.textContent = "Erro: " + e.message; });
   auth.onAuthStateChanged(user => user ? mostrarLogado(user) : mostrarDeslogado());
 </script>
 </body>
