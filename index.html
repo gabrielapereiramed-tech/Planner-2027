@@ -3,42 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Teste de sincronização</title>
+<title>Meu planner</title>
 <style>
   :root {
     box-sizing: border-box;
+    --creme: #FBF8EC;
+    --peony: #FAD2E1;
+    --burgundy: #770523;
+    --pistachio: #D0D996;
+    --fuchsia: #D81A67;
+    --blood: #DD4E28;
+    --branco: #FFFFFF;
+    --texto: #770523;
+    color-scheme: light;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    --bg: #f5f5f4; --fg: #1c1917; --card: #ffffff; --accent: #2563eb; --input: #f5f5f4; --muted: #78716c;
-    color-scheme: light;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg: #1c1917; --fg: #f5f5f4; --card: #292524; --accent: #60a5fa; --input: #1c1917; --muted: #a8a29e; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--creme); color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; justify-content: center; align-items: flex-start;
   }
-  body { margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
-         font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); }
-  .card { background: var(--card); padding: 1.5rem; border-radius: 16px; margin-top: 2rem;
-          max-width: 420px; width: 90%; }
-  h2 { margin-top: 0; text-align: center; }
-  .linha { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-  input { flex: 1; min-width: 0; font-size: 1rem; padding: 0.7rem; border: 1px solid #a8a29e; border-radius: 10px;
-          background: var(--input); color: var(--fg); }
-  button { font-size: 1rem; padding: 0.7rem 1rem; border: none; border-radius: 10px;
-           background: var(--accent); color: #fff; cursor: pointer; }
-  button.secundario { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-  button.pequeno { padding: 0.3rem 0.6rem; font-size: 0.85rem; background: transparent; color: #dc2626; border: 1px solid #dc2626; }
+  .wrap { width: 100%; max-width: 920px; padding: 1.25rem; }
+  .painel { display: flex; flex-direction: column; gap: 1.5rem; }
+  @media (min-width: 720px) {
+    .painel { flex-direction: row; align-items: center; min-height: 80vh; }
+    .ilustra { flex: 1; }
+    .formulario { flex: 1; }
+  }
+
+  .ilustra { background: var(--peony); border-radius: 28px; padding: 1.5rem; text-align: center; }
+  .ilustra svg { width: 100%; max-width: 280px; height: auto; }
+
+  .formulario { padding: 0.5rem 0.25rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
+  .sub { margin: 0 0 1.25rem; font-size: 1rem; line-height: 1.4; opacity: 0.9; }
+
+  input {
+    display: block; width: 100%; font-size: 1rem; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem;
+    border: 2px solid var(--burgundy); border-radius: 999px; background: var(--branco); color: var(--texto);
+    outline: none;
+  }
+  input:focus { border-color: var(--fuchsia); }
+
+  button {
+    font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none; border-radius: 999px;
+    background: var(--fuchsia); color: var(--branco); cursor: pointer; margin-top: 0.25rem;
+  }
+  button.secundario { width: auto; padding: 0.5rem 1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); margin-top: 0; }
+  button.excluir { width: auto; padding: 0.3rem 0.75rem; font-size: 0.85rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); margin-top: 0; }
+
+  #status { margin-top: 0.9rem; font-size: 0.9rem; min-height: 1.2em; color: var(--blood); }
+
+  .card-logado { background: var(--branco); border-radius: 24px; padding: 1.5rem; }
+  .topo { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .linha { display: flex; gap: 0.5rem; margin-top: 1rem; }
+  .linha input { margin-bottom: 0; }
+  .linha button { width: auto; margin-top: 0; padding: 0.9rem 1.4rem; }
   ul { list-style: none; padding: 0; margin: 1rem 0 0; }
-  li { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
-       padding: 0.6rem 0; border-bottom: 1px solid #e7e5e4; }
-  .vazio { color: var(--muted); font-size: 0.9rem; text-align: center; margin-top: 1rem; }
-  #status { margin-top: 0.8rem; font-size: 0.85rem; color: var(--muted); min-height: 1.2em; text-align: center; }
-  .topo { display: flex; justify-content: space-between; align-items: center; }
+  li {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+    padding: 0.8rem 1rem; margin-bottom: 0.5rem; background: var(--pistachio); border-radius: 16px;
+  }
+  .vazio { text-align: center; opacity: 0.7; margin: 1rem 0 0; }
 </style>
 </head>
 <body>
-<div class="card">
+<div class="wrap">
   <div id="conteudo"></div>
-  <div id="status"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -58,25 +91,65 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
   const conteudo = document.getElementById("conteudo");
-  const status = document.getElementById("status");
   let pararEscuta = null;
+
+  const BONEQUINHO = `
+  <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#770523" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-label="Ilustração">
+    <!-- cabelo cacheado preso -->
+    <circle cx="200" cy="58" r="24" fill="#770523"/>
+    <circle cx="178" cy="46" r="13" fill="#770523"/>
+    <circle cx="218" cy="72" r="11" fill="#770523"/>
+    <path d="M92 118 Q88 52 150 50 Q212 50 208 118 Q200 88 150 84 Q104 86 92 118 Z" fill="#770523"/>
+    <!-- rosto -->
+    <ellipse cx="150" cy="130" rx="52" ry="58" fill="#FFFFFF"/>
+    <!-- olhos fechados felizes -->
+    <path d="M124 124 Q131 116 138 124"/>
+    <path d="M162 124 Q169 116 176 124"/>
+    <!-- bochechas -->
+    <circle cx="118" cy="142" r="8" fill="#D81A67" stroke="none" opacity="0.45"/>
+    <circle cx="182" cy="142" r="8" fill="#D81A67" stroke="none" opacity="0.45"/>
+    <!-- sorriso -->
+    <path d="M134 150 Q150 166 166 150"/>
+    <!-- pescoço -->
+    <path d="M136 186 L136 204"/>
+    <path d="M164 186 L164 204"/>
+    <!-- corpo com blusa pistache -->
+    <path d="M96 292 Q98 214 136 204 L164 204 Q202 214 204 292 Z" fill="#D0D996"/>
+    <!-- braço direito (viewer esquerda) levantado com sinal de paz -->
+    <path d="M104 240 Q72 214 70 170"/>
+    <path d="M60 150 Q54 146 58 138 Q64 136 70 142 L78 138 Q84 136 84 144 L82 160 Q80 172 70 176 Q60 172 60 150 Z" fill="#FFFFFF"/>
+    <path d="M64 142 L56 84"/>
+    <path d="M78 142 L84 84"/>
+    <!-- braço esquerdo (viewer direita) apoiado -->
+    <path d="M196 240 Q222 262 220 292"/>
+    <!-- detalhes: estrelinhas -->
+    <path d="M250 110 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4 z" fill="#D81A67" stroke="none"/>
+    <path d="M42 216 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3 z" fill="#DD4E28" stroke="none"/>
+  </svg>`;
 
   function mostrarFormulario() {
     if (pararEscuta) { pararEscuta(); pararEscuta = null; }
     conteudo.innerHTML =
-      "<h2>Entrar</h2>" +
-      "<div class='linha'><input id='email' type='email' placeholder='E-mail' autocomplete='username'></div>" +
-      "<div class='linha'><input id='senha' type='password' placeholder='Senha' autocomplete='current-password'></div>" +
-      "<div class='linha'><button id='entrar' style='flex:1'>Entrar</button></div>";
+      "<div class='painel'>" +
+        "<div class='ilustra'>" + BONEQUINHO + "</div>" +
+        "<div class='formulario'>" +
+          "<h1>Oiê!</h1>" +
+          "<p class='sub'>Vamos planejar hoje, um passo de cada vez. O resto a gente acrescenta depois.</p>" +
+          "<input id='email' type='email' placeholder='E-mail' autocomplete='username'>" +
+          "<input id='senha' type='password' placeholder='Senha' autocomplete='current-password'>" +
+          "<button id='entrar'>Entrar</button>" +
+          "<div id='status'></div>" +
+        "</div>" +
+      "</div>";
+
     document.getElementById("entrar").onclick = async () => {
       const email = document.getElementById("email").value.trim();
       const senha = document.getElementById("senha").value;
-      status.textContent = "Entrando...";
+      document.getElementById("status").textContent = "Entrando...";
       try {
         await auth.signInWithEmailAndPassword(email, senha);
-        status.textContent = "";
       } catch (e) {
-        status.textContent = "Erro: " + e.message;
+        document.getElementById("status").textContent = "Não foi possível entrar: " + e.message;
       }
     };
   }
@@ -85,9 +158,13 @@
     const itens = db.collection("users").doc(user.uid).collection("itens");
 
     conteudo.innerHTML =
-      "<div class='topo'><strong>" + user.email + "</strong><button id='sair' class='secundario'>Sair</button></div>" +
-      "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
-      "<ul id='lista'></ul>";
+      "<div class='card-logado'>" +
+        "<div class='topo'><div><h1>Oiê!</h1><p class='sub' style='margin:0'>" + user.email + "</p></div>" +
+        "<button id='sair' class='secundario'>Sair</button></div>" +
+        "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
+        "<div id='status'></div>" +
+        "<ul id='lista'></ul>" +
+      "</div>";
 
     document.getElementById("sair").onclick = () => auth.signOut();
 
@@ -98,30 +175,28 @@
       campo.value = "";
       try {
         await itens.add({ texto: texto, criadoEm: firebase.firestore.FieldValue.serverTimestamp() });
-        status.textContent = "Salvo na nuvem.";
       } catch (e) {
-        status.textContent = "Erro ao salvar: " + e.message;
+        document.getElementById("status").textContent = "Erro ao salvar: " + e.message;
       }
     }
     document.getElementById("adicionar").onclick = adicionar;
     document.getElementById("novo").addEventListener("keydown", e => { if (e.key === "Enter") adicionar(); });
 
     pararEscuta = itens.orderBy("criadoEm").onSnapshot(snap => {
-      const lista = document.getElementById("lista");
+      const ul = document.getElementById("lista");
       if (snap.empty) {
-        lista.outerHTML = "<p class='vazio'>Nenhum item ainda.</p>";
+        ul.outerHTML = "<p class='vazio' id='lista'>Nenhum item ainda.</p>";
         return;
       }
-      const lis = snap.docs.map(doc => {
+      ul.innerHTML = snap.docs.map(doc => {
         const texto = doc.data().texto.replace(/</g, "&lt;");
-        return "<li><span>" + texto + "</span><button class='pequeno' data-id='" + doc.id + "'>Excluir</button></li>";
-      });
-      document.getElementById("lista").innerHTML = lis.join("");
+        return "<li><span>" + texto + "</span><button class='excluir' data-id='" + doc.id + "'>Excluir</button></li>";
+      }).join("");
       document.querySelectorAll("button[data-id]").forEach(b => {
         b.onclick = () => itens.doc(b.dataset.id).delete();
       });
     }, e => {
-      status.textContent = "Erro ao carregar: " + e.message;
+      document.getElementById("status").textContent = "Erro ao carregar: " + e.message;
     });
   }
 
