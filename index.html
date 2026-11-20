@@ -6,7 +6,7 @@
 <title>Oiê!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     box-sizing: border-box;
@@ -28,6 +28,22 @@
     display: flex; justify-content: center; align-items: flex-start;
   }
   .wrap { width: 100%; max-width: 980px; padding: 1.25rem; }
+  h1 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 2rem; margin: 0 0 0.5rem; }
+  h2 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.6rem; margin: 0 0 0.5rem; }
+  .sub { margin: 0 0 1.25rem; font-weight: 300; font-size: 1rem; line-height: 1.5; }
+
+  input, select {
+    display: block; width: 100%; font-family: inherit; font-size: 1rem; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem;
+    border: 2px solid var(--burgundy); border-radius: 999px; background: var(--branco); color: var(--burgundy); outline: none;
+  }
+  input:focus, select:focus { border-color: var(--fuchsia); }
+  button {
+    font-family: inherit; font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none;
+    border-radius: 999px; background: var(--fuchsia); color: var(--branco); cursor: pointer;
+  }
+  button.secundario { width: auto; padding: 0.6rem 1.1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
+  button.excluir { width: auto; padding: 0.4rem 0.75rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
+  #status { margin-top: 0.9rem; font-size: 0.9rem; min-height: 1.2em; color: var(--blood); }
 
   /* ---------- Login ---------- */
   .painel { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; width: 100%; max-width: 980px; margin: 0 auto; }
@@ -37,20 +53,6 @@
   }
   .ilustra img { display: block; width: 100%; max-width: 380px; height: auto; margin: 0 auto; }
   .formulario { width: 100%; max-width: 380px; }
-  h1 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 2rem; margin: 0 0 0.5rem; }
-  h2 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.6rem; margin: 0 0 0.5rem; }
-  .sub { margin: 0 0 1.25rem; font-weight: 300; font-size: 1rem; line-height: 1.5; }
-
-  input {
-    display: block; width: 100%; font-family: inherit; font-size: 1rem; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem;
-    border: 2px solid var(--burgundy); border-radius: 999px; background: var(--branco); color: var(--burgundy); outline: none;
-  }
-  input:focus { border-color: var(--fuchsia); }
-  button {
-    font-family: inherit; font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none;
-    border-radius: 999px; background: var(--fuchsia); color: var(--branco); cursor: pointer;
-  }
-  #status { margin-top: 0.9rem; font-size: 0.9rem; min-height: 1.2em; color: var(--blood); }
 
   /* ---------- App ---------- */
   .app { display: flex; flex-direction: column; gap: 1rem; }
@@ -59,17 +61,16 @@
   .item {
     display: flex; align-items: center; gap: 0.7rem; text-align: left; padding: 0.9rem 1.1rem;
     background: var(--fuchsia); color: var(--branco);
-    font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.05rem;
+    font-family: "Poppins", system-ui, sans-serif; font-weight: 600; font-size: 1rem;
   }
   .item svg { width: 22px; height: 22px; flex-shrink: 0; }
   .item.ativo { outline: 3px solid var(--burgundy); outline-offset: 3px; }
   .item.sair { background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); justify-content: center; margin-top: 0.5rem; }
-  .conteudo { background: var(--branco); border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
+  .conteudo { background: var(--creme); border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
   .voltar { width: auto; padding: 0.45rem 1rem; margin-bottom: 1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
   .linha { display: flex; gap: 0.5rem; margin-top: 1rem; }
   .linha input { margin-bottom: 0; }
   .linha button { width: auto; padding: 0.9rem 1.4rem; }
-  .conteudo #status { color: var(--burgundy); opacity: 0.7; }
   ul { list-style: none; padding: 0; margin: 1rem 0 0; }
   li {
     display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
@@ -77,6 +78,31 @@
   }
   li button { width: auto; padding: 0.3rem 0.75rem; font-size: 0.85rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
   .vazio { text-align: center; opacity: 0.7; margin: 1rem 0 0; }
+
+  /* ---------- Treinos ---------- */
+  .semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.35rem; margin-bottom: 1rem; }
+  .dia { padding: 0.5rem 0; border-radius: 999px; background: var(--branco); color: var(--burgundy); border: 2px solid var(--peony); font-size: 0.8rem; font-weight: 600; width: 100%; }
+  .dia.ativo { background: var(--fuchsia); color: var(--branco); border-color: var(--fuchsia); }
+  .barra { display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
+  .barra button { width: auto; padding: 0.7rem 1.2rem; }
+  .descanso { background: var(--burgundy); color: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; text-align: center; margin-bottom: 1rem; }
+  .descanso strong { display: block; font-size: 1.8rem; margin: 0.2rem 0; }
+  .descanso button { width: auto; padding: 0.4rem 1rem; background: transparent; border: 2px solid var(--branco); }
+  .ex { background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
+  .ex.feito { background: var(--pistachio); }
+  .ex-topo { display: flex; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; font-weight: 600; }
+  .ex-linha { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.6rem; }
+  .ex-linha input { width: 110px; margin-bottom: 0; padding: 0.6rem 0.9rem; }
+  .ex-linha span { font-size: 0.85rem; }
+  .ex-linha button { width: auto; padding: 0.6rem 1rem; margin-left: auto; }
+  .ex small { display: block; margin-top: 0.5rem; opacity: 0.75; }
+  .lin-edit { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr auto; gap: 0.4rem; margin-bottom: 0.5rem; align-items: center; }
+  .lin-edit input, .lin-edit select { margin-bottom: 0; padding: 0.6rem 0.8rem; }
+  .fab {
+    position: fixed; right: 1.25rem; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    width: 58px; height: 58px; border-radius: 50%; padding: 0; font-size: 1.4rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 5;
+  }
 
   @media (min-width: 720px) {
     .wrap { max-width: none; padding: 0; }
@@ -135,11 +161,51 @@
     { id: "financeiro", nome: "Financeiro", icone: ICONES.dinheiro },
     { id: "trabalho", nome: "Trabalho", icone: ICONES.notebook }
   ];
+  const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
   let usuario = null;
   let secaoAtual = null;
   let pararEscuta = null;
+  let wakeLock = null;
 
+  const treino = {
+    dia: new Date().getDay(),
+    programa: {},
+    ultimas: {},
+    sessao: null,
+    feitos: {},
+    cargas: {},
+    descanso: null,
+    editando: false,
+    rascunho: null
+  };
+
+  // ---------- utilitários ----------
+  function esc(t) {
+    return String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function slug(t) {
+    return String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+  function formatar(seg) {
+    seg = Math.max(0, Math.floor(seg));
+    const m = Math.floor(seg / 60), s = seg % 60;
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+  function colecao(nome) {
+    return db.collection("users").doc(usuario.uid).collection(nome);
+  }
+  function vibrar() {
+    if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]);
+  }
+  async function manterTela() {
+    try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) { wakeLock = null; }
+  }
+  function soltarTela() {
+    if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  }
+
+  // ---------- login ----------
   function mostrarFormulario() {
     if (pararEscuta) { pararEscuta(); pararEscuta = null; }
     usuario = null;
@@ -168,12 +234,14 @@
     };
   }
 
-  function mostrarApp(user) {
+  async function mostrarApp(user) {
     usuario = user;
     conteudo.innerHTML = "<div class='app' id='app'><nav class='menu' id='menu'></nav><main class='conteudo' id='main'></main></div>";
     secaoAtual = telaGrande.matches ? "bora" : null;
     desenharMenu();
     desenharMain();
+    await carregarTreinos();
+    if (secaoAtual === "treinos") renderTreinos();
   }
 
   function irPara(id) {
@@ -195,7 +263,7 @@
       ).join("") +
       "<button class='item sair' id='sair'>Sair</button>";
     menu.querySelectorAll("button[data-id]").forEach(b => b.onclick = () => irPara(b.dataset.id));
-    document.getElementById("sair").onclick = () => auth.signOut();
+    document.getElementById("sair").onclick = () => { soltarTela(); auth.signOut(); };
   }
 
   function desenharMain() {
@@ -212,6 +280,13 @@
         "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
         "<div id='status'></div><ul id='lista'></ul>";
       ligarTeste();
+    } else if (secao.id === "treinos") {
+      main.innerHTML = voltar + "<div id='treinos'></div>";
+      const el = document.getElementById("treinos");
+      el.onclick = tratarClique;
+      el.oninput = tratarEntrada;
+      el.onchange = tratarEntrada;
+      renderTreinos();
     } else {
       main.innerHTML = voltar + "<h2>" + secao.nome + "</h2><p class='sub'>Em breve.</p>";
     }
@@ -220,7 +295,7 @@
   }
 
   function ligarTeste() {
-    const itens = db.collection("users").doc(usuario.uid).collection("itens");
+    const itens = colecao("itens");
 
     async function adicionar() {
       const campo = document.getElementById("novo");
@@ -243,10 +318,9 @@
         ul.outerHTML = "<p class='vazio' id='lista'>Nenhum item ainda.</p>";
         return;
       }
-      ul.innerHTML = snap.docs.map(doc => {
-        const texto = doc.data().texto.replace(/</g, "&lt;");
-        return "<li><span>" + texto + "</span><button data-id='" + doc.id + "'>Excluir</button></li>";
-      }).join("");
+      ul.innerHTML = snap.docs.map(doc =>
+        "<li><span>" + esc(doc.data().texto) + "</span><button data-id='" + doc.id + "'>Excluir</button></li>"
+      ).join("");
       ul.querySelectorAll("button[data-id]").forEach(b => {
         b.onclick = () => itens.doc(b.dataset.id).delete();
       });
@@ -255,6 +329,241 @@
       if (st) st.textContent = "Erro ao carregar: " + e.message;
     });
   }
+
+  // ---------- treinos: dados ----------
+  async function carregarTreinos() {
+    try {
+      const prog = await colecao("programa").get();
+      treino.programa = {};
+      prog.forEach(d => { treino.programa[Number(d.id)] = d.data(); });
+      const ult = await colecao("ultimas").get();
+      treino.ultimas = {};
+      ult.forEach(d => { treino.ultimas[d.id] = d.data(); });
+    } catch (e) {
+      const st = document.getElementById("status");
+      if (st) st.textContent = "Erro ao carregar treinos: " + e.message;
+    }
+  }
+
+  // ---------- treinos: tela ----------
+  function renderTreinos() {
+    const el = document.getElementById("treinos");
+    if (!el) return;
+    if (treino.editando) { el.innerHTML = htmlEditor(); return; }
+
+    const prog = treino.programa[treino.dia];
+    let h = "<div class='semana'>" +
+      DIAS.map((n, i) => "<button class='dia" + (i === treino.dia ? " ativo" : "") + "' data-acao='dia' data-i='" + i + "'>" + n + "</button>").join("") +
+    "</div>";
+
+    if (treino.descanso) {
+      h += "<div class='descanso'>Descanso<strong id='descanso'></strong><button data-acao='pular'>Pular descanso</button></div>";
+    }
+
+    h += "<div class='barra'>" + (treino.sessao
+      ? "<span>Tempo: <strong id='tempo'></strong></span><button data-acao='finalizar'>Finalizar treino</button>"
+      : "<span></span><button data-acao='iniciar'>Começar treino</button>") +
+    "</div>";
+
+    h += "<div id='treino-status' style='color:var(--blood);font-size:0.9rem;min-height:1.2em'></div>";
+
+    if (!prog) {
+      h += "<p class='vazio'>Nenhum treino programado para este dia. Toque no ✎ para cadastrar.</p>";
+    } else {
+      h += "<h2>" + esc(prog.nome) + "</h2>";
+      prog.exercicios.forEach((ex, i) => { h += cardExercicio(ex, i); });
+    }
+
+    h += "<button class='fab' data-acao='editar' aria-label='Editar treino'>✎</button>";
+    el.innerHTML = h;
+    atualizarTempos();
+  }
+
+  function cardExercicio(ex, i) {
+    const feito = !!treino.feitos[i];
+    const ultima = treino.ultimas[slug(ex.nome)];
+    const carga = treino.cargas[i] !== undefined ? treino.cargas[i] : (ultima ? ultima.carga : "");
+    const lado = ex.tipo === "lado";
+    const ultimaTxt = ultima ? "Última vez: " + ultima.carga + " kg" + (lado ? " por lado" : "") : "Primeira vez";
+    const totalTxt = lado && carga !== "" ? "= " + (Number(carga) * 2) + " kg no total" : "";
+
+    return "<div class='ex" + (feito ? " feito" : "") + "'>" +
+      "<div class='ex-topo'><span>" + esc(ex.nome) + "</span><span>" + esc(ex.series) + " × " + esc(ex.reps) + "</span></div>" +
+      "<div class='ex-linha'>" +
+        "<input type='number' inputmode='decimal' step='0.5' placeholder='kg' value='" + carga + "' data-carga='" + i + "'>" +
+        "<span>kg " + (lado ? "por lado" : "total") + "</span>" +
+        "<button data-acao='feito' data-i='" + i + "'>" + (feito ? "✓ Feito" : "Marcar") + "</button>" +
+      "</div>" +
+      "<small>" + ultimaTxt + " <span data-total='" + i + "'>" + totalTxt + "</span></small>" +
+    "</div>";
+  }
+
+  function htmlEditor() {
+    const r = treino.rascunho;
+    let h = "<h2>Editar treino</h2>" +
+      "<p class='sub'>" + DIAS[treino.dia] + "</p>" +
+      "<input placeholder='Nome do treino (ex.: Costas e bíceps)' data-rnome='1' value='" + esc(r.nome) + "'>";
+
+    r.exercicios.forEach((ex, i) => {
+      h += "<div class='lin-edit'>" +
+        "<input placeholder='Exercício' data-enome='" + i + "' value='" + esc(ex.nome) + "'>" +
+        "<input type='number' placeholder='Séries' data-eseries='" + i + "' value='" + esc(ex.series) + "'>" +
+        "<input type='number' placeholder='Reps' data-ereps='" + i + "' value='" + esc(ex.reps) + "'>" +
+        "<select data-etipo='" + i + "'>" +
+          "<option value='total'" + (ex.tipo !== "lado" ? " selected" : "") + ">Total</option>" +
+          "<option value='lado'" + (ex.tipo === "lado" ? " selected" : "") + ">Por lado</option>" +
+        "</select>" +
+        "<button class='excluir' data-acao='excluir' data-i='" + i + "'>×</button>" +
+      "</div>";
+    });
+
+    h += "<div class='barra'><button class='secundario' data-acao='add-ex'>+ Exercício</button></div>" +
+      "<div class='barra'><button class='secundario' data-acao='cancelar'>Cancelar</button><button data-acao='salvar'>Salvar</button></div>" +
+      "<div id='treino-status' style='color:var(--blood);font-size:0.9rem'></div>";
+    return h;
+  }
+
+  function tratarClique(e) {
+    const el = e.target.closest("[data-acao]");
+    if (!el) return;
+    const acao = el.dataset.acao;
+    const i = Number(el.dataset.i);
+
+    if (acao === "dia") { treino.dia = i; renderTreinos(); }
+    else if (acao === "feito") {
+      treino.feitos[i] = !treino.feitos[i];
+      if (treino.feitos[i]) iniciarDescanso(60);
+      renderTreinos();
+    }
+    else if (acao === "iniciar") {
+      treino.sessao = { inicio: Date.now() };
+      treino.feitos = {};
+      manterTela();
+      renderTreinos();
+    }
+    else if (acao === "finalizar") finalizarTreino();
+    else if (acao === "pular") { treino.descanso = null; renderTreinos(); }
+    else if (acao === "editar") abrirEditor();
+    else if (acao === "add-ex") { treino.rascunho.exercicios.push({ nome: "", series: "", reps: "", tipo: "total" }); renderTreinos(); }
+    else if (acao === "excluir") { treino.rascunho.exercicios.splice(i, 1); renderTreinos(); }
+    else if (acao === "cancelar") { treino.editando = false; renderTreinos(); }
+    else if (acao === "salvar") salvarPrograma();
+  }
+
+  function tratarEntrada(e) {
+    const d = e.target.dataset;
+    if ("carga" in d) {
+      const i = Number(d.carga);
+      treino.cargas[i] = e.target.value;
+      const ex = treino.programa[treino.dia].exercicios[i];
+      const span = document.querySelector("[data-total='" + i + "']");
+      if (span) span.textContent = ex.tipo === "lado" && e.target.value !== "" ? "= " + (Number(e.target.value) * 2) + " kg no total" : "";
+      return;
+    }
+    if (!treino.rascunho) return;
+    const r = treino.rascunho;
+    if ("rnome" in d) r.nome = e.target.value;
+    else if ("enome" in d) r.exercicios[Number(d.enome)].nome = e.target.value;
+    else if ("eseries" in d) r.exercicios[Number(d.eseries)].series = e.target.value;
+    else if ("ereps" in d) r.exercicios[Number(d.ereps)].reps = e.target.value;
+    else if ("etipo" in d) r.exercicios[Number(d.etipo)].tipo = e.target.value;
+  }
+
+  function abrirEditor() {
+    const p = treino.programa[treino.dia];
+    treino.rascunho = p
+      ? JSON.parse(JSON.stringify(p))
+      : { nome: "", exercicios: [] };
+    treino.editando = true;
+    renderTreinos();
+  }
+
+  async function salvarPrograma() {
+    const r = treino.rascunho;
+    const status = document.getElementById("treino-status");
+    const limpo = {
+      nome: r.nome.trim() || "Treino",
+      exercicios: r.exercicios
+        .filter(ex => ex.nome.trim() !== "")
+        .map(ex => ({ nome: ex.nome.trim(), series: ex.series || "", reps: ex.reps || "", tipo: ex.tipo === "lado" ? "lado" : "total" }))
+    };
+    try {
+      await colecao("programa").doc(String(treino.dia)).set(limpo);
+      treino.programa[treino.dia] = limpo;
+      treino.editando = false;
+      treino.rascunho = null;
+      renderTreinos();
+    } catch (e) {
+      if (status) status.textContent = "Erro ao salvar: " + e.message;
+    }
+  }
+
+  // ---------- descanso e sessão ----------
+  function iniciarDescanso(segundos) {
+    treino.descanso = { fim: Date.now() + segundos * 1000 };
+    renderTreinos();
+  }
+
+  async function finalizarTreino() {
+    const prog = treino.programa[treino.dia];
+    const status = document.getElementById("treino-status");
+    if (!prog || !treino.sessao) return;
+
+    const duracao = Math.round((Date.now() - treino.sessao.inicio) / 1000);
+    const exercicios = prog.exercicios.map((ex, i) => ({
+      nome: ex.nome,
+      tipo: ex.tipo,
+      carga: treino.cargas[i] !== undefined && treino.cargas[i] !== "" ? Number(treino.cargas[i]) : null,
+      feito: !!treino.feitos[i]
+    }));
+
+    try {
+      const salvos = [];
+      exercicios.forEach(ex => {
+        if (ex.carga !== null) {
+          salvos.push(colecao("ultimas").doc(slug(ex.nome)).set({
+            nome: ex.nome, carga: ex.carga, tipo: ex.tipo,
+            data: firebase.firestore.FieldValue.serverTimestamp()
+          }));
+          treino.ultimas[slug(ex.nome)] = { nome: ex.nome, carga: ex.carga, tipo: ex.tipo };
+        }
+      });
+      salvos.push(colecao("sessoes").add({
+        dia: treino.dia, nome: prog.nome, duracaoSeg: duracao, exercicios: exercicios,
+        data: firebase.firestore.FieldValue.serverTimestamp()
+      }));
+      await Promise.all(salvos);
+
+      treino.sessao = null;
+      treino.feitos = {};
+      treino.descanso = null;
+      soltarTela();
+      renderTreinos();
+      const st = document.getElementById("treino-status");
+      if (st) st.textContent = "Treino salvo. Duração: " + formatar(duracao);
+    } catch (e) {
+      if (status) status.textContent = "Erro ao salvar o treino: " + e.message;
+    }
+  }
+
+  function atualizarTempos() {
+    if (treino.sessao) {
+      const t = document.getElementById("tempo");
+      if (t) t.textContent = formatar((Date.now() - treino.sessao.inicio) / 1000);
+    }
+    if (treino.descanso) {
+      const d = document.getElementById("descanso");
+      const restante = (treino.descanso.fim - Date.now()) / 1000;
+      if (restante <= 0) {
+        treino.descanso = null;
+        vibrar();
+        renderTreinos();
+      } else if (d) {
+        d.textContent = formatar(restante);
+      }
+    }
+  }
+  setInterval(atualizarTempos, 1000);
 
   telaGrande.addEventListener("change", () => {
     if (!usuario) return;
