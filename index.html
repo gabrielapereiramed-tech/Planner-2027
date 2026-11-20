@@ -9,18 +9,19 @@
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    --bg: #f5f5f4; --fg: #1c1917; --card: #ffffff; --accent: #2563eb;
+    --bg: #f5f5f4; --fg: #1c1917; --card: #ffffff; --accent: #2563eb; --input: #f5f5f4;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --bg: #1c1917; --fg: #f5f5f4; --card: #292524; --accent: #60a5fa; color-scheme: dark; }
+    :root:not([data-theme="light"]) { --bg: #1c1917; --fg: #f5f5f4; --card: #292524; --accent: #60a5fa; --input: #1c1917; color-scheme: dark; }
   }
   body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
          font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); }
   .card { background: var(--card); padding: 2rem; border-radius: 16px; text-align: center; max-width: 320px; width: 90%; }
+  input { display: block; width: 100%; box-sizing: border-box; font-size: 1rem; padding: 0.7rem; margin-top: 0.7rem;
+          border: 1px solid #a8a29e; border-radius: 10px; background: var(--input); color: var(--fg); }
   button { font-size: 1rem; padding: 0.8rem 1.2rem; border: none; border-radius: 10px;
            background: var(--accent); color: #fff; cursor: pointer; width: 100%; margin-top: 1rem; }
-  img { border-radius: 50%; width: 64px; height: 64px; }
   #status { margin-top: 1rem; font-size: 0.9rem; opacity: 0.8; min-height: 1.2em; }
 </style>
 </head>
@@ -45,16 +46,20 @@
 
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
-  const provider = new firebase.auth.GoogleAuthProvider();
   const conteudo = document.getElementById("conteudo");
   const status = document.getElementById("status");
 
-  function mostrarDeslogado() {
-    conteudo.innerHTML = "<p>Você não está logado.</p><button id='entrar'>Entrar com Google</button>";
+  function mostrarFormulario() {
+    conteudo.innerHTML =
+      "<input id='email' type='email' placeholder='E-mail' autocomplete='username'>" +
+      "<input id='senha' type='password' placeholder='Senha' autocomplete='current-password'>" +
+      "<button id='entrar'>Entrar</button>";
     document.getElementById("entrar").onclick = async () => {
-      status.textContent = "Abrindo login...";
+      const email = document.getElementById("email").value.trim();
+      const senha = document.getElementById("senha").value;
+      status.textContent = "Entrando...";
       try {
-        await auth.signInWithPopup(provider);
+        await auth.signInWithEmailAndPassword(email, senha);
       } catch (e) {
         status.textContent = "Erro: " + e.message;
       }
@@ -63,14 +68,13 @@
 
   function mostrarLogado(user) {
     conteudo.innerHTML =
-      (user.photoURL ? "<img src='" + user.photoURL + "' alt=''>" : "") +
-      "<p><strong>" + (user.displayName || "Sem nome") + "</strong><br>" + user.email + "</p>" +
+      "<p><strong>Logado como</strong><br>" + user.email + "</p>" +
       "<button id='sair'>Sair</button>";
     document.getElementById("sair").onclick = () => auth.signOut();
     status.textContent = "Login funcionando.";
   }
 
-  auth.onAuthStateChanged(user => user ? mostrarLogado(user) : mostrarDeslogado());
+  auth.onAuthStateChanged(user => user ? mostrarLogado(user) : mostrarFormulario());
 </script>
 </body>
 </html>
