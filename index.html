@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Meu planner</title>
+<title>Oiê!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
@@ -27,46 +27,66 @@
     font-family: "Poppins", system-ui, -apple-system, sans-serif; font-weight: 400;
     display: flex; justify-content: center; align-items: flex-start;
   }
-  .wrap { width: 100%; max-width: 920px; padding: 1.25rem; }
+  .wrap { width: 100%; max-width: 980px; padding: 1.25rem; }
+
+  /* ---------- Login ---------- */
   .painel { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; }
-  @media (min-width: 720px) {
+  @media (orientation: landscape) and (min-width: 720px) {
     .painel { flex-direction: row; min-height: 80vh; }
     .ilustra, .formulario { flex: 1; }
   }
-
   .ilustra img { display: block; width: 100%; max-width: 380px; height: auto; margin: 0 auto; }
-
   .formulario { width: 100%; max-width: 380px; }
   h1 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 2rem; margin: 0 0 0.5rem; }
+  h2 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.6rem; margin: 0 0 0.5rem; }
   .sub { margin: 0 0 1.25rem; font-weight: 300; font-size: 1rem; line-height: 1.5; }
 
   input {
     display: block; width: 100%; font-family: inherit; font-size: 1rem; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem;
-    border: 2px solid var(--burgundy); border-radius: 999px; background: var(--branco); color: var(--burgundy);
-    outline: none;
+    border: 2px solid var(--burgundy); border-radius: 999px; background: var(--branco); color: var(--burgundy); outline: none;
   }
   input:focus { border-color: var(--fuchsia); }
-
   button {
     font-family: inherit; font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none;
-    border-radius: 999px; background: var(--fuchsia); color: var(--branco); cursor: pointer; margin-top: 0.25rem;
+    border-radius: 999px; background: var(--fuchsia); color: var(--branco); cursor: pointer;
   }
-  button.secundario { width: auto; padding: 0.5rem 1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); margin-top: 0; }
-  button.excluir { width: auto; padding: 0.3rem 0.75rem; font-size: 0.85rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); margin-top: 0; }
-
   #status { margin-top: 0.9rem; font-size: 0.9rem; min-height: 1.2em; color: var(--blood); }
 
-  .card-logado { background: var(--branco); border-radius: 24px; padding: 1.5rem; width: 100%; max-width: 520px; }
-  .topo { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  /* ---------- App ---------- */
+  .app { display: flex; flex-direction: column; gap: 1rem; }
+  .menu { display: flex; flex-direction: column; gap: 0.6rem; }
+  .menu-topo { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.6rem; margin: 0 0 0.5rem; }
+  .item {
+    display: flex; align-items: center; gap: 0.7rem; text-align: left; padding: 0.9rem 1.1rem;
+    background: var(--fuchsia); color: var(--branco);
+  }
+  .item svg { width: 22px; height: 22px; flex-shrink: 0; }
+  .item.ativo { background: var(--burgundy); }
+  .item.sair { background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); justify-content: center; margin-top: 0.5rem; }
+  .conteudo { background: var(--branco); border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
+  .voltar { width: auto; padding: 0.45rem 1rem; margin-bottom: 1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
   .linha { display: flex; gap: 0.5rem; margin-top: 1rem; }
   .linha input { margin-bottom: 0; }
-  .linha button { width: auto; margin-top: 0; padding: 0.9rem 1.4rem; }
+  .linha button { width: auto; padding: 0.9rem 1.4rem; }
+  .conteudo #status { color: var(--burgundy); opacity: 0.7; }
   ul { list-style: none; padding: 0; margin: 1rem 0 0; }
   li {
     display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
     padding: 0.8rem 1rem; margin-bottom: 0.5rem; background: var(--pistachio); border-radius: 16px;
   }
+  li button { width: auto; padding: 0.3rem 0.75rem; font-size: 0.85rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
   .vazio { text-align: center; opacity: 0.7; margin: 1rem 0 0; }
+
+  @media (min-width: 720px) {
+    .app { flex-direction: row; align-items: flex-start; }
+    .menu { width: 230px; flex-shrink: 0; display: flex !important; }
+    .conteudo { flex: 1; display: block !important; }
+    .voltar { display: none; }
+  }
+  @media (max-width: 719px) {
+    .app.mobile-secao .menu { display: none; }
+    .app.mobile-home .conteudo { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -91,10 +111,34 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
   const conteudo = document.getElementById("conteudo");
+  const telaGrande = window.matchMedia("(min-width: 720px)");
+
+  const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const ICONES = {
+    estrela: svg('<path d="M12 2 C12.8 8.5 15.5 11.2 22 12 C15.5 12.8 12.8 15.5 12 22 C11.2 15.5 8.5 12.8 2 12 C8.5 11.2 11.2 8.5 12 2 Z"/>'),
+    coracao: svg('<path d="M12 21 C12 21 4 15.5 4 9.5 C4 6.5 6.2 4.5 8.5 4.5 C10 4.5 11.3 5.3 12 6.5 C12.7 5.3 14 4.5 15.5 4.5 C17.8 4.5 20 6.5 20 9.5 C20 15.5 12 21 12 21 Z"/>'),
+    livro: svg('<path d="M4 5 C7 4 10 4.5 12 6 C14 4.5 17 4 20 5 V19 C17 18 14 18.5 12 20 C10 18.5 7 18 4 19 Z"/><path d="M12 6 V20"/>'),
+    halter: svg('<path d="M6 7 V17 M18 7 V17 M3 9 V15 M21 9 V15 M6 12 H18"/>'),
+    dinheiro: svg('<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5 C14 8.5 13 8 12 8 C10.5 8 9.5 8.8 9.5 10 C9.5 13.5 14.5 11.5 14.5 15 C14.5 16.2 13.5 17 12 17 C10.8 17 9.8 16.5 9.3 15.5 M12 6.5 V8 M12 16 V17.5"/>'),
+    notebook: svg('<rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 19 H22"/>')
+  };
+
+  const SECOES = [
+    { id: "bora", nome: "Bora ver", icone: ICONES.estrela },
+    { id: "pessoal", nome: "Pessoal", icone: ICONES.coracao },
+    { id: "estudos", nome: "Estudos", icone: ICONES.livro },
+    { id: "treinos", nome: "Treinos", icone: ICONES.halter },
+    { id: "financeiro", nome: "Financeiro", icone: ICONES.dinheiro },
+    { id: "trabalho", nome: "Trabalho", icone: ICONES.notebook }
+  ];
+
+  let usuario = null;
+  let secaoAtual = null;
   let pararEscuta = null;
 
   function mostrarFormulario() {
     if (pararEscuta) { pararEscuta(); pararEscuta = null; }
+    usuario = null;
     conteudo.innerHTML =
       "<div class='painel'>" +
         "<div class='ilustra'><img src='ilustracao.png' alt='Ilustração'></div>" +
@@ -120,19 +164,59 @@
     };
   }
 
-  function mostrarLogado(user) {
-    const itens = db.collection("users").doc(user.uid).collection("itens");
+  function mostrarApp(user) {
+    usuario = user;
+    conteudo.innerHTML = "<div class='app' id='app'><nav class='menu' id='menu'></nav><main class='conteudo' id='main'></main></div>";
+    secaoAtual = telaGrande.matches ? "bora" : null;
+    desenharMenu();
+    desenharMain();
+  }
 
-    conteudo.innerHTML =
-      "<div class='card-logado'>" +
-        "<div class='topo'><div><h1>Oiê!</h1><p class='sub' style='margin:0'>" + user.email + "</p></div>" +
-        "<button id='sair' class='secundario'>Sair</button></div>" +
-        "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
-        "<div id='status'></div>" +
-        "<ul id='lista'></ul>" +
-      "</div>";
+  function irPara(id) {
+    secaoAtual = id;
+    desenharMenu();
+    desenharMain();
+  }
 
+  function desenharMenu() {
+    const app = document.getElementById("app");
+    const menu = document.getElementById("menu");
+    app.className = "app " + (secaoAtual ? "mobile-secao" : "mobile-home");
+    menu.innerHTML =
+      "<div class='menu-topo'>Oiê!</div>" +
+      SECOES.map(s =>
+        "<button class='item" + (s.id === secaoAtual ? " ativo" : "") + "' data-id='" + s.id + "'>" +
+          s.icone + "<span>" + s.nome + "</span>" +
+        "</button>"
+      ).join("") +
+      "<button class='item sair' id='sair'>Sair</button>";
+    menu.querySelectorAll("button[data-id]").forEach(b => b.onclick = () => irPara(b.dataset.id));
     document.getElementById("sair").onclick = () => auth.signOut();
+  }
+
+  function desenharMain() {
+    if (pararEscuta) { pararEscuta(); pararEscuta = null; }
+    const main = document.getElementById("main");
+    const secao = SECOES.find(s => s.id === secaoAtual);
+    if (!secao) { main.innerHTML = ""; return; }
+
+    const voltar = "<button class='voltar' id='voltar'>← Voltar</button>";
+    if (secao.id === "bora") {
+      main.innerHTML = voltar +
+        "<h2>Bora ver</h2>" +
+        "<p class='sub'>Visão de tudo o que está planejado. Por enquanto, esta lista é só um teste de sincronização.</p>" +
+        "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
+        "<div id='status'></div><ul id='lista'></ul>";
+      ligarTeste();
+    } else {
+      main.innerHTML = voltar + "<h2>" + secao.nome + "</h2><p class='sub'>Em breve.</p>";
+    }
+    const b = document.getElementById("voltar");
+    if (b) b.onclick = () => irPara(null);
+  }
+
+  function ligarTeste() {
+    const itens = db.collection("users").doc(usuario.uid).collection("itens");
 
     async function adicionar() {
       const campo = document.getElementById("novo");
@@ -150,23 +234,32 @@
 
     pararEscuta = itens.orderBy("criadoEm").onSnapshot(snap => {
       const ul = document.getElementById("lista");
+      if (!ul) return;
       if (snap.empty) {
         ul.outerHTML = "<p class='vazio' id='lista'>Nenhum item ainda.</p>";
         return;
       }
       ul.innerHTML = snap.docs.map(doc => {
         const texto = doc.data().texto.replace(/</g, "&lt;");
-        return "<li><span>" + texto + "</span><button class='excluir' data-id='" + doc.id + "'>Excluir</button></li>";
+        return "<li><span>" + texto + "</span><button data-id='" + doc.id + "'>Excluir</button></li>";
       }).join("");
-      document.querySelectorAll("button[data-id]").forEach(b => {
+      ul.querySelectorAll("button[data-id]").forEach(b => {
         b.onclick = () => itens.doc(b.dataset.id).delete();
       });
     }, e => {
-      document.getElementById("status").textContent = "Erro ao carregar: " + e.message;
+      const st = document.getElementById("status");
+      if (st) st.textContent = "Erro ao carregar: " + e.message;
     });
   }
 
-  auth.onAuthStateChanged(user => user ? mostrarLogado(user) : mostrarFormulario());
+  telaGrande.addEventListener("change", () => {
+    if (!usuario) return;
+    if (telaGrande.matches && !secaoAtual) secaoAtual = "bora";
+    desenharMenu();
+    desenharMain();
+  });
+
+  auth.onAuthStateChanged(user => user ? mostrarApp(user) : mostrarFormulario());
 </script>
 </body>
 </html>
