@@ -151,6 +151,7 @@
   .cal-dia i { display: block; height: 14px; }
   .cal-dia svg { width: 14px; height: 14px; color: var(--blood); }
   .detalhe-dia { margin-top: 1rem; }
+  .feito-card button.excluir-sessao { width: auto; margin-top: 0.6rem; padding: 0.4rem 0.9rem; font-size: 0.85rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
   .detalhe-dia h3 { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; margin: 0 0 0.5rem; }
   .linha-treino { display: flex; gap: 0.5rem; align-items: center; }
   .linha-treino .treino-item { flex: 1; margin-bottom: 0.5rem; }
@@ -190,6 +191,20 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+  function mostrarErro(msg) {
+    let b = document.getElementById("erro-banner");
+    if (!b) {
+      b = document.createElement("div");
+      b.id = "erro-banner";
+      b.style.cssText = "position:fixed;left:8px;right:8px;bottom:8px;background:#DD4E28;color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;z-index:99;";
+      b.onclick = () => b.remove();
+      document.body.appendChild(b);
+    }
+    b.textContent = "Erro: " + msg + " (toque para fechar)";
+  }
+  window.addEventListener("error", e => mostrarErro(e.message));
+  window.addEventListener("unhandledrejection", e => mostrarErro(e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+
   const firebaseConfig = {
     apiKey: "AIzaSyCThzs67EiYA7EFZTcmyrzQf0zlrf-Pwus",
     authDomain: "planner-2026-2cf70.firebaseapp.com",
@@ -240,7 +255,7 @@
   let wakeLock = null;
 
   const T = {
-    aba: "dia", hist: "mes", offsetSemana: 0, offsetMes: 0, offsetAno: 0,
+    aba: "geral", hist: "mes", offsetSemana: 0, offsetMes: 0, offsetAno: 0,
     selecionado: null, centralizar: true,
     treinos: [], sessoes: [], ultimas: {}, trocas: {}, metas: {},
     treinoHoje: null, sessao: null, feitos: {}, cargas: {}, descanso: null,
@@ -405,6 +420,7 @@
       el.oninput = tratarEntrada;
       el.onchange = tratarEntrada;
       renderTreinos();
+      carregarTudo().then(() => renderTreinos());
     } else {
       main.innerHTML = voltar + "<h2>" + secao.nome + "</h2><p class='sub'>Em breve.</p>";
     }
@@ -454,11 +470,11 @@
     if (!el) return;
     if (T.editorTipo) { el.innerHTML = htmlEditorAtual(); return; }
 
-    let h = "<div class='abas'>" +
-      "<button class='aba" + (T.aba === "dia" ? " ativo" : "") + "' data-acao='aba' data-v='dia'>Dia</button>" +
+    let h = "<h2>Treinos</h2><div class='abas'>" +
+      "<button class='aba" + (T.aba === "geral" ? " ativo" : "") + "' data-acao='aba' data-v='geral'>Geral</button>" +
       "<button class='aba" + (T.aba === "historico" ? " ativo" : "") + "' data-acao='aba' data-v='historico'>Histórico</button>" +
     "</div>";
-    h += T.aba === "dia" ? htmlAbaDia() : htmlAbaHistorico();
+    h += T.aba === "geral" ? htmlAbaDia() : htmlAbaHistorico();
     h += "<div class='fabs'>" +
       "<button class='fab' data-acao='abrir-metas' aria-label='Metas'>" + ICONES.alvo + "</button>" +
       "<button class='fab' data-acao='abrir-lista' aria-label='Editar treinos'>" + ICONES.lapis + "</button>" +
@@ -574,6 +590,7 @@
         h += "<div class='linha-ex'><span>" + esc(ex.nome) + (ex.feito ? "" : " (pulado)") + "</span><span>" + carga + "</span></div>";
       });
     }
+    if (s.id) h += "<button class='excluir-sessao' data-acao='excluir-sessao' data-id='" + s.id + "'>Excluir treino</button>";
     return h + "</div>";
   }
 
@@ -765,7 +782,7 @@
   }
 
   // ---------- eventos ----------
-  async function tratarClique(e) {
+  async function tratarCliqueInterno(e) {
     const el = e.target.closest("[data-acao]");
     if (!el) return;
     const a = el.dataset.acao;
@@ -845,8 +862,29 @@
         break;
       case "treino-salvar": await salvarTreino(); break;
       case "treino-excluir": await excluirTreino(); break;
+      case "excluir-sessao": await excluirSessao(el.dataset.id); break;
       case "excluir-lista": await excluirTreinoPorId(el.dataset.id); break;
       case "metas-salvar": await salvarMetas(); break;
+    }
+  }
+
+  async function tratarClique(e) {
+    try {
+      await tratarCliqueInterno(e);
+    } catch (err) {
+      mostrarErro(err.message);
+    }
+  }
+
+  async function excluirSessao(id) {
+    if (!id) return;
+    if (!confirm("Excluir este treino concluído? Essa ação não pode ser desfeita.")) return;
+    try {
+      await colecao("sessoes").doc(id).delete();
+      T.sessoes = T.sessoes.filter(x => x.id !== id);
+      renderTreinos();
+    } catch (err) {
+      mostrarErro(err.message);
     }
   }
 
@@ -1025,13 +1063,6 @@
     }
   }
   setInterval(atualizarTempos, 1000);
-
-  // ---------- ao voltar para o app, atualiza os dados ----------
-  window.addEventListener("focus", async () => {
-    if (!usuario || secaoAtual !== "treinos" || T.sessao || T.editorTipo || T.registrando) return;
-    await carregarTudo();
-    renderTreinos();
-  });
 
   telaGrande.addEventListener("change", () => {
     if (!usuario) return;
