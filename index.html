@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Meu planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
   :root {
     box-sizing: border-box;
@@ -14,49 +17,46 @@
     --fuchsia: #D81A67;
     --blood: #DD4E28;
     --branco: #FFFFFF;
-    --texto: #770523;
     color-scheme: light;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; min-height: 100vh; background: var(--creme); color: var(--texto);
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0; min-height: 100vh; background: var(--creme); color: var(--burgundy);
+    font-family: "Poppins", system-ui, -apple-system, sans-serif; font-weight: 400;
     display: flex; justify-content: center; align-items: flex-start;
   }
   .wrap { width: 100%; max-width: 920px; padding: 1.25rem; }
-  .painel { display: flex; flex-direction: column; gap: 1.5rem; }
+  .painel { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; }
   @media (min-width: 720px) {
-    .painel { flex-direction: row; align-items: center; min-height: 80vh; }
-    .ilustra { flex: 1; }
-    .formulario { flex: 1; }
+    .painel { flex-direction: row; min-height: 80vh; }
+    .ilustra, .formulario { flex: 1; }
   }
 
-  .ilustra { background: var(--peony); border-radius: 28px; padding: 1.5rem; text-align: center; }
-  .ilustra svg { width: 100%; max-width: 280px; height: auto; }
+  .ilustra img { display: block; width: 100%; max-width: 380px; height: auto; margin: 0 auto; }
 
-  .formulario { padding: 0.5rem 0.25rem; }
-  h1 { font-size: 1.6rem; margin: 0 0 0.25rem; }
-  .sub { margin: 0 0 1.25rem; font-size: 1rem; line-height: 1.4; opacity: 0.9; }
+  .formulario { width: 100%; max-width: 380px; }
+  h1 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 2rem; margin: 0 0 0.5rem; }
+  .sub { margin: 0 0 1.25rem; font-weight: 300; font-size: 1rem; line-height: 1.5; }
 
   input {
-    display: block; width: 100%; font-size: 1rem; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem;
-    border: 2px solid var(--burgundy); border-radius: 999px; background: var(--branco); color: var(--texto);
+    display: block; width: 100%; font-family: inherit; font-size: 1rem; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem;
+    border: 2px solid var(--burgundy); border-radius: 999px; background: var(--branco); color: var(--burgundy);
     outline: none;
   }
   input:focus { border-color: var(--fuchsia); }
 
   button {
-    font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none; border-radius: 999px;
-    background: var(--fuchsia); color: var(--branco); cursor: pointer; margin-top: 0.25rem;
+    font-family: inherit; font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none;
+    border-radius: 999px; background: var(--fuchsia); color: var(--branco); cursor: pointer; margin-top: 0.25rem;
   }
   button.secundario { width: auto; padding: 0.5rem 1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); margin-top: 0; }
   button.excluir { width: auto; padding: 0.3rem 0.75rem; font-size: 0.85rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); margin-top: 0; }
 
   #status { margin-top: 0.9rem; font-size: 0.9rem; min-height: 1.2em; color: var(--blood); }
 
-  .card-logado { background: var(--branco); border-radius: 24px; padding: 1.5rem; }
+  .card-logado { background: var(--branco); border-radius: 24px; padding: 1.5rem; width: 100%; max-width: 520px; }
   .topo { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
   .linha { display: flex; gap: 0.5rem; margin-top: 1rem; }
   .linha input { margin-bottom: 0; }
@@ -93,45 +93,11 @@
   const conteudo = document.getElementById("conteudo");
   let pararEscuta = null;
 
-  const BONEQUINHO = `
-  <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#770523" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-label="Ilustração">
-    <!-- cabelo cacheado preso -->
-    <circle cx="200" cy="58" r="24" fill="#770523"/>
-    <circle cx="178" cy="46" r="13" fill="#770523"/>
-    <circle cx="218" cy="72" r="11" fill="#770523"/>
-    <path d="M92 118 Q88 52 150 50 Q212 50 208 118 Q200 88 150 84 Q104 86 92 118 Z" fill="#770523"/>
-    <!-- rosto -->
-    <ellipse cx="150" cy="130" rx="52" ry="58" fill="#FFFFFF"/>
-    <!-- olhos fechados felizes -->
-    <path d="M124 124 Q131 116 138 124"/>
-    <path d="M162 124 Q169 116 176 124"/>
-    <!-- bochechas -->
-    <circle cx="118" cy="142" r="8" fill="#D81A67" stroke="none" opacity="0.45"/>
-    <circle cx="182" cy="142" r="8" fill="#D81A67" stroke="none" opacity="0.45"/>
-    <!-- sorriso -->
-    <path d="M134 150 Q150 166 166 150"/>
-    <!-- pescoço -->
-    <path d="M136 186 L136 204"/>
-    <path d="M164 186 L164 204"/>
-    <!-- corpo com blusa pistache -->
-    <path d="M96 292 Q98 214 136 204 L164 204 Q202 214 204 292 Z" fill="#D0D996"/>
-    <!-- braço direito (viewer esquerda) levantado com sinal de paz -->
-    <path d="M104 240 Q72 214 70 170"/>
-    <path d="M60 150 Q54 146 58 138 Q64 136 70 142 L78 138 Q84 136 84 144 L82 160 Q80 172 70 176 Q60 172 60 150 Z" fill="#FFFFFF"/>
-    <path d="M64 142 L56 84"/>
-    <path d="M78 142 L84 84"/>
-    <!-- braço esquerdo (viewer direita) apoiado -->
-    <path d="M196 240 Q222 262 220 292"/>
-    <!-- detalhes: estrelinhas -->
-    <path d="M250 110 l4 10 l10 4 l-10 4 l-4 10 l-4 -10 l-10 -4 l10 -4 z" fill="#D81A67" stroke="none"/>
-    <path d="M42 216 l3 7 l7 3 l-7 3 l-3 7 l-3 -7 l-7 -3 l7 -3 z" fill="#DD4E28" stroke="none"/>
-  </svg>`;
-
   function mostrarFormulario() {
     if (pararEscuta) { pararEscuta(); pararEscuta = null; }
     conteudo.innerHTML =
       "<div class='painel'>" +
-        "<div class='ilustra'>" + BONEQUINHO + "</div>" +
+        "<div class='ilustra'><img src='ilustracao.png' alt='Ilustração'></div>" +
         "<div class='formulario'>" +
           "<h1>Oiê!</h1>" +
           "<p class='sub'>Vamos planejar hoje, um passo de cada vez. O resto a gente acrescenta depois.</p>" +
