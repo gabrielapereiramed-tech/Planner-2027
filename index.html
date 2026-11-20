@@ -142,6 +142,20 @@
   .meta-bloco p { margin: 0 0 0.2rem; }
   .lin-edit { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr auto; gap: 0.4rem; margin-bottom: 0.5rem; align-items: center; }
   .lin-edit input, .lin-edit select { margin-bottom: 0; padding: 0.6rem 0.8rem; }
+  .calendario { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .cal-cab { font-size: 0.75rem; text-align: center; color: #6B6259; padding: 4px 0; }
+  .cal-dia { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; padding: 6px 0; width: 100%; background: var(--branco); color: #2B2420; border: 1px solid #E7E5E4; border-radius: 10px; font-size: 0.9rem; font-weight: 500; }
+  .cal-dia.hoje { background: var(--pistachio); }
+  .cal-dia.sel { background: var(--blood); color: var(--branco); border-color: var(--blood); }
+  .cal-dia.sel svg { color: var(--branco); }
+  .cal-dia i { display: block; height: 14px; }
+  .cal-dia svg { width: 14px; height: 14px; color: var(--blood); }
+  .detalhe-dia { margin-top: 1rem; }
+  .detalhe-dia h3 { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; margin: 0 0 0.5rem; }
+  .linha-treino { display: flex; gap: 0.5rem; align-items: center; }
+  .linha-treino .treino-item { flex: 1; margin-bottom: 0.5rem; }
+  .linha-treino button.excluir { width: auto; padding: 0.6rem; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; }
+  .linha-treino button.excluir svg { width: 18px; height: 18px; }
   .fabs { position: fixed; right: 1.25rem; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); display: flex; gap: 0.6rem; z-index: 5; }
   .fab {
     width: 58px; height: 58px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;
@@ -204,6 +218,8 @@
 
   ICONES.grade = svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>');
 
+  ICONES.lixeira = svg('<path d="M4 7 H20 M9 7 V4 H15 V7 M6 7 L7 20 H17 L18 7"/>');
+
   const SECOES = [
     { id: "geral", nome: "Geral", icone: ICONES.grade },
     { id: "bora", nome: "Bora ver", icone: ICONES.estrela },
@@ -221,7 +237,7 @@
   let wakeLock = null;
 
   const T = {
-    aba: "dia", hist: "semana", offsetSemana: 0, offsetMes: 0,
+    aba: "dia", hist: "mes", offsetSemana: 0, offsetMes: 0,
     selecionado: null, centralizar: true,
     treinos: [], sessoes: [], ultimas: {}, trocas: {}, metas: {},
     treinoHoje: null, sessao: null, feitos: {}, cargas: {}, descanso: null,
@@ -350,7 +366,7 @@
     const menu = document.getElementById("menu");
     app.className = "app " + (secaoAtual ? "mobile-secao" : "mobile-home");
     menu.innerHTML =
-      "<div class='menu-topo'>Oiê!</div>" +
+      "<div class='menu-topo'>Planner 2027</div>" +
       SECOES.map(s =>
         "<button class='item" + (s.id === secaoAtual ? " ativo" : "") + "' data-id='" + s.id + "'>" +
           s.icone + "<span>" + s.nome + "</span>" +
@@ -590,11 +606,10 @@
 
   // ---------- histórico ----------
   function htmlAbaHistorico() {
-    const abas = [["semana", "Semana"], ["mes", "Mês"], ["total", "Total"]].map(([v, n]) =>
+    const abas = [["mes", "Mês"], ["total", "Total"]].map(([v, n]) =>
       "<button class='aba" + (T.hist === v ? " ativo" : "") + "' data-acao='hist' data-v='" + v + "'>" + n + "</button>"
     ).join("");
     let h = "<div class='abas'>" + abas + "</div>";
-    if (T.hist === "semana") return h + htmlHistSemana();
     if (T.hist === "mes") return h + htmlHistMes();
     return h + htmlHistTotal();
   }
@@ -635,14 +650,35 @@
   function htmlHistMes() {
     const agora = new Date();
     const ref = new Date(agora.getFullYear(), agora.getMonth() + T.offsetMes, 1);
-    const ini = isoDe(new Date(ref.getFullYear(), ref.getMonth(), 1));
-    const fim = isoDe(new Date(ref.getFullYear(), ref.getMonth() + 1, 0));
+    const ano = ref.getFullYear();
+    const mes = ref.getMonth();
+    const ini = isoDe(new Date(ano, mes, 1));
+    const fim = isoDe(new Date(ano, mes + 1, 0));
     const n = contarEntre(ini, fim);
-    const titulo = capitalizar(MESES[ref.getMonth()]) + " de " + ref.getFullYear();
-    const lista = T.sessoes.filter(s => s.dataISO >= ini && s.dataISO <= fim);
+    const titulo = capitalizar(MESES[mes]) + " de " + ano;
+    const primeiro = new Date(ano, mes, 1).getDay();
+    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+
+    let grade = NOMES.map(d => "<div class='cal-cab'>" + d + "</div>").join("");
+    for (let k = 0; k < primeiro; k++) grade += "<div></div>";
+    for (let d = 1; d <= diasNoMes; d++) {
+      const iso = isoDe(new Date(ano, mes, d));
+      const tem = sessoesDoDia(iso).length > 0;
+      grade += "<button class='cal-dia" + (iso === hojeISO() ? " hoje" : "") + (iso === T.selecionado ? " sel" : "") +
+        "' data-acao='dia' data-iso='" + iso + "'><span>" + d + "</span>" + (tem ? ICONE_CHECK : "<i></i>") + "</button>";
+    }
+
+    let detalhe = "";
+    if (T.selecionado >= ini && T.selecionado <= fim) {
+      const sess = sessoesDoDia(T.selecionado);
+      detalhe = "<h3>" + tituloDia(T.selecionado) + "</h3>" +
+        (sess.length ? sess.map(s => htmlSessaoFeita(s)).join("") : "<p class='vazio'>Sem treino registrado.</p>");
+    }
+
     return navegacao(titulo) +
       "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + " neste mês</p>" +
-      htmlListaSessoes(lista);
+      "<div class='calendario'>" + grade + "</div>" +
+      "<div class='detalhe-dia'>" + detalhe + "</div>";
   }
 
   function htmlHistTotal() {
@@ -658,7 +694,7 @@
       h += "<div class='meta-bloco'><p>Meta de " + anoMeta + ": <strong>" + feitos + "</strong> de " + T.metas.anual + " treinos</p>" +
         "<div class='barra-meta'><div style='width:" + pct + "%'></div></div></div>";
     }
-    return h + htmlListaSessoes(T.sessoes);
+    return h;
   }
 
   function htmlListaSessoes(lista) {
@@ -681,9 +717,9 @@
     return "<h2>Seus treinos</h2><p class='sub'>Toque em um treino para editar, ou crie um novo.</p>" +
       (T.treinos.length
         ? T.treinos.map(t =>
-            "<button class='treino-item' data-acao='editar-treino' data-id='" + t.id + "'><span>" + esc(t.nome) + "</span><small>" +
+            "<div class='linha-treino'><button class='treino-item' data-acao='editar-treino' data-id='" + t.id + "'><span>" + esc(t.nome) + "</span><small>" +
             (t.diaSugerido === null || t.diaSugerido === undefined ? "Sem dia" : NOMES_LONGOS[Number(t.diaSugerido)]) +
-            "</small></button>").join("")
+            "</small></button><button class='excluir' data-acao='excluir-lista' data-id='" + t.id + "' aria-label='Excluir treino'>" + ICONES.lixeira + "</button></div>").join("")
         : "<p class='vazio'>Nenhum treino cadastrado ainda.</p>") +
       "<button data-acao='novo-treino'>+ Novo treino</button>" +
       "<div class='centro'><button class='secundario' data-acao='fechar-editor'>Fechar</button></div>";
@@ -819,6 +855,7 @@
         break;
       case "treino-salvar": await salvarTreino(); break;
       case "treino-excluir": await excluirTreino(); break;
+      case "excluir-lista": await excluirTreinoPorId(el.dataset.id); break;
       case "metas-salvar": await salvarMetas(); break;
     }
   }
@@ -941,19 +978,26 @@
     }
   }
 
-  async function excluirTreino() {
-    const id = T.editor && T.editor.id;
+  async function excluirTreinoPorId(id) {
     if (!id) return;
-    const st = document.getElementById("treino-status");
+    if (!confirm("Excluir este treino? Os treinos já feitos com ele continuam no histórico.")) return;
     try {
       await colecao("treinos").doc(id).delete();
       T.treinos = T.treinos.filter(x => x.id !== id);
-      T.editorTipo = "lista";
-      T.editor = null;
+      if (T.editorTipo === "treino" && T.editor && T.editor.id === id) {
+        T.editorTipo = "lista";
+        T.editor = null;
+      }
       renderTreinos();
     } catch (err) {
+      const st = document.getElementById("treino-status");
       if (st) st.textContent = "Erro ao excluir: " + err.message;
     }
+  }
+
+  async function excluirTreino() {
+    const id = T.editor && T.editor.id;
+    if (id) await excluirTreinoPorId(id);
   }
 
   async function salvarMetas() {
