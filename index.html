@@ -30,7 +30,7 @@
   .wrap { width: 100%; max-width: 980px; padding: 1.25rem; }
 
   /* ---------- Login ---------- */
-  .painel { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; }
+  .painel { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; width: 100%; max-width: 980px; margin: 0 auto; }
   @media (orientation: landscape) and (min-width: 720px) {
     .painel { flex-direction: row; min-height: 80vh; }
     .ilustra, .formulario { flex: 1; }
@@ -59,9 +59,10 @@
   .item {
     display: flex; align-items: center; gap: 0.7rem; text-align: left; padding: 0.9rem 1.1rem;
     background: var(--fuchsia); color: var(--branco);
+    font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.05rem;
   }
   .item svg { width: 22px; height: 22px; flex-shrink: 0; }
-  .item.ativo { background: var(--burgundy); }
+  .item.ativo { outline: 3px solid var(--burgundy); outline-offset: 3px; }
   .item.sair { background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); justify-content: center; margin-top: 0.5rem; }
   .conteudo { background: var(--branco); border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
   .voltar { width: auto; padding: 0.45rem 1rem; margin-bottom: 1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
@@ -78,9 +79,12 @@
   .vazio { text-align: center; opacity: 0.7; margin: 1rem 0 0; }
 
   @media (min-width: 720px) {
-    .app { flex-direction: row; align-items: flex-start; }
-    .menu { width: 230px; flex-shrink: 0; display: flex !important; }
-    .conteudo { flex: 1; display: block !important; }
+    .wrap { max-width: none; padding: 0; }
+    .app { flex-direction: row; align-items: stretch; min-height: 100vh; gap: 0; }
+    .menu { width: 260px; flex-shrink: 0; display: flex !important; padding: 1.5rem 1rem 1.5rem 1.5rem; background: var(--peony); }
+    .menu-topo { color: var(--burgundy); }
+    .item.sair { background: transparent; }
+    .conteudo { flex: 1; display: block !important; border-radius: 0; padding: 2.5rem; min-height: 100vh; }
     .voltar { display: none; }
   }
   @media (max-width: 719px) {
