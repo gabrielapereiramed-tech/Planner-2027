@@ -90,21 +90,21 @@
   /* ---------- Treinos ---------- */
   .abas { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
   .aba { width: auto; padding: 0.5rem 1.1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); font-size: 0.95rem; }
-  .aba.ativo { background: var(--fuchsia); color: var(--branco); border-color: var(--fuchsia); }
+  .aba.ativo { background: var(--blood); color: var(--branco); border-color: var(--blood); }
   .semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; margin-bottom: 0.6rem; }
-  .roleta { display: flex; gap: 0.3rem; overflow-x: auto; padding: 0.3rem 0 0.6rem; scrollbar-width: none; }
+  .roleta { --gap: 0.3rem; display: flex; gap: var(--gap); width: 100%; max-width: 100%; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0.3rem 0 0.6rem; scrollbar-width: none; }
   .roleta::-webkit-scrollbar { display: none; }
   .dia {
-    flex: 0 0 auto; width: 52px; padding: 0.45rem 0.2rem; display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    flex: 0 0 calc((100% - 6 * var(--gap)) / 7); scroll-snap-align: start; padding: 0.45rem 0.2rem; display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
     background: transparent; color: var(--burgundy); border-radius: 14px; font-weight: 600;
   }
-  .semana .dia { width: 100%; }
   .dia small { font-size: 0.7rem; }
   .dia b { font-size: 1.05rem; font-weight: 600; }
   .dia i { display: block; height: 14px; }
-  .dia svg { width: 14px; height: 14px; color: var(--fuchsia); }
-  .dia.hoje { background: var(--peony); }
-  .dia.sel { outline: 2px solid var(--burgundy); outline-offset: -2px; }
+  .dia svg { width: 14px; height: 14px; color: var(--blood); }
+  .dia.hoje { background: var(--pistachio); }
+  .dia.sel { background: var(--blood); color: var(--branco); }
+  .dia.sel svg { color: var(--branco); }
   .resumo { font-size: 0.95rem; margin: 0.4rem 0 0.8rem; }
   .painel-dia { margin-top: 0.5rem; }
   .prog { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin: 0.6rem 0; }
@@ -114,7 +114,7 @@
     border: 2px solid var(--peony); text-align: left; margin-bottom: 0.5rem; padding: 0.9rem 1.1rem;
   }
   .treino-item small { font-weight: 300; }
-  .descanso { background: var(--burgundy); color: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; text-align: center; margin: 0.6rem 0 1rem; }
+  .descanso { background: var(--blood); color: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; text-align: center; margin: 0.6rem 0 1rem; }
   .descanso strong { display: block; font-size: 1.8rem; margin: 0.2rem 0; }
   .descanso button { width: auto; padding: 0.4rem 1rem; background: transparent; border: 2px solid var(--branco); }
   .ex { background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
@@ -125,19 +125,19 @@
   .ex-linha span { font-size: 0.85rem; }
   .ex-linha button { width: auto; padding: 0.6rem 1rem; margin-left: auto; }
   .ex small { display: block; margin-top: 0.5rem; opacity: 0.75; }
-  .feito-card { background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
+  .feito-card { background: var(--pistachio); border-radius: 18px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
   .feito-card .nome-feito { font-weight: 600; margin: 0.3rem 0 0.4rem; }
   .feito-card .texto { margin: 0.3rem 0 0; }
   .linha-ex { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.9rem; padding: 0.2rem 0; }
-  .linha-dia { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.6rem 0; border-bottom: 1px solid var(--peony); font-size: 0.95rem; }
+  .linha-dia { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.6rem 0; border-bottom: 1px solid var(--pistachio); font-size: 0.95rem; }
   .linha-dia .dir { display: flex; align-items: center; gap: 0.4rem; text-align: right; }
-  .linha-dia .dir svg { width: 16px; height: 16px; color: var(--fuchsia); flex-shrink: 0; }
+  .linha-dia .dir svg { width: 16px; height: 16px; color: var(--blood); flex-shrink: 0; }
   .linha-dia em { opacity: 0.6; }
   .dia-sessao small { display: block; margin-bottom: 0.2rem; opacity: 0.7; }
   .nav { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin: 0.4rem 0 0.8rem; }
   .nav strong { font-weight: 600; text-align: center; }
-  .barra-meta { height: 10px; background: var(--peony); border-radius: 999px; overflow: hidden; margin-top: 0.4rem; }
-  .barra-meta div { height: 100%; background: var(--fuchsia); border-radius: 999px; }
+  .barra-meta { height: 10px; background: var(--pistachio); border-radius: 999px; overflow: hidden; margin-top: 0.4rem; }
+  .barra-meta div { height: 100%; background: var(--blood); border-radius: 999px; }
   .meta-bloco { margin: 0.6rem 0 1rem; }
   .meta-bloco p { margin: 0 0 0.2rem; }
   .lin-edit { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr auto; gap: 0.4rem; margin-bottom: 0.5rem; align-items: center; }
@@ -155,7 +155,7 @@
     .menu { width: 260px; flex-shrink: 0; display: flex !important; padding: 1.5rem 1rem 1.5rem 1.5rem; background: var(--peony); }
     .menu-topo { color: var(--burgundy); }
     .item.sair { background: transparent; }
-    .conteudo { flex: 1; display: block !important; border-radius: 0; padding: 2.5rem; min-height: 100vh; }
+    .conteudo { flex: 1; min-width: 0; display: block !important; border-radius: 0; padding: 2.5rem; min-height: 100vh; }
     .voltar { display: none; }
   }
   @media (max-width: 719px) {
@@ -437,12 +437,19 @@
       "<button class='fab' data-acao='abrir-metas' aria-label='Metas'>" + ICONES.alvo + "</button>" +
       "<button class='fab' data-acao='abrir-lista' aria-label='Editar treinos'>" + ICONES.lapis + "</button>" +
     "</div>";
+    const roletaAntes = el.querySelector(".roleta");
+    const posAntes = roletaAntes ? roletaAntes.scrollLeft : 0;
     el.innerHTML = h;
 
-    if (T.centralizar) {
-      const sel = el.querySelector(".dia.sel");
-      if (sel) sel.scrollIntoView({ inline: "center", block: "nearest" });
-      T.centralizar = false;
+    const roleta = el.querySelector(".roleta");
+    if (roleta) {
+      if (T.centralizar) {
+        const inicio = el.querySelector(".roleta .dia[data-iso='" + inicioSemana(hojeISO()) + "']");
+        if (inicio) roleta.scrollLeft = inicio.offsetLeft - roleta.offsetLeft;
+        T.centralizar = false;
+      } else {
+        roleta.scrollLeft = posAntes;
+      }
     }
     atualizarTempos();
   }
@@ -467,7 +474,7 @@
     const n = contarEntre(ini, somar(ini, 6));
     const meta = T.metas.semanal ? " de " + T.metas.semanal : "";
 
-    return "<div class='semana'>" + semana + "</div>" +
+    return
       "<p class='resumo'>Esta semana: <strong>" + n + "</strong> treino" + (n === 1 ? "" : "s") + meta + "</p>" +
       "<div class='roleta'>" + roleta + "</div>" +
       "<div id='treino-status' class='status'></div>" +
