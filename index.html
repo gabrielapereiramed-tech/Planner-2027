@@ -202,7 +202,10 @@
   };
   const ICONE_CHECK = svg('<path d="M5 12 L10 17 L19 7"/>');
 
+  ICONES.grade = svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>');
+
   const SECOES = [
+    { id: "geral", nome: "Geral", icone: ICONES.grade },
     { id: "bora", nome: "Bora ver", icone: ICONES.estrela },
     { id: "pessoal", nome: "Pessoal", icone: ICONES.coracao },
     { id: "estudos", nome: "Estudos", icone: ICONES.livro },
@@ -327,7 +330,7 @@
   async function mostrarApp(user) {
     usuario = user;
     conteudo.innerHTML = "<div class='app' id='app'><nav class='menu' id='menu'></nav><main class='conteudo' id='main'></main></div>";
-    secaoAtual = telaGrande.matches ? "bora" : null;
+    secaoAtual = telaGrande.matches ? "geral" : null;
     T.selecionado = hojeISO();
     T.centralizar = true;
     desenharMenu();
@@ -365,10 +368,14 @@
     if (!secao) { main.innerHTML = ""; return; }
 
     const voltar = "<button class='voltar' id='voltar'>← Voltar</button>";
-    if (secao.id === "bora") {
+    if (secao.id === "geral") {
+      main.innerHTML = voltar +
+        "<h2>Geral</h2>" +
+        "<p class='sub'>Visão do planner inteiro. Habit tracker e outras informações serão definidos depois.</p>";
+    } else if (secao.id === "bora") {
       main.innerHTML = voltar +
         "<h2>Bora ver</h2>" +
-        "<p class='sub'>Visão de tudo o que está planejado. Por enquanto, esta lista é só um teste de sincronização.</p>" +
+        "<p class='sub'>Sua organização de tarefas do dia, da semana e do mês. Será programada depois. Por enquanto, a lista abaixo é só um teste de sincronização.</p>" +
         "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
         "<div id='status'></div><ul id='lista'></ul>";
       ligarTeste();
@@ -474,8 +481,7 @@
     const n = contarEntre(ini, somar(ini, 6));
     const meta = T.metas.semanal ? " de " + T.metas.semanal : "";
 
-    return
-      "<p class='resumo'>Esta semana: <strong>" + n + "</strong> treino" + (n === 1 ? "" : "s") + meta + "</p>" +
+    return "<p class='resumo'>Esta semana: <strong>" + n + "</strong> treino" + (n === 1 ? "" : "s") + meta + "</p>" +
       "<div class='roleta'>" + roleta + "</div>" +
       "<div id='treino-status' class='status'></div>" +
       "<div class='painel-dia'>" + htmlPainelDia() + "</div>";
@@ -995,7 +1001,7 @@
 
   telaGrande.addEventListener("change", () => {
     if (!usuario) return;
-    if (telaGrande.matches && !secaoAtual) secaoAtual = "bora";
+    if (telaGrande.matches && !secaoAtual) secaoAtual = "geral";
     desenharMenu();
     desenharMain();
   });
