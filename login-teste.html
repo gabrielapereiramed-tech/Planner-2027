@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teste de login</title>
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #f5f5f4; --fg: #1c1917; --card: #ffffff; --accent: #2563eb;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #1c1917; --fg: #f5f5f4; --card: #292524; --accent: #60a5fa; color-scheme: dark; }
+  }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); }
+  .card { background: var(--card); padding: 2rem; border-radius: 16px; text-align: center; max-width: 320px; width: 90%; }
+  button { font-size: 1rem; padding: 0.8rem 1.2rem; border: none; border-radius: 10px;
+           background: var(--accent); color: #fff; cursor: pointer; width: 100%; margin-top: 1rem; }
+  img { border-radius: 50%; width: 64px; height: 64px; }
+  #status { margin-top: 1rem; font-size: 0.9rem; opacity: 0.8; min-height: 1.2em; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2 id="titulo">Teste de login</h2>
+  <div id="conteudo"></div>
+  <div id="status"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCThzs67EiYA7EFZTcmyrzQf0zlrf-Pwus",
+    authDomain: "planner-2026-2cf70.firebaseapp.com",
+    projectId: "planner-2026-2cf70",
+    storageBucket: "planner-2026-2cf70.firebasestorage.app",
+    messagingSenderId: "69295479170",
+    appId: "1:69295479170:web:d356cff56f3e1e74f8d79b"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const provider = new firebase.auth.GoogleAuthProvider();
+  const conteudo = document.getElementById("conteudo");
+  const status = document.getElementById("status");
+
+  function mostrarDeslogado() {
+    conteudo.innerHTML = "<p>Você não está logado.</p><button id='entrar'>Entrar com Google</button>";
+    document.getElementById("entrar").onclick = async () => {
+      status.textContent = "Abrindo login...";
+      try {
+        await auth.signInWithRedirect(provider);
+      } catch (e) {
+        status.textContent = "Erro: " + e.message;
+      }
+    };
+  }
+
+  function mostrarLogado(user) {
+    conteudo.innerHTML =
+      (user.photoURL ? "<img src='" + user.photoURL + "' alt=''>" : "") +
+      "<p><strong>" + (user.displayName || "Sem nome") + "</strong><br>" + user.email + "</p>" +
+      "<button id='sair'>Sair</button>";
+    document.getElementById("sair").onclick = () => auth.signOut();
+    status.textContent = "Login funcionando.";
+  }
+
+  auth.getRedirectResult().catch(e => { status.textContent = "Erro: " + e.message; });
+  auth.onAuthStateChanged(user => user ? mostrarLogado(user) : mostrarDeslogado());
+</script>
+</body>
+</html>
