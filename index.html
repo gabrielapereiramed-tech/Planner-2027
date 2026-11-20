@@ -180,6 +180,46 @@
     .item.ativo { border-color: var(--blood); box-shadow: none; }
     .item.sair { width: auto; margin-top: 0; }
   }
+
+  /* ---- refinamento: visual limpo ---- */
+  .conteudo { background: var(--creme); }
+  h2 { font-size: 1.5rem; margin: 0 0 1rem; }
+  .sub { font-size: 0.9rem; margin: 0.25rem 0 0.9rem; color: #6B6259; }
+  .abas { gap: 1.5rem; border-bottom: 1px solid #E7E5E4; margin-bottom: 1.25rem; }
+  .aba { width: auto; background: transparent; color: #6B6259; border: none; border-radius: 0; padding: 0.4rem 0; font-weight: 500; font-size: 0.95rem; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .aba.ativo { color: #2B2420; background: transparent; border-bottom-color: var(--blood); }
+  .semana, .roleta { gap: 0.25rem; }
+  .dia { border-radius: 12px; }
+  .dia.hoje { background: #EEF2DA; }
+  .dia.sel { background: var(--blood); }
+  .prog, .ex, .feito-card, .treino-item, .treino-item, .descanso {
+    border-radius: 14px;
+  }
+  .prog, .ex, .feito-card, .treino-item { background: #FFFFFF; border: 1px solid #E7E5E4; box-shadow: none; }
+  .ex.feito, .feito-card { background: #FFFFFF; border-left: 3px solid var(--pistachio); }
+  .ex.feito { background: #FFFFFF; }
+  .treino-item { color: #2B2420; font-weight: 500; padding: 0.8rem 1rem; }
+  .treino-item small { color: #6B6259; }
+  .resumo { color: #6B6259; font-size: 0.9rem; }
+  .resumo strong { color: #2B2420; }
+  .barra { margin: 0.25rem 0 0.75rem; }
+  .centro { margin: 0.75rem 0; }
+  .ex { padding: 0.9rem 1rem; }
+  .ex-topo { font-weight: 500; }
+  input, select, textarea { border-color: #D6D3CE; }
+  input:focus, select:focus, textarea:focus { border-color: var(--burgundy); }
+  button { font-weight: 500; }
+  .fab { background: var(--burgundy); }
+  .fab svg { color: #FFFFFF; }
+  .fabs { gap: 0.5rem; }
+  .feito-card .nome-feito { font-weight: 500; }
+  .linha-dia { border-bottom: 1px solid #EFECE6; }
+  .barra-meta { background: #EFECE6; }
+  .barra-meta div { background: var(--blood); }
+  .descanso { background: #FFFFFF; color: #2B2420; border: 1px solid #E7E5E4; }
+  .descanso strong { color: var(--blood); }
+  .descanso button { border-color: #2B2420; color: #2B2420; }
+  .vazio { color: #6B6259; }
 </style>
 </head>
 <body>
@@ -570,7 +610,12 @@
   }
 
   function htmlRegistro() {
-    return "<p class='sub'>O que você treinou nesse dia?</p>" +
+    const lista = T.treinos.length
+      ? "<p class='sub'>Escolha um treino salvo:</p>" +
+        T.treinos.map(t => "<button class='treino-item' data-acao='registrar-treino' data-id='" + t.id + "'><span>" + esc(t.nome) + "</span></button>").join("")
+      : "<p class='vazio'>Você ainda não tem treinos salvos.</p>";
+    return lista +
+      "<p class='sub'>Ou descreva o que você fez:</p>" +
       "<textarea data-campo='descricao' placeholder='Ex.: Costas: puxada 40 kg, remada 30 kg, 3 séries de 10'>" + esc(T.descricao) + "</textarea>" +
       "<div class='centro'>" +
         "<button class='secundario' data-acao='registrar-cancelar'>Cancelar</button>" +
@@ -578,9 +623,26 @@
       "</div>";
   }
 
+  async function registrarTreinoAntigo(id) {
+    const t = T.treinos.find(x => x.id === id);
+    if (!t) return;
+    const obj = {
+      dataISO: T.selecionado, nome: t.nome, treinoId: t.id, manual: false, duracaoSeg: null,
+      exercicios: t.exercicios.map(ex => ({ nome: ex.nome, tipo: ex.tipo, carga: null, feito: true }))
+    };
+    try {
+      const ref = await colecao("sessoes").add({ ...obj, data: firebase.firestore.FieldValue.serverTimestamp() });
+      T.sessoes.push({ id: ref.id, ...obj });
+      T.registrando = false;
+      renderTreinos();
+    } catch (err) {
+      mostrarErro(err.message);
+    }
+  }
+
   function htmlSessaoFeita(s) {
     let h = "<div class='feito-card'><div class='ex-topo'><span>" + (s.manual ? "Registro manual" : "Treino feito") + "</span><span>" +
-      (s.manual ? "" : formatar(s.duracaoSeg)) + "</span></div>";
+      (s.manual || !s.duracaoSeg ? "" : formatar(s.duracaoSeg)) + "</span></div>";
     if (s.manual) {
       h += "<p class='texto'>" + esc(s.descricao) + "</p>";
     } else {
@@ -654,6 +716,14 @@
     if (T.hist === "semana") return h + htmlHistSemana();
     if (T.hist === "mes") return h + htmlHistMes();
     return h + htmlHistTotal();
+  }
+
+  function navegacao(titulo) {
+    return "<div class='nav'>" +
+      "<button class='icone' data-acao='nav' data-d='-1' aria-label='Anterior'>‹</button>" +
+      "<strong>" + titulo + "</strong>" +
+      "<button class='icone' data-acao='nav' data-d='1' aria-label='Próximo'>›</button>" +
+    "</div>";
   }
 
   function htmlHistSemana() {
@@ -835,6 +905,7 @@
       case "registrar-abrir": T.registrando = true; renderTreinos(); break;
       case "registrar-cancelar": T.registrando = false; renderTreinos(); break;
       case "registrar-salvar": await salvarRegistro(); break;
+      case "registrar-treino": await registrarTreinoAntigo(el.dataset.id); break;
       case "abrir-lista": T.editorTipo = "lista"; T.editor = null; renderTreinos(); break;
       case "abrir-metas": T.metaRascunho = { ...T.metas }; T.editorTipo = "metas"; renderTreinos(); break;
       case "fechar-editor": T.editorTipo = null; T.editor = null; renderTreinos(); break;
