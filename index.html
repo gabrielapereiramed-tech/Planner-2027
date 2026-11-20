@@ -23,7 +23,7 @@
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; min-height: 100vh; background: var(--creme); color: var(--burgundy);
+    margin: 0; min-height: 100vh; background: var(--creme); color: #2B2420;
     font-family: "Poppins", system-ui, -apple-system, sans-serif; font-weight: 400;
     display: flex; justify-content: center; align-items: flex-start;
   }
@@ -44,7 +44,7 @@
   input:focus, select:focus, textarea:focus { border-color: var(--fuchsia); outline: none; }
   button {
     font-family: inherit; font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none;
-    border-radius: 999px; background: var(--fuchsia); color: var(--branco); cursor: pointer;
+    border-radius: 999px; background: var(--burgundy); color: var(--branco); cursor: pointer;
   }
   button.secundario { width: auto; padding: 0.6rem 1.1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
   button.excluir { width: auto; padding: 0.4rem 0.75rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
@@ -68,11 +68,11 @@
   .menu-topo { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.6rem; margin: 0 0 0.5rem; }
   .item {
     display: flex; align-items: center; gap: 0.7rem; text-align: left; padding: 0.9rem 1.1rem;
-    background: var(--fuchsia); color: var(--branco);
+    background: var(--branco); color: #2B2420; border: 1px solid #E7E5E4;
     font-family: "Poppins", system-ui, sans-serif; font-weight: 600; font-size: 1rem;
   }
   .item svg { width: 22px; height: 22px; flex-shrink: 0; }
-  .item.ativo { outline: 3px solid var(--burgundy); outline-offset: 3px; }
+  .item.ativo { border-color: var(--blood); box-shadow: inset 4px 0 0 var(--blood); }
   .item.sair { background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); justify-content: center; margin-top: 0.5rem; }
   .conteudo { background: var(--creme); border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
   .voltar { width: auto; padding: 0.45rem 1rem; margin-bottom: 1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
@@ -152,7 +152,7 @@
   @media (min-width: 720px) {
     .wrap { max-width: none; padding: 0; }
     .app { flex-direction: row; align-items: stretch; min-height: 100vh; gap: 0; }
-    .menu { width: 260px; flex-shrink: 0; display: flex !important; padding: 1.5rem 1rem 1.5rem 1.5rem; background: var(--peony); }
+    .menu { width: 260px; flex-shrink: 0; display: flex !important; padding: 1.5rem 1rem 1.5rem 1.5rem; background: var(--branco); border-right: 1px solid #E7E5E4; }
     .menu-topo { color: var(--burgundy); }
     .item.sair { background: transparent; }
     .conteudo { flex: 1; min-width: 0; display: block !important; border-radius: 0; padding: 2.5rem; min-height: 100vh; }
@@ -330,7 +330,7 @@
   async function mostrarApp(user) {
     usuario = user;
     conteudo.innerHTML = "<div class='app' id='app'><nav class='menu' id='menu'></nav><main class='conteudo' id='main'></main></div>";
-    secaoAtual = telaGrande.matches ? "geral" : null;
+    secaoAtual = "geral";
     T.selecionado = hojeISO();
     T.centralizar = true;
     desenharMenu();
@@ -481,10 +481,10 @@
     const n = contarEntre(ini, somar(ini, 6));
     const meta = T.metas.semanal ? " de " + T.metas.semanal : "";
 
-    return "<p class='resumo'>Esta semana: <strong>" + n + "</strong> treino" + (n === 1 ? "" : "s") + meta + "</p>" +
-      "<div class='roleta'>" + roleta + "</div>" +
-      "<div id='treino-status' class='status'></div>" +
-      "<div class='painel-dia'>" + htmlPainelDia() + "</div>";
+    return "<div id='treino-status' class='status'></div>" +
+      "<div class='painel-dia'>" + htmlPainelDia() + "</div>" +
+      "<p class='resumo'>Esta semana: <strong>" + n + "</strong> treino" + (n === 1 ? "" : "s") + meta + "</p>" +
+      "<div class='roleta'>" + roleta + "</div>";
   }
 
   function htmlPainelDia() {
@@ -519,7 +519,7 @@
     if (iso === hojeISO()) {
       h += prog
         ? "<div class='centro'><button class='grande' data-acao='iniciar'>Começar treino</button></div>"
-        : "<p class='vazio'>Toque em ⇄ para escolher um treino.</p>";
+        : "<p class='vazio'>Toque em ⇄ para escolher um treino, ou cadastre um com dia sugerido pelo ✎.</p>";
     }
     return h;
   }
@@ -1001,7 +1001,7 @@
 
   telaGrande.addEventListener("change", () => {
     if (!usuario) return;
-    if (telaGrande.matches && !secaoAtual) secaoAtual = "geral";
+    if (!secaoAtual) secaoAtual = "geral";
     desenharMenu();
     desenharMain();
   });
