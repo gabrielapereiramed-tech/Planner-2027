@@ -31,24 +31,32 @@
   h1 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 2rem; margin: 0 0 0.5rem; }
   h2 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.6rem; margin: 0 0 0.5rem; }
   .sub { margin: 0 0 1.25rem; font-weight: 300; font-size: 1rem; line-height: 1.5; }
+  label { display: block; font-size: 0.9rem; font-weight: 600; margin: 0.6rem 0 0.25rem; }
 
   input, select {
     display: block; width: 100%; font-family: inherit; font-size: 1rem; padding: 0.9rem 1.1rem; margin-bottom: 0.75rem;
     border: 2px solid var(--burgundy); border-radius: 999px; background: var(--branco); color: var(--burgundy); outline: none;
   }
-  input:focus, select:focus { border-color: var(--fuchsia); }
+  textarea {
+    display: block; width: 100%; min-height: 110px; font-family: inherit; font-size: 1rem; padding: 0.9rem 1rem;
+    border: 2px solid var(--burgundy); border-radius: 18px; background: var(--branco); color: var(--burgundy); margin-bottom: 0.75rem;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--fuchsia); outline: none; }
   button {
     font-family: inherit; font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none;
     border-radius: 999px; background: var(--fuchsia); color: var(--branco); cursor: pointer;
   }
   button.secundario { width: auto; padding: 0.6rem 1.1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
   button.excluir { width: auto; padding: 0.4rem 0.75rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
+  button.icone { width: auto; padding: 0.3rem 0.8rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); font-size: 1.1rem; }
+  button.grande { width: auto; padding: 0.9rem 2.2rem; }
   #status { margin-top: 0.9rem; font-size: 0.9rem; min-height: 1.2em; color: var(--blood); }
+  .status { font-size: 0.9rem; min-height: 1.2em; color: var(--blood); margin: 0.4rem 0; }
 
   /* ---------- Login ---------- */
-  .painel { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; width: 100%; max-width: 980px; margin: 0 auto; }
+  .painel-login { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; width: 100%; max-width: 980px; margin: 0 auto; }
   @media (orientation: landscape) and (min-width: 720px) {
-    .painel { flex-direction: row; min-height: 80vh; }
+    .painel-login { flex-direction: row; min-height: 80vh; }
     .ilustra, .formulario { flex: 1; }
   }
   .ilustra img { display: block; width: 100%; max-width: 380px; height: auto; margin: 0 auto; }
@@ -80,12 +88,33 @@
   .vazio { text-align: center; opacity: 0.7; margin: 1rem 0 0; }
 
   /* ---------- Treinos ---------- */
-  .semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.35rem; margin-bottom: 1rem; }
-  .dia { padding: 0.5rem 0; border-radius: 999px; background: var(--branco); color: var(--burgundy); border: 2px solid var(--peony); font-size: 0.8rem; font-weight: 600; width: 100%; }
-  .dia.ativo { background: var(--fuchsia); color: var(--branco); border-color: var(--fuchsia); }
-  .barra { display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 0.5rem 0 1rem; }
-  .barra button { width: auto; padding: 0.7rem 1.2rem; }
-  .descanso { background: var(--burgundy); color: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; text-align: center; margin-bottom: 1rem; }
+  .abas { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .aba { width: auto; padding: 0.5rem 1.1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); font-size: 0.95rem; }
+  .aba.ativo { background: var(--fuchsia); color: var(--branco); border-color: var(--fuchsia); }
+  .semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; margin-bottom: 0.6rem; }
+  .roleta { display: flex; gap: 0.3rem; overflow-x: auto; padding: 0.3rem 0 0.6rem; scrollbar-width: none; }
+  .roleta::-webkit-scrollbar { display: none; }
+  .dia {
+    flex: 0 0 auto; width: 52px; padding: 0.45rem 0.2rem; display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    background: transparent; color: var(--burgundy); border-radius: 14px; font-weight: 600;
+  }
+  .semana .dia { width: 100%; }
+  .dia small { font-size: 0.7rem; }
+  .dia b { font-size: 1.05rem; font-weight: 600; }
+  .dia i { display: block; height: 14px; }
+  .dia svg { width: 14px; height: 14px; color: var(--fuchsia); }
+  .dia.hoje { background: var(--peony); }
+  .dia.sel { outline: 2px solid var(--burgundy); outline-offset: -2px; }
+  .resumo { font-size: 0.95rem; margin: 0.4rem 0 0.8rem; }
+  .painel-dia { margin-top: 0.5rem; }
+  .prog { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin: 0.6rem 0; }
+  .centro { display: flex; justify-content: center; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0.9rem 0; }
+  .treino-item {
+    display: flex; justify-content: space-between; align-items: center; background: var(--branco); color: var(--burgundy);
+    border: 2px solid var(--peony); text-align: left; margin-bottom: 0.5rem; padding: 0.9rem 1.1rem;
+  }
+  .treino-item small { font-weight: 300; }
+  .descanso { background: var(--burgundy); color: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; text-align: center; margin: 0.6rem 0 1rem; }
   .descanso strong { display: block; font-size: 1.8rem; margin: 0.2rem 0; }
   .descanso button { width: auto; padding: 0.4rem 1rem; background: transparent; border: 2px solid var(--branco); }
   .ex { background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
@@ -96,13 +125,29 @@
   .ex-linha span { font-size: 0.85rem; }
   .ex-linha button { width: auto; padding: 0.6rem 1rem; margin-left: auto; }
   .ex small { display: block; margin-top: 0.5rem; opacity: 0.75; }
+  .feito-card { background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
+  .feito-card .nome-feito { font-weight: 600; margin: 0.3rem 0 0.4rem; }
+  .feito-card .texto { margin: 0.3rem 0 0; }
+  .linha-ex { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.9rem; padding: 0.2rem 0; }
+  .linha-dia { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.6rem 0; border-bottom: 1px solid var(--peony); font-size: 0.95rem; }
+  .linha-dia .dir { display: flex; align-items: center; gap: 0.4rem; text-align: right; }
+  .linha-dia .dir svg { width: 16px; height: 16px; color: var(--fuchsia); flex-shrink: 0; }
+  .linha-dia em { opacity: 0.6; }
+  .dia-sessao small { display: block; margin-bottom: 0.2rem; opacity: 0.7; }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin: 0.4rem 0 0.8rem; }
+  .nav strong { font-weight: 600; text-align: center; }
+  .barra-meta { height: 10px; background: var(--peony); border-radius: 999px; overflow: hidden; margin-top: 0.4rem; }
+  .barra-meta div { height: 100%; background: var(--fuchsia); border-radius: 999px; }
+  .meta-bloco { margin: 0.6rem 0 1rem; }
+  .meta-bloco p { margin: 0 0 0.2rem; }
   .lin-edit { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr auto; gap: 0.4rem; margin-bottom: 0.5rem; align-items: center; }
   .lin-edit input, .lin-edit select { margin-bottom: 0; padding: 0.6rem 0.8rem; }
+  .fabs { position: fixed; right: 1.25rem; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); display: flex; gap: 0.6rem; z-index: 5; }
   .fab {
-    position: fixed; right: 1.25rem; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
-    width: 58px; height: 58px; border-radius: 50%; padding: 0; font-size: 1.4rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 5;
+    width: 58px; height: 58px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   }
+  .fab svg { width: 26px; height: 26px; }
 
   @media (min-width: 720px) {
     .wrap { max-width: none; padding: 0; }
@@ -143,6 +188,7 @@
   const conteudo = document.getElementById("conteudo");
   const telaGrande = window.matchMedia("(min-width: 720px)");
 
+  // ---------- ícones ----------
   const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const ICONES = {
     estrela: svg('<path d="M12 2 C12.8 8.5 15.5 11.2 22 12 C15.5 12.8 12.8 15.5 12 22 C11.2 15.5 8.5 12.8 2 12 C8.5 11.2 11.2 8.5 12 2 Z"/>'),
@@ -150,8 +196,11 @@
     livro: svg('<path d="M4 5 C7 4 10 4.5 12 6 C14 4.5 17 4 20 5 V19 C17 18 14 18.5 12 20 C10 18.5 7 18 4 19 Z"/><path d="M12 6 V20"/>'),
     halter: svg('<path d="M6 7 V17 M18 7 V17 M3 9 V15 M21 9 V15 M6 12 H18"/>'),
     dinheiro: svg('<circle cx="12" cy="12" r="9"/><path d="M14.5 9.5 C14 8.5 13 8 12 8 C10.5 8 9.5 8.8 9.5 10 C9.5 13.5 14.5 11.5 14.5 15 C14.5 16.2 13.5 17 12 17 C10.8 17 9.8 16.5 9.3 15.5 M12 6.5 V8 M12 16 V17.5"/>'),
-    notebook: svg('<rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 19 H22"/>')
+    notebook: svg('<rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 19 H22"/>'),
+    alvo: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>'),
+    lapis: svg('<path d="M4 20 L8.5 19 L19 8.5 L15.5 5 L5 15.5 Z"/><path d="M13.5 7 L17 10.5"/>')
   };
+  const ICONE_CHECK = svg('<path d="M5 12 L10 17 L19 7"/>');
 
   const SECOES = [
     { id: "bora", nome: "Bora ver", icone: ICONES.estrela },
@@ -161,24 +210,36 @@
     { id: "financeiro", nome: "Financeiro", icone: ICONES.dinheiro },
     { id: "trabalho", nome: "Trabalho", icone: ICONES.notebook }
   ];
-  const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+  // ---------- estado ----------
   let usuario = null;
   let secaoAtual = null;
   let pararEscuta = null;
   let wakeLock = null;
 
-  const treino = {
-    dia: new Date().getDay(),
-    programa: {},
-    ultimas: {},
-    sessao: null,
-    feitos: {},
-    cargas: {},
-    descanso: null,
-    editando: false,
-    rascunho: null
+  const T = {
+    aba: "dia", hist: "semana", offsetSemana: 0, offsetMes: 0,
+    selecionado: null, centralizar: true,
+    treinos: [], sessoes: [], ultimas: {}, trocas: {}, metas: {},
+    treinoHoje: null, sessao: null, feitos: {}, cargas: {}, descanso: null,
+    trocando: false, registrando: false, descricao: "",
+    editorTipo: null, editor: null, metaRascunho: {}
   };
+
+  // ---------- datas ----------
+  const NOMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const NOMES_LONGOS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+  const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  const pad = n => String(n).padStart(2, "0");
+  const isoDe = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const dePara = iso => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
+  const somar = (iso, n) => { const d = dePara(iso); d.setDate(d.getDate() + n); return isoDe(d); };
+  const hojeISO = () => isoDe(new Date());
+  const diaSemana = iso => dePara(iso).getDay();
+  const inicioSemana = iso => somar(iso, -diaSemana(iso));
+  const tituloDia = iso => NOMES_LONGOS[diaSemana(iso)] + ", " + dePara(iso).getDate() + " de " + MESES[dePara(iso).getMonth()];
+  const dataCurta = iso => dePara(iso).getDate() + "/" + pad(dePara(iso).getMonth() + 1);
+  const capitalizar = t => t.replace(/^./, c => c.toUpperCase());
 
   // ---------- utilitários ----------
   function esc(t) {
@@ -189,8 +250,7 @@
   }
   function formatar(seg) {
     seg = Math.max(0, Math.floor(seg));
-    const m = Math.floor(seg / 60), s = seg % 60;
-    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    return pad(Math.floor(seg / 60)) + ":" + pad(seg % 60);
   }
   function colecao(nome) {
     return db.collection("users").doc(usuario.uid).collection(nome);
@@ -205,12 +265,42 @@
     if (wakeLock) { wakeLock.release(); wakeLock = null; }
   }
 
+  // ---------- consultas ----------
+  function treinoDoDia(iso) {
+    if (T.trocas[iso]) return T.treinos.find(t => t.id === T.trocas[iso]) || null;
+    return T.treinos.find(t => t.diaSugerido !== null && t.diaSugerido !== undefined && Number(t.diaSugerido) === diaSemana(iso)) || null;
+  }
+  const sessoesDoDia = iso => T.sessoes.filter(s => s.dataISO === iso);
+  const contarEntre = (ini, fim) => T.sessoes.filter(s => s.dataISO >= ini && s.dataISO <= fim).length;
+
+  async function carregarTudo() {
+    try {
+      const [tr, ul, ss, tc, ms] = await Promise.all([
+        colecao("treinos").get(),
+        colecao("ultimas").get(),
+        colecao("sessoes").get(),
+        colecao("trocas").get(),
+        colecao("config").doc("metas").get()
+      ]);
+      T.treinos = tr.docs.map(d => ({ id: d.id, ...d.data() }));
+      T.ultimas = {};
+      ul.forEach(d => { T.ultimas[d.id] = d.data(); });
+      T.sessoes = ss.docs.map(d => ({ id: d.id, ...d.data() }));
+      T.trocas = {};
+      tc.forEach(d => { T.trocas[d.id] = d.data().treinoId; });
+      T.metas = ms.exists ? ms.data() : {};
+    } catch (e) {
+      const st = document.getElementById("treino-status");
+      if (st) st.textContent = "Erro ao carregar: " + e.message;
+    }
+  }
+
   // ---------- login ----------
   function mostrarFormulario() {
     if (pararEscuta) { pararEscuta(); pararEscuta = null; }
     usuario = null;
     conteudo.innerHTML =
-      "<div class='painel'>" +
+      "<div class='painel-login'>" +
         "<div class='ilustra'><img src='ilustracao.png' alt='Ilustração'></div>" +
         "<div class='formulario'>" +
           "<h1>Oiê!</h1>" +
@@ -238,9 +328,11 @@
     usuario = user;
     conteudo.innerHTML = "<div class='app' id='app'><nav class='menu' id='menu'></nav><main class='conteudo' id='main'></main></div>";
     secaoAtual = telaGrande.matches ? "bora" : null;
+    T.selecionado = hojeISO();
+    T.centralizar = true;
     desenharMenu();
     desenharMain();
-    await carregarTreinos();
+    await carregarTudo();
     if (secaoAtual === "treinos") renderTreinos();
   }
 
@@ -330,59 +422,144 @@
     });
   }
 
-  // ---------- treinos: dados ----------
-  async function carregarTreinos() {
-    try {
-      const prog = await colecao("programa").get();
-      treino.programa = {};
-      prog.forEach(d => { treino.programa[Number(d.id)] = d.data(); });
-      const ult = await colecao("ultimas").get();
-      treino.ultimas = {};
-      ult.forEach(d => { treino.ultimas[d.id] = d.data(); });
-    } catch (e) {
-      const st = document.getElementById("status");
-      if (st) st.textContent = "Erro ao carregar treinos: " + e.message;
-    }
-  }
-
   // ---------- treinos: tela ----------
   function renderTreinos() {
     const el = document.getElementById("treinos");
     if (!el) return;
-    if (treino.editando) { el.innerHTML = htmlEditor(); return; }
+    if (T.editorTipo) { el.innerHTML = htmlEditorAtual(); return; }
 
-    const prog = treino.programa[treino.dia];
-    let h = "<div class='semana'>" +
-      DIAS.map((n, i) => "<button class='dia" + (i === treino.dia ? " ativo" : "") + "' data-acao='dia' data-i='" + i + "'>" + n + "</button>").join("") +
+    let h = "<div class='abas'>" +
+      "<button class='aba" + (T.aba === "dia" ? " ativo" : "") + "' data-acao='aba' data-v='dia'>Dia</button>" +
+      "<button class='aba" + (T.aba === "historico" ? " ativo" : "") + "' data-acao='aba' data-v='historico'>Histórico</button>" +
     "</div>";
-
-    if (treino.descanso) {
-      h += "<div class='descanso'>Descanso<strong id='descanso'></strong><button data-acao='pular'>Pular descanso</button></div>";
-    }
-
-    h += "<div class='barra'>" + (treino.sessao
-      ? "<span>Tempo: <strong id='tempo'></strong></span><button data-acao='finalizar'>Finalizar treino</button>"
-      : "<span></span><button data-acao='iniciar'>Começar treino</button>") +
+    h += T.aba === "dia" ? htmlAbaDia() : htmlAbaHistorico();
+    h += "<div class='fabs'>" +
+      "<button class='fab' data-acao='abrir-metas' aria-label='Metas'>" + ICONES.alvo + "</button>" +
+      "<button class='fab' data-acao='abrir-lista' aria-label='Editar treinos'>" + ICONES.lapis + "</button>" +
     "</div>";
-
-    h += "<div id='treino-status' style='color:var(--blood);font-size:0.9rem;min-height:1.2em'></div>";
-
-    if (!prog) {
-      h += "<p class='vazio'>Nenhum treino programado para este dia. Toque no ✎ para cadastrar.</p>";
-    } else {
-      h += "<h2>" + esc(prog.nome) + "</h2>";
-      prog.exercicios.forEach((ex, i) => { h += cardExercicio(ex, i); });
-    }
-
-    h += "<button class='fab' data-acao='editar' aria-label='Editar treino'>✎</button>";
     el.innerHTML = h;
+
+    if (T.centralizar) {
+      const sel = el.querySelector(".dia.sel");
+      if (sel) sel.scrollIntoView({ inline: "center", block: "nearest" });
+      T.centralizar = false;
+    }
     atualizarTempos();
   }
 
+  function celula(iso) {
+    const h = hojeISO();
+    const tem = sessoesDoDia(iso).length > 0;
+    return "<button class='dia" + (iso === h ? " hoje" : "") + (iso === T.selecionado ? " sel" : "") +
+      "' data-acao='dia' data-iso='" + iso + "'>" +
+      "<small>" + NOMES[diaSemana(iso)] + "</small><b>" + dePara(iso).getDate() + "</b>" +
+      (tem ? ICONE_CHECK : "<i></i>") +
+    "</button>";
+  }
+
+  function htmlAbaDia() {
+    const h = hojeISO();
+    const ini = inicioSemana(h);
+    let semana = "";
+    for (let k = 0; k < 7; k++) semana += celula(somar(ini, k));
+    let roleta = "";
+    for (let k = -30; k <= 30; k++) roleta += celula(somar(h, k));
+    const n = contarEntre(ini, somar(ini, 6));
+    const meta = T.metas.semanal ? " de " + T.metas.semanal : "";
+
+    return "<div class='semana'>" + semana + "</div>" +
+      "<p class='resumo'>Esta semana: <strong>" + n + "</strong> treino" + (n === 1 ? "" : "s") + meta + "</p>" +
+      "<div class='roleta'>" + roleta + "</div>" +
+      "<div id='treino-status' class='status'></div>" +
+      "<div class='painel-dia'>" + htmlPainelDia() + "</div>";
+  }
+
+  function htmlPainelDia() {
+    const iso = T.selecionado;
+    const h = hojeISO();
+    let html = "<h2>" + tituloDia(iso) + "</h2>";
+
+    if (iso === h && T.sessao) return html + htmlSessaoAtiva();
+
+    const sess = sessoesDoDia(iso);
+    sess.forEach(s => { html += htmlSessaoFeita(s); });
+
+    if (iso < h) {
+      if (sess.length === 0) {
+        html += T.registrando
+          ? htmlRegistro()
+          : "<p class='vazio'>Sem treino registrado.</p>" +
+            "<div class='centro'><button class='secundario' data-acao='registrar-abrir'>Registrar o que fiz</button></div>";
+      }
+      return html;
+    }
+    return html + htmlProgramado(iso);
+  }
+
+  function htmlProgramado(iso) {
+    if (T.trocando) return htmlEscolherTreino();
+    const prog = treinoDoDia(iso);
+    let h = "<div class='prog'>" + (prog
+        ? "<span>Treino programado: <strong>" + esc(prog.nome) + "</strong></span>"
+        : "<span>Nenhum treino programado para este dia.</span>") +
+      "<button class='icone' data-acao='trocar' aria-label='Trocar treino'>⇄</button></div>";
+    if (iso === hojeISO()) {
+      h += prog
+        ? "<div class='centro'><button class='grande' data-acao='iniciar'>Começar treino</button></div>"
+        : "<p class='vazio'>Toque em ⇄ para escolher um treino.</p>";
+    }
+    return h;
+  }
+
+  function htmlEscolherTreino() {
+    if (T.treinos.length === 0) {
+      return "<p class='vazio'>Cadastre seus treinos primeiro, pelo botão ✎.</p>" +
+        "<div class='centro'><button class='secundario' data-acao='cancelar-troca'>Voltar</button></div>";
+    }
+    return "<p class='sub'>Escolha o treino para este dia:</p>" +
+      T.treinos.map(t => "<button class='treino-item' data-acao='escolher' data-id='" + t.id + "'><span>" + esc(t.nome) + "</span></button>").join("") +
+      "<div class='centro'><button class='secundario' data-acao='cancelar-troca'>Cancelar</button></div>";
+  }
+
+  function htmlRegistro() {
+    return "<p class='sub'>O que você treinou nesse dia?</p>" +
+      "<textarea data-campo='descricao' placeholder='Ex.: Costas: puxada 40 kg, remada 30 kg, 3 séries de 10'>" + esc(T.descricao) + "</textarea>" +
+      "<div class='centro'>" +
+        "<button class='secundario' data-acao='registrar-cancelar'>Cancelar</button>" +
+        "<button class='grande' data-acao='registrar-salvar'>Salvar registro</button>" +
+      "</div>";
+  }
+
+  function htmlSessaoFeita(s) {
+    let h = "<div class='feito-card'><div class='ex-topo'><span>" + (s.manual ? "Registro manual" : "Treino feito") + "</span><span>" +
+      (s.manual ? "" : formatar(s.duracaoSeg)) + "</span></div>";
+    if (s.manual) {
+      h += "<p class='texto'>" + esc(s.descricao) + "</p>";
+    } else {
+      h += "<p class='nome-feito'>" + esc(s.nome) + "</p>";
+      (s.exercicios || []).forEach(ex => {
+        const carga = ex.carga === null || ex.carga === undefined ? "sem carga" : ex.carga + " kg" + (ex.tipo === "lado" ? " por lado" : "");
+        h += "<div class='linha-ex'><span>" + esc(ex.nome) + (ex.feito ? "" : " (pulado)") + "</span><span>" + carga + "</span></div>";
+      });
+    }
+    return h + "</div>";
+  }
+
+  function htmlSessaoAtiva() {
+    const t = T.treinoHoje;
+    let h = "<h2>" + esc(t.nome) + "</h2><div class='centro'>Tempo: <strong id='tempo'></strong></div>";
+    if (T.descanso) {
+      h += "<div class='descanso'>Descanso<strong id='descanso'></strong><button data-acao='pular'>Pular descanso</button></div>";
+    }
+    h += t.exercicios.map((ex, i) => cardExercicio(ex, i)).join("");
+    h += "<div class='centro'><button class='grande' data-acao='finalizar'>Finalizar treino</button></div>";
+    return h;
+  }
+
   function cardExercicio(ex, i) {
-    const feito = !!treino.feitos[i];
-    const ultima = treino.ultimas[slug(ex.nome)];
-    const carga = treino.cargas[i] !== undefined ? treino.cargas[i] : (ultima ? ultima.carga : "");
+    const feito = !!T.feitos[i];
+    const ultima = T.ultimas[slug(ex.nome)];
+    const carga = T.cargas[i] !== undefined ? T.cargas[i] : (ultima ? ultima.carga : "");
     const lado = ex.tipo === "lado";
     const ultimaTxt = ultima ? "Última vez: " + ultima.carga + " kg" + (lado ? " por lado" : "") : "Primeira vez";
     const totalTxt = lado && carga !== "" ? "= " + (Number(carga) * 2) + " kg no total" : "";
@@ -398,172 +575,416 @@
     "</div>";
   }
 
-  function htmlEditor() {
-    const r = treino.rascunho;
-    let h = "<h2>Editar treino</h2>" +
-      "<p class='sub'>" + DIAS[treino.dia] + "</p>" +
-      "<input placeholder='Nome do treino (ex.: Costas e bíceps)' data-rnome='1' value='" + esc(r.nome) + "'>";
+  // ---------- histórico ----------
+  function htmlAbaHistorico() {
+    const abas = [["semana", "Semana"], ["mes", "Mês"], ["total", "Total"]].map(([v, n]) =>
+      "<button class='aba" + (T.hist === v ? " ativo" : "") + "' data-acao='hist' data-v='" + v + "'>" + n + "</button>"
+    ).join("");
+    let h = "<div class='abas'>" + abas + "</div>";
+    if (T.hist === "semana") return h + htmlHistSemana();
+    if (T.hist === "mes") return h + htmlHistMes();
+    return h + htmlHistTotal();
+  }
 
-    r.exercicios.forEach((ex, i) => {
-      h += "<div class='lin-edit'>" +
-        "<input placeholder='Exercício' data-enome='" + i + "' value='" + esc(ex.nome) + "'>" +
-        "<input type='number' placeholder='Séries' data-eseries='" + i + "' value='" + esc(ex.series) + "'>" +
-        "<input type='number' placeholder='Reps' data-ereps='" + i + "' value='" + esc(ex.reps) + "'>" +
-        "<select data-etipo='" + i + "'>" +
-          "<option value='total'" + (ex.tipo !== "lado" ? " selected" : "") + ">Total</option>" +
-          "<option value='lado'" + (ex.tipo === "lado" ? " selected" : "") + ">Por lado</option>" +
-        "</select>" +
-        "<button class='excluir' data-acao='excluir' data-i='" + i + "'>×</button>" +
-      "</div>";
-    });
+  function navegacao(titulo) {
+    return "<div class='nav'>" +
+      "<button class='icone' data-acao='nav' data-d='-1' aria-label='Anterior'>‹</button>" +
+      "<strong>" + titulo + "</strong>" +
+      "<button class='icone' data-acao='nav' data-d='1' aria-label='Próximo'>›</button>" +
+    "</div>";
+  }
 
-    h += "<div class='barra'><button class='secundario' data-acao='add-ex'>+ Exercício</button></div>" +
-      "<div class='barra'><button class='secundario' data-acao='cancelar'>Cancelar</button><button data-acao='salvar'>Salvar</button></div>" +
-      "<div id='treino-status' style='color:var(--blood);font-size:0.9rem'></div>";
+  function htmlHistSemana() {
+    const ref = somar(hojeISO(), T.offsetSemana * 7);
+    const ini = inicioSemana(ref);
+    const fim = somar(ini, 6);
+    const n = contarEntre(ini, fim);
+    const meta = T.metas.semanal ? " de " + T.metas.semanal : "";
+    let h = navegacao(dataCurta(ini) + " a " + dataCurta(fim)) +
+      "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + meta + " nesta semana</p>";
+
+    for (let k = 0; k < 7; k++) {
+      const iso = somar(ini, k);
+      const sess = sessoesDoDia(iso);
+      const prog = treinoDoDia(iso);
+      let conteudo = "";
+      if (sess.length) {
+        conteudo = sess.map(s => "<span>" + esc(s.manual ? "Registro: " + s.descricao : s.nome) + "</span>").join("");
+      } else if (iso > hojeISO() && prog) {
+        conteudo = "<em>" + esc(prog.nome) + "</em>";
+      }
+      h += "<div class='linha-dia'><span>" + NOMES_LONGOS[diaSemana(iso)] + " " + dePara(iso).getDate() + "</span>" +
+        "<div class='dir'>" + conteudo + (sess.length ? ICONE_CHECK : "") + "</div></div>";
+    }
     return h;
   }
 
-  function tratarClique(e) {
+  function htmlHistMes() {
+    const agora = new Date();
+    const ref = new Date(agora.getFullYear(), agora.getMonth() + T.offsetMes, 1);
+    const ini = isoDe(new Date(ref.getFullYear(), ref.getMonth(), 1));
+    const fim = isoDe(new Date(ref.getFullYear(), ref.getMonth() + 1, 0));
+    const n = contarEntre(ini, fim);
+    const titulo = capitalizar(MESES[ref.getMonth()]) + " de " + ref.getFullYear();
+    const lista = T.sessoes.filter(s => s.dataISO >= ini && s.dataISO <= fim);
+    return navegacao(titulo) +
+      "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + " neste mês</p>" +
+      htmlListaSessoes(lista);
+  }
+
+  function htmlHistTotal() {
+    const ano = new Date().getFullYear();
+    const noAno = T.sessoes.filter(s => s.dataISO.startsWith(String(ano))).length;
+    let h = "<p class='resumo'>Em " + ano + ": <strong>" + noAno + "</strong> treinos</p>" +
+      "<p class='resumo'>Total desde o início: <strong>" + T.sessoes.length + "</strong> treinos</p>";
+
+    if (T.metas.anual) {
+      const anoMeta = Number(T.metas.ano) || ano;
+      const feitos = T.sessoes.filter(s => s.dataISO.startsWith(String(anoMeta))).length;
+      const pct = Math.min(100, Math.round(feitos / Number(T.metas.anual) * 100));
+      h += "<div class='meta-bloco'><p>Meta de " + anoMeta + ": <strong>" + feitos + "</strong> de " + T.metas.anual + " treinos</p>" +
+        "<div class='barra-meta'><div style='width:" + pct + "%'></div></div></div>";
+    }
+    return h + htmlListaSessoes(T.sessoes);
+  }
+
+  function htmlListaSessoes(lista) {
+    if (!lista.length) return "<p class='vazio'>Nenhum treino registrado.</p>";
+    return lista.slice().sort((a, b) => b.dataISO.localeCompare(a.dataISO)).map(s =>
+      "<div class='dia-sessao'><small>" + dataCurta(s.dataISO) + " · " + NOMES_LONGOS[diaSemana(s.dataISO)] + "</small>" +
+      htmlSessaoFeita(s) + "</div>"
+    ).join("");
+  }
+
+  // ---------- editores ----------
+  function htmlEditorAtual() {
+    if (T.editorTipo === "lista") return htmlListaEditor();
+    if (T.editorTipo === "treino") return htmlEditorTreino();
+    if (T.editorTipo === "metas") return htmlMetas();
+    return "";
+  }
+
+  function htmlListaEditor() {
+    return "<h2>Seus treinos</h2><p class='sub'>Toque em um treino para editar, ou crie um novo.</p>" +
+      (T.treinos.length
+        ? T.treinos.map(t =>
+            "<button class='treino-item' data-acao='editar-treino' data-id='" + t.id + "'><span>" + esc(t.nome) + "</span><small>" +
+            (t.diaSugerido === null || t.diaSugerido === undefined ? "Sem dia" : NOMES_LONGOS[Number(t.diaSugerido)]) +
+            "</small></button>").join("")
+        : "<p class='vazio'>Nenhum treino cadastrado ainda.</p>") +
+      "<button data-acao='novo-treino'>+ Novo treino</button>" +
+      "<div class='centro'><button class='secundario' data-acao='fechar-editor'>Fechar</button></div>";
+  }
+
+  function htmlEditorTreino() {
+    const e = T.editor;
+    let h = "<h2>" + (e.id ? "Editar treino" : "Novo treino") + "</h2>" +
+      "<input placeholder='Nome do treino (ex.: Costas e bíceps)' data-campo='nome' value='" + esc(e.nome) + "'>" +
+      "<label>Qual dia você pretende fazer?</label>" +
+      "<select data-campo='dia'><option value=''>Sem dia</option>" +
+        NOMES_LONGOS.map((n, i) => "<option value='" + i + "'" + (e.diaSugerido !== null && Number(e.diaSugerido) === i ? " selected" : "") + ">" + n + "</option>").join("") +
+      "</select>" +
+      "<label>Exercícios</label>";
+
+    e.exercicios.forEach((ex, i) => {
+      h += "<div class='lin-edit'>" +
+        "<input placeholder='Exercício' data-campo='exNome' data-i='" + i + "' value='" + esc(ex.nome) + "'>" +
+        "<input type='number' placeholder='Séries' data-campo='exSeries' data-i='" + i + "' value='" + esc(ex.series) + "'>" +
+        "<input type='number' placeholder='Reps' data-campo='exReps' data-i='" + i + "' value='" + esc(ex.reps) + "'>" +
+        "<select data-campo='exTipo' data-i='" + i + "'>" +
+          "<option value='total'" + (ex.tipo !== "lado" ? " selected" : "") + ">Total</option>" +
+          "<option value='lado'" + (ex.tipo === "lado" ? " selected" : "") + ">Por lado</option>" +
+        "</select>" +
+        "<button class='excluir' data-acao='ex-del' data-i='" + i + "'>×</button>" +
+      "</div>";
+    });
+
+    h += "<button class='secundario' data-acao='ex-add'>+ Exercício</button>" +
+      "<div id='treino-status' class='status'></div>" +
+      "<div class='centro'>" +
+        (e.id ? "<button class='excluir' data-acao='treino-excluir'>Excluir</button>" : "") +
+        "<button class='secundario' data-acao='voltar-lista'>Cancelar</button>" +
+        "<button class='grande' data-acao='treino-salvar'>Salvar</button>" +
+      "</div>";
+    return h;
+  }
+
+  function htmlMetas() {
+    const r = T.metaRascunho;
+    return "<h2>Metas</h2><p class='sub'>Defina quantos treinos você quer fazer.</p>" +
+      "<label>Treinos por semana</label>" +
+      "<input type='number' inputmode='numeric' placeholder='Ex.: 4' data-campo='meta' data-chave='semanal' value='" + (r.semanal ?? "") + "'>" +
+      "<label>Treinos no ano</label>" +
+      "<input type='number' inputmode='numeric' placeholder='Ex.: 150' data-campo='meta' data-chave='anual' value='" + (r.anual ?? "") + "'>" +
+      "<label>Ano da meta</label>" +
+      "<input type='number' inputmode='numeric' placeholder='Ex.: 2027' data-campo='meta' data-chave='ano' value='" + (r.ano ?? "") + "'>" +
+      "<div id='treino-status' class='status'></div>" +
+      "<div class='centro'>" +
+        "<button class='secundario' data-acao='fechar-editor'>Cancelar</button>" +
+        "<button class='grande' data-acao='metas-salvar'>Salvar</button>" +
+      "</div>";
+  }
+
+  // ---------- eventos ----------
+  async function tratarClique(e) {
     const el = e.target.closest("[data-acao]");
     if (!el) return;
-    const acao = el.dataset.acao;
+    const a = el.dataset.acao;
     const i = Number(el.dataset.i);
 
-    if (acao === "dia") { treino.dia = i; renderTreinos(); }
-    else if (acao === "feito") {
-      treino.feitos[i] = !treino.feitos[i];
-      if (treino.feitos[i]) iniciarDescanso(60);
-      renderTreinos();
+    switch (a) {
+      case "aba": T.aba = el.dataset.v; renderTreinos(); break;
+      case "hist": T.hist = el.dataset.v; renderTreinos(); break;
+      case "nav": {
+        const d = Number(el.dataset.d);
+        if (T.hist === "semana") T.offsetSemana += d; else T.offsetMes += d;
+        renderTreinos();
+        break;
+      }
+      case "dia":
+        T.selecionado = el.dataset.iso;
+        T.registrando = false;
+        T.trocando = false;
+        renderTreinos();
+        break;
+      case "trocar": T.trocando = true; renderTreinos(); break;
+      case "cancelar-troca": T.trocando = false; renderTreinos(); break;
+      case "escolher": {
+        const iso = T.selecionado;
+        T.trocas[iso] = el.dataset.id;
+        T.trocando = false;
+        try { await colecao("trocas").doc(iso).set({ treinoId: el.dataset.id }); } catch (err) { /* mantém localmente */ }
+        renderTreinos();
+        break;
+      }
+      case "iniciar": {
+        const prog = treinoDoDia(hojeISO());
+        if (!prog) return;
+        T.treinoHoje = prog;
+        T.sessao = { inicio: Date.now() };
+        T.feitos = {};
+        T.cargas = {};
+        T.descanso = null;
+        manterTela();
+        renderTreinos();
+        break;
+      }
+      case "feito":
+        T.feitos[i] = !T.feitos[i];
+        if (T.feitos[i]) T.descanso = { fim: Date.now() + 60000 };
+        renderTreinos();
+        break;
+      case "pular": T.descanso = null; renderTreinos(); break;
+      case "finalizar": await finalizarTreino(); break;
+      case "registrar-abrir": T.registrando = true; renderTreinos(); break;
+      case "registrar-cancelar": T.registrando = false; renderTreinos(); break;
+      case "registrar-salvar": await salvarRegistro(); break;
+      case "abrir-lista": T.editorTipo = "lista"; T.editor = null; renderTreinos(); break;
+      case "abrir-metas": T.metaRascunho = { ...T.metas }; T.editorTipo = "metas"; renderTreinos(); break;
+      case "fechar-editor": T.editorTipo = null; T.editor = null; renderTreinos(); break;
+      case "voltar-lista": T.editorTipo = "lista"; T.editor = null; renderTreinos(); break;
+      case "novo-treino":
+        T.editor = { id: null, nome: "", diaSugerido: null, exercicios: [] };
+        T.editorTipo = "treino";
+        renderTreinos();
+        break;
+      case "editar-treino": {
+        const t = T.treinos.find(x => x.id === el.dataset.id);
+        if (!t) break;
+        T.editor = JSON.parse(JSON.stringify(t));
+        T.editorTipo = "treino";
+        renderTreinos();
+        break;
+      }
+      case "ex-add":
+        T.editor.exercicios.push({ nome: "", series: "", reps: "", tipo: "total" });
+        renderTreinos();
+        break;
+      case "ex-del":
+        T.editor.exercicios.splice(i, 1);
+        renderTreinos();
+        break;
+      case "treino-salvar": await salvarTreino(); break;
+      case "treino-excluir": await excluirTreino(); break;
+      case "metas-salvar": await salvarMetas(); break;
     }
-    else if (acao === "iniciar") {
-      treino.sessao = { inicio: Date.now() };
-      treino.feitos = {};
-      manterTela();
-      renderTreinos();
-    }
-    else if (acao === "finalizar") finalizarTreino();
-    else if (acao === "pular") { treino.descanso = null; renderTreinos(); }
-    else if (acao === "editar") abrirEditor();
-    else if (acao === "add-ex") { treino.rascunho.exercicios.push({ nome: "", series: "", reps: "", tipo: "total" }); renderTreinos(); }
-    else if (acao === "excluir") { treino.rascunho.exercicios.splice(i, 1); renderTreinos(); }
-    else if (acao === "cancelar") { treino.editando = false; renderTreinos(); }
-    else if (acao === "salvar") salvarPrograma();
   }
 
   function tratarEntrada(e) {
     const d = e.target.dataset;
-    if ("carga" in d) {
+    if (d.carga !== undefined) {
       const i = Number(d.carga);
-      treino.cargas[i] = e.target.value;
-      const ex = treino.programa[treino.dia].exercicios[i];
+      T.cargas[i] = e.target.value;
+      const ex = T.treinoHoje && T.treinoHoje.exercicios[i];
       const span = document.querySelector("[data-total='" + i + "']");
-      if (span) span.textContent = ex.tipo === "lado" && e.target.value !== "" ? "= " + (Number(e.target.value) * 2) + " kg no total" : "";
+      if (span && ex) {
+        span.textContent = ex.tipo === "lado" && e.target.value !== "" ? "= " + (Number(e.target.value) * 2) + " kg no total" : "";
+      }
       return;
     }
-    if (!treino.rascunho) return;
-    const r = treino.rascunho;
-    if ("rnome" in d) r.nome = e.target.value;
-    else if ("enome" in d) r.exercicios[Number(d.enome)].nome = e.target.value;
-    else if ("eseries" in d) r.exercicios[Number(d.eseries)].series = e.target.value;
-    else if ("ereps" in d) r.exercicios[Number(d.ereps)].reps = e.target.value;
-    else if ("etipo" in d) r.exercicios[Number(d.etipo)].tipo = e.target.value;
-  }
-
-  function abrirEditor() {
-    const p = treino.programa[treino.dia];
-    treino.rascunho = p
-      ? JSON.parse(JSON.stringify(p))
-      : { nome: "", exercicios: [] };
-    treino.editando = true;
-    renderTreinos();
-  }
-
-  async function salvarPrograma() {
-    const r = treino.rascunho;
-    const status = document.getElementById("treino-status");
-    const limpo = {
-      nome: r.nome.trim() || "Treino",
-      exercicios: r.exercicios
-        .filter(ex => ex.nome.trim() !== "")
-        .map(ex => ({ nome: ex.nome.trim(), series: ex.series || "", reps: ex.reps || "", tipo: ex.tipo === "lado" ? "lado" : "total" }))
-    };
-    try {
-      await colecao("programa").doc(String(treino.dia)).set(limpo);
-      treino.programa[treino.dia] = limpo;
-      treino.editando = false;
-      treino.rascunho = null;
-      renderTreinos();
-    } catch (e) {
-      if (status) status.textContent = "Erro ao salvar: " + e.message;
+    if (d.campo === undefined) return;
+    const i = Number(d.i);
+    switch (d.campo) {
+      case "descricao": T.descricao = e.target.value; break;
+      case "nome": if (T.editor) T.editor.nome = e.target.value; break;
+      case "dia": if (T.editor) T.editor.diaSugerido = e.target.value === "" ? null : Number(e.target.value); break;
+      case "exNome": if (T.editor) T.editor.exercicios[i].nome = e.target.value; break;
+      case "exSeries": if (T.editor) T.editor.exercicios[i].series = e.target.value; break;
+      case "exReps": if (T.editor) T.editor.exercicios[i].reps = e.target.value; break;
+      case "exTipo": if (T.editor) T.editor.exercicios[i].tipo = e.target.value; break;
+      case "meta": T.metaRascunho[d.chave] = e.target.value; break;
     }
   }
 
-  // ---------- descanso e sessão ----------
-  function iniciarDescanso(segundos) {
-    treino.descanso = { fim: Date.now() + segundos * 1000 };
-    renderTreinos();
+  // ---------- salvar ----------
+  async function salvarRegistro() {
+    const txt = (T.descricao || "").trim();
+    const st = document.getElementById("treino-status");
+    if (!txt) { if (st) st.textContent = "Escreva o que você treinou."; return; }
+    const obj = { dataISO: T.selecionado, nome: "Registro manual", manual: true, descricao: txt };
+    try {
+      const ref = await colecao("sessoes").add({ ...obj, data: firebase.firestore.FieldValue.serverTimestamp() });
+      T.sessoes.push({ id: ref.id, ...obj });
+      T.registrando = false;
+      T.descricao = "";
+      renderTreinos();
+    } catch (err) {
+      if (st) st.textContent = "Erro ao salvar: " + err.message;
+    }
   }
 
   async function finalizarTreino() {
-    const prog = treino.programa[treino.dia];
-    const status = document.getElementById("treino-status");
-    if (!prog || !treino.sessao) return;
-
-    const duracao = Math.round((Date.now() - treino.sessao.inicio) / 1000);
-    const exercicios = prog.exercicios.map((ex, i) => ({
+    const t = T.treinoHoje;
+    if (!t || !T.sessao) return;
+    const duracao = Math.round((Date.now() - T.sessao.inicio) / 1000);
+    const exercicios = t.exercicios.map((ex, i) => ({
       nome: ex.nome,
       tipo: ex.tipo,
-      carga: treino.cargas[i] !== undefined && treino.cargas[i] !== "" ? Number(treino.cargas[i]) : null,
-      feito: !!treino.feitos[i]
+      carga: T.cargas[i] !== undefined && T.cargas[i] !== "" ? Number(T.cargas[i]) : null,
+      feito: !!T.feitos[i]
     }));
+    const obj = { dataISO: hojeISO(), nome: t.nome, treinoId: t.id, manual: false, duracaoSeg: duracao, exercicios };
 
     try {
-      const salvos = [];
+      const promessas = [];
       exercicios.forEach(ex => {
         if (ex.carga !== null) {
-          salvos.push(colecao("ultimas").doc(slug(ex.nome)).set({
+          const id = slug(ex.nome);
+          promessas.push(colecao("ultimas").doc(id).set({
             nome: ex.nome, carga: ex.carga, tipo: ex.tipo,
             data: firebase.firestore.FieldValue.serverTimestamp()
           }));
-          treino.ultimas[slug(ex.nome)] = { nome: ex.nome, carga: ex.carga, tipo: ex.tipo };
+          T.ultimas[id] = { nome: ex.nome, carga: ex.carga, tipo: ex.tipo };
         }
       });
-      salvos.push(colecao("sessoes").add({
-        dia: treino.dia, nome: prog.nome, duracaoSeg: duracao, exercicios: exercicios,
-        data: firebase.firestore.FieldValue.serverTimestamp()
-      }));
-      await Promise.all(salvos);
+      promessas.push(colecao("sessoes").add({ ...obj, data: firebase.firestore.FieldValue.serverTimestamp() }));
+      const resultados = await Promise.all(promessas);
+      const sessaoRef = resultados[resultados.length - 1];
+      T.sessoes.push({ id: sessaoRef.id, ...obj });
 
-      treino.sessao = null;
-      treino.feitos = {};
-      treino.descanso = null;
+      T.sessao = null;
+      T.treinoHoje = null;
+      T.feitos = {};
+      T.cargas = {};
+      T.descanso = null;
       soltarTela();
       renderTreinos();
       const st = document.getElementById("treino-status");
       if (st) st.textContent = "Treino salvo. Duração: " + formatar(duracao);
-    } catch (e) {
-      if (status) status.textContent = "Erro ao salvar o treino: " + e.message;
+    } catch (err) {
+      const st = document.getElementById("treino-status");
+      if (st) st.textContent = "Erro ao salvar o treino: " + err.message;
     }
   }
 
-  function atualizarTempos() {
-    if (treino.sessao) {
-      const t = document.getElementById("tempo");
-      if (t) t.textContent = formatar((Date.now() - treino.sessao.inicio) / 1000);
+  async function salvarTreino() {
+    const e = T.editor;
+    const st = document.getElementById("treino-status");
+    const nome = (e.nome || "").trim();
+    if (!nome) { if (st) st.textContent = "Dê um nome ao treino."; return; }
+    const limpo = {
+      nome: nome,
+      diaSugerido: e.diaSugerido === null || e.diaSugerido === undefined || e.diaSugerido === "" ? null : Number(e.diaSugerido),
+      exercicios: e.exercicios
+        .filter(x => (x.nome || "").trim() !== "")
+        .map(x => ({ nome: x.nome.trim(), series: x.series || "", reps: x.reps || "", tipo: x.tipo === "lado" ? "lado" : "total" }))
+    };
+    try {
+      let id = e.id;
+      if (id) {
+        await colecao("treinos").doc(id).set(limpo);
+      } else {
+        const ref = await colecao("treinos").add(limpo);
+        id = ref.id;
+      }
+      const novo = { id: id, ...limpo };
+      const idx = T.treinos.findIndex(x => x.id === id);
+      if (idx >= 0) T.treinos[idx] = novo; else T.treinos.push(novo);
+      T.editorTipo = "lista";
+      T.editor = null;
+      renderTreinos();
+    } catch (err) {
+      if (st) st.textContent = "Erro ao salvar: " + err.message;
     }
-    if (treino.descanso) {
-      const d = document.getElementById("descanso");
-      const restante = (treino.descanso.fim - Date.now()) / 1000;
+  }
+
+  async function excluirTreino() {
+    const id = T.editor && T.editor.id;
+    if (!id) return;
+    const st = document.getElementById("treino-status");
+    try {
+      await colecao("treinos").doc(id).delete();
+      T.treinos = T.treinos.filter(x => x.id !== id);
+      T.editorTipo = "lista";
+      T.editor = null;
+      renderTreinos();
+    } catch (err) {
+      if (st) st.textContent = "Erro ao excluir: " + err.message;
+    }
+  }
+
+  async function salvarMetas() {
+    const r = T.metaRascunho;
+    const st = document.getElementById("treino-status");
+    const num = v => (v === "" || v === null || v === undefined) ? null : Number(v);
+    const obj = { semanal: num(r.semanal), anual: num(r.anual), ano: num(r.ano) };
+    try {
+      await colecao("config").doc("metas").set(obj);
+      T.metas = obj;
+      T.editorTipo = null;
+      T.metaRascunho = {};
+      renderTreinos();
+    } catch (err) {
+      if (st) st.textContent = "Erro ao salvar: " + err.message;
+    }
+  }
+
+  // ---------- descanso e cronômetro ----------
+  function atualizarTempos() {
+    if (T.sessao) {
+      const t = document.getElementById("tempo");
+      if (t) t.textContent = formatar((Date.now() - T.sessao.inicio) / 1000);
+    }
+    if (T.descanso) {
+      const restante = (T.descanso.fim - Date.now()) / 1000;
       if (restante <= 0) {
-        treino.descanso = null;
+        T.descanso = null;
         vibrar();
         renderTreinos();
-      } else if (d) {
-        d.textContent = formatar(restante);
+      } else {
+        const d = document.getElementById("descanso");
+        if (d) d.textContent = formatar(restante);
       }
     }
   }
   setInterval(atualizarTempos, 1000);
+
+  // ---------- ao voltar para o app, atualiza os dados ----------
+  window.addEventListener("focus", async () => {
+    if (!usuario || secaoAtual !== "treinos" || T.sessao || T.editorTipo || T.registrando) return;
+    await carregarTudo();
+    renderTreinos();
+  });
 
   telaGrande.addEventListener("change", () => {
     if (!usuario) return;
