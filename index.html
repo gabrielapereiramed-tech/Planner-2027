@@ -67,15 +67,15 @@
   .menu { display: flex; flex-direction: column; gap: 0.6rem; }
   .menu-topo { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.6rem; margin: 0 0 0.5rem; }
   .item {
-    display: flex; align-items: center; gap: 0.7rem; text-align: left; padding: 0.9rem 1.1rem;
-    background: var(--branco); color: #2B2420; border: 1px solid #E7E5E4;
-    font-family: "Poppins", system-ui, sans-serif; font-weight: 600; font-size: 1rem;
+    display: flex; align-items: center; gap: 0.5rem; text-align: left; width: 100%;
+    padding: 0.55rem 0.7rem; background: transparent; color: #2B2420; border: none;
+    font-family: "Poppins", system-ui, sans-serif; font-weight: 400; font-size: 0.85rem;
   }
-  .item svg { width: 22px; height: 22px; flex-shrink: 0; }
-  .item.ativo { border-color: var(--blood); box-shadow: inset 4px 0 0 var(--blood); }
+  .item svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .item.ativo { background: var(--creme); box-shadow: inset 3px 0 0 var(--blood); }
   .item.sair { background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); justify-content: center; margin-top: 0.5rem; }
   .conteudo { background: var(--creme); border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
-  .voltar { width: auto; padding: 0.45rem 1rem; margin-bottom: 1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
+  .voltar { display: none; }
   .linha { display: flex; gap: 0.5rem; margin-top: 1rem; }
   .linha input { margin-bottom: 0; }
   .linha button { width: auto; padding: 0.9rem 1.4rem; }
@@ -166,15 +166,18 @@
   @media (min-width: 720px) {
     .wrap { max-width: none; padding: 0; }
     .app { flex-direction: row; align-items: stretch; min-height: 100vh; gap: 0; }
-    .menu { width: 260px; flex-shrink: 0; display: flex !important; padding: 1.5rem 1rem 1.5rem 1.5rem; background: var(--branco); border-right: 1px solid #E7E5E4; }
-    .menu-topo { color: var(--burgundy); }
+    .menu { width: 170px; flex-shrink: 0; display: flex !important; padding: 1.25rem 0.6rem; background: var(--branco); border-right: 1px solid #E7E5E4; }
+    .menu-topo { color: var(--burgundy); font-size: 1.1rem; padding: 0 0.5rem 0.8rem; }
     .item.sair { background: transparent; }
     .conteudo { flex: 1; min-width: 0; display: block !important; border-radius: 0; padding: 2.5rem; min-height: 100vh; }
     .voltar { display: none; }
   }
   @media (max-width: 719px) {
-    .app.mobile-secao .menu { display: none; }
-    .app.mobile-home .conteudo { display: none; }
+    .menu { flex-direction: row; overflow-x: auto; gap: 0.4rem; padding-bottom: 0.25rem; }
+    .menu-topo { display: none; }
+    .item { width: auto; flex-shrink: 0; border: 1px solid #E7E5E4; background: #FFFFFF; border-radius: 999px; padding: 0.45rem 0.8rem; font-size: 0.8rem; }
+    .item.ativo { border-color: var(--blood); box-shadow: none; }
+    .item.sair { width: auto; margin-top: 0; }
   }
 </style>
 </head>
@@ -237,7 +240,7 @@
   let wakeLock = null;
 
   const T = {
-    aba: "dia", hist: "mes", offsetSemana: 0, offsetMes: 0,
+    aba: "dia", hist: "mes", offsetSemana: 0, offsetMes: 0, offsetAno: 0,
     selecionado: null, centralizar: true,
     treinos: [], sessoes: [], ultimas: {}, trocas: {}, metas: {},
     treinoHoje: null, sessao: null, feitos: {}, cargas: {}, descanso: null,
@@ -364,7 +367,7 @@
   function desenharMenu() {
     const app = document.getElementById("app");
     const menu = document.getElementById("menu");
-    app.className = "app " + (secaoAtual ? "mobile-secao" : "mobile-home");
+    app.className = "app";
     menu.innerHTML =
       "<div class='menu-topo'>Planner 2027</div>" +
       SECOES.map(s =>
@@ -497,10 +500,10 @@
     const n = contarEntre(ini, somar(ini, 6));
     const meta = T.metas.semanal ? " de " + T.metas.semanal : "";
 
-    return "<div id='treino-status' class='status'></div>" +
-      "<div class='painel-dia'>" + htmlPainelDia() + "</div>" +
+    return "<div class='roleta'>" + roleta + "</div>" +
       "<p class='resumo'>Esta semana: <strong>" + n + "</strong> treino" + (n === 1 ? "" : "s") + meta + "</p>" +
-      "<div class='roleta'>" + roleta + "</div>";
+      "<div id='treino-status' class='status'></div>" +
+      "<div class='painel-dia'>" + htmlPainelDia() + "</div>";
   }
 
   function htmlPainelDia() {
@@ -605,21 +608,35 @@
   }
 
   // ---------- histórico ----------
+  function barras(itens, altura) {
+    const max = Math.max(1, ...itens.map(x => x.valor));
+    const largura = 320, base = altura - 22, topo = 14;
+    const passo = largura / itens.length;
+    const barra = passo * 0.6;
+    let out = "";
+    itens.forEach((x, k) => {
+      const h = x.valor === 0 ? 0 : Math.max(4, (x.valor / max) * (base - topo));
+      const cx = k * passo + passo / 2;
+      if (x.valor > 0) {
+        out += "<rect x='" + (cx - barra / 2) + "' y='" + (base - h) + "' width='" + barra + "' height='" + h + "' rx='4' fill='#D81A67'/>";
+        out += "<text x='" + cx + "' y='" + (base - h - 4) + "' text-anchor='middle' font-size='10' fill='#2B2420'>" + x.valor + "</text>";
+      }
+      if (x.rotulo !== null && x.rotulo !== undefined) {
+        out += "<text x='" + cx + "' y='" + (altura - 6) + "' text-anchor='middle' font-size='10' fill='#6B6259'>" + x.rotulo + "</text>";
+      }
+    });
+    out += "<line x1='0' y1='" + base + "' x2='" + largura + "' y2='" + base + "' stroke='#E7E5E4'/>";
+    return "<svg viewBox='0 0 " + largura + " " + altura + "' width='100%' role='img' aria-label='Gráfico de treinos'>" + out + "</svg>";
+  }
+
   function htmlAbaHistorico() {
-    const abas = [["mes", "Mês"], ["total", "Total"]].map(([v, n]) =>
+    const abas = [["semana", "Semana"], ["mes", "Mês"], ["total", "Total"]].map(([v, n]) =>
       "<button class='aba" + (T.hist === v ? " ativo" : "") + "' data-acao='hist' data-v='" + v + "'>" + n + "</button>"
     ).join("");
     let h = "<div class='abas'>" + abas + "</div>";
+    if (T.hist === "semana") return h + htmlHistSemana();
     if (T.hist === "mes") return h + htmlHistMes();
     return h + htmlHistTotal();
-  }
-
-  function navegacao(titulo) {
-    return "<div class='nav'>" +
-      "<button class='icone' data-acao='nav' data-d='-1' aria-label='Anterior'>‹</button>" +
-      "<strong>" + titulo + "</strong>" +
-      "<button class='icone' data-acao='nav' data-d='1' aria-label='Próximo'>›</button>" +
-    "</div>";
   }
 
   function htmlHistSemana() {
@@ -627,24 +644,14 @@
     const ini = inicioSemana(ref);
     const fim = somar(ini, 6);
     const n = contarEntre(ini, fim);
-    const meta = T.metas.semanal ? " de " + T.metas.semanal : "";
-    let h = navegacao(dataCurta(ini) + " a " + dataCurta(fim)) +
-      "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + meta + " nesta semana</p>";
-
+    const itens = [];
     for (let k = 0; k < 7; k++) {
       const iso = somar(ini, k);
-      const sess = sessoesDoDia(iso);
-      const prog = treinoDoDia(iso);
-      let conteudo = "";
-      if (sess.length) {
-        conteudo = sess.map(s => "<span>" + esc(s.manual ? "Registro: " + s.descricao : s.nome) + "</span>").join("");
-      } else if (iso > hojeISO() && prog) {
-        conteudo = "<em>" + esc(prog.nome) + "</em>";
-      }
-      h += "<div class='linha-dia'><span>" + NOMES_LONGOS[diaSemana(iso)] + " " + dePara(iso).getDate() + "</span>" +
-        "<div class='dir'>" + conteudo + (sess.length ? ICONE_CHECK : "") + "</div></div>";
+      itens.push({ valor: sessoesDoDia(iso).length, rotulo: NOMES[diaSemana(iso)] });
     }
-    return h;
+    return navegacao(dataCurta(ini) + " a " + dataCurta(fim)) +
+      "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + (T.metas.semanal ? " de " + T.metas.semanal : "") + " nesta semana</p>" +
+      barras(itens, 170);
   }
 
   function htmlHistMes() {
@@ -652,40 +659,31 @@
     const ref = new Date(agora.getFullYear(), agora.getMonth() + T.offsetMes, 1);
     const ano = ref.getFullYear();
     const mes = ref.getMonth();
+    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
     const ini = isoDe(new Date(ano, mes, 1));
     const fim = isoDe(new Date(ano, mes + 1, 0));
     const n = contarEntre(ini, fim);
-    const titulo = capitalizar(MESES[mes]) + " de " + ano;
-    const primeiro = new Date(ano, mes, 1).getDay();
-    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-
-    let grade = NOMES.map(d => "<div class='cal-cab'>" + d + "</div>").join("");
-    for (let k = 0; k < primeiro; k++) grade += "<div></div>";
+    const itens = [];
     for (let d = 1; d <= diasNoMes; d++) {
       const iso = isoDe(new Date(ano, mes, d));
-      const tem = sessoesDoDia(iso).length > 0;
-      grade += "<button class='cal-dia" + (iso === hojeISO() ? " hoje" : "") + (iso === T.selecionado ? " sel" : "") +
-        "' data-acao='dia' data-iso='" + iso + "'><span>" + d + "</span>" + (tem ? ICONE_CHECK : "<i></i>") + "</button>";
+      itens.push({ valor: sessoesDoDia(iso).length, rotulo: (d === 1 || d % 5 === 0) ? String(d) : null });
     }
-
-    let detalhe = "";
-    if (T.selecionado >= ini && T.selecionado <= fim) {
-      const sess = sessoesDoDia(T.selecionado);
-      detalhe = "<h3>" + tituloDia(T.selecionado) + "</h3>" +
-        (sess.length ? sess.map(s => htmlSessaoFeita(s)).join("") : "<p class='vazio'>Sem treino registrado.</p>");
-    }
-
-    return navegacao(titulo) +
+    return navegacao(capitalizar(MESES[mes]) + " de " + ano) +
       "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + " neste mês</p>" +
-      "<div class='calendario'>" + grade + "</div>" +
-      "<div class='detalhe-dia'>" + detalhe + "</div>";
+      barras(itens, 170);
   }
 
   function htmlHistTotal() {
-    const ano = new Date().getFullYear();
-    const noAno = T.sessoes.filter(s => s.dataISO.startsWith(String(ano))).length;
-    let h = "<p class='resumo'>Em " + ano + ": <strong>" + noAno + "</strong> treinos</p>" +
-      "<p class='resumo'>Total desde o início: <strong>" + T.sessoes.length + "</strong> treinos</p>";
+    const ano = new Date().getFullYear() + T.offsetAno;
+    const meses = MESES.map((m, k) => {
+      const ini = isoDe(new Date(ano, k, 1));
+      const fim = isoDe(new Date(ano, k + 1, 0));
+      return { valor: contarEntre(ini, fim), rotulo: m.slice(0, 3) };
+    });
+    const noAno = meses.reduce((acc, x) => acc + x.valor, 0);
+    let h = navegacao(String(ano)) +
+      "<p class='resumo'>Em " + ano + ": <strong>" + noAno + "</strong> treinos · Total desde o início: <strong>" + T.sessoes.length + "</strong></p>" +
+      barras(meses, 170);
 
     if (T.metas.anual) {
       const anoMeta = Number(T.metas.ano) || ano;
@@ -695,14 +693,6 @@
         "<div class='barra-meta'><div style='width:" + pct + "%'></div></div></div>";
     }
     return h;
-  }
-
-  function htmlListaSessoes(lista) {
-    if (!lista.length) return "<p class='vazio'>Nenhum treino registrado.</p>";
-    return lista.slice().sort((a, b) => b.dataISO.localeCompare(a.dataISO)).map(s =>
-      "<div class='dia-sessao'><small>" + dataCurta(s.dataISO) + " · " + NOMES_LONGOS[diaSemana(s.dataISO)] + "</small>" +
-      htmlSessaoFeita(s) + "</div>"
-    ).join("");
   }
 
   // ---------- editores ----------
@@ -786,7 +776,7 @@
       case "hist": T.hist = el.dataset.v; renderTreinos(); break;
       case "nav": {
         const d = Number(el.dataset.d);
-        if (T.hist === "semana") T.offsetSemana += d; else T.offsetMes += d;
+        if (T.hist === "semana") T.offsetSemana += d; else if (T.hist === "total") T.offsetAno += d; else T.offsetMes += d;
         renderTreinos();
         break;
       }
