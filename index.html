@@ -231,6 +231,13 @@
   .serie.feita .bolinha { background: var(--pistachio); border-color: var(--pistachio); }
   .serie.feita .bolinha svg { color: #2B2420; }
   .ex .secundario { margin-top: 0.6rem; }
+
+  .bloco { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
+  .bloco h3 { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; margin: 0 0 0.6rem; }
+  .cal-dia.treinado { background: var(--pistachio); border-color: var(--pistachio); }
+  .cal-dia.treinado svg { color: #2B2420; }
+  .cal-dia.hoje span { text-decoration: underline; text-decoration-color: var(--blood); text-underline-offset: 3px; }
+  .cal-dia div, .cal-dia { min-height: 52px; }
 </style>
 </head>
 <body>
@@ -564,11 +571,11 @@
     for (let k = 0; k < 7; k++) semana += celula(somar(ini, k));
     let roleta = "";
     for (let k = -30; k <= 30; k++) roleta += celula(somar(h, k));
-    const n = contarEntre(ini, somar(ini, 6));
+    const n = diasTreinados(ini, somar(ini, 6));
     const meta = T.metas.semanal ? " de " + T.metas.semanal : "";
 
     return "<div class='roleta'>" + roleta + "</div>" +
-      "<p class='resumo'>Esta semana: <strong>" + n + "</strong> treino" + (n === 1 ? "" : "s") + meta + "</p>" +
+      "<p class='resumo'>Esta semana: <strong>" + n + "</strong> dia" + (n === 1 ? "" : "s") + " treinado" + (n === 1 ? "" : "s") + meta + "</p>" +
       "<div id='treino-status' class='status'></div>" +
       "<div class='painel-dia'>" + htmlPainelDia() + "</div>";
   }
@@ -720,99 +727,78 @@
   }
 
   // ---------- histórico ----------
-  function barras(itens, altura) {
-    const max = Math.max(1, ...itens.map(x => x.valor));
-    const largura = 320, base = altura - 22, topo = 14;
-    const passo = largura / itens.length;
-    const barra = passo * 0.6;
-    let out = "";
-    itens.forEach((x, k) => {
-      const h = x.valor === 0 ? 0 : Math.max(4, (x.valor / max) * (base - topo));
-      const cx = k * passo + passo / 2;
-      if (x.valor > 0) {
-        out += "<rect x='" + (cx - barra / 2) + "' y='" + (base - h) + "' width='" + barra + "' height='" + h + "' rx='4' fill='#D81A67'/>";
-        out += "<text x='" + cx + "' y='" + (base - h - 4) + "' text-anchor='middle' font-size='10' fill='#2B2420'>" + x.valor + "</text>";
-      }
-      if (x.rotulo !== null && x.rotulo !== undefined) {
-        out += "<text x='" + cx + "' y='" + (altura - 6) + "' text-anchor='middle' font-size='10' fill='#6B6259'>" + x.rotulo + "</text>";
-      }
-    });
-    out += "<line x1='0' y1='" + base + "' x2='" + largura + "' y2='" + base + "' stroke='#E7E5E4'/>";
-    return "<svg viewBox='0 0 " + largura + " " + altura + "' width='100%' style='max-width:380px;display:block;margin:0 auto' role='img' aria-label='Gráfico de treinos'>" + out + "</svg>";
+  function diasTreinados(ini, fim) {
+    const dias = new Set(T.sessoes.filter(x => x.dataISO >= ini && x.dataISO <= fim).map(x => x.dataISO));
+    return dias.size;
   }
 
-  function htmlAbaHistorico() {
-    const abas = [["semana", "Semana"], ["mes", "Mês"], ["total", "Total"]].map(([v, n]) =>
-      "<button class='aba" + (T.hist === v ? " ativo" : "") + "' data-acao='hist' data-v='" + v + "'>" + n + "</button>"
-    ).join("");
-    let h = "<div class='abas'>" + abas + "</div>";
-    if (T.hist === "semana") return h + htmlHistSemana();
-    if (T.hist === "mes") return h + htmlHistMes();
-    return h + htmlHistTotal();
-  }
-
-  function navegacao(titulo) {
+  function navegacao(titulo, tipo) {
     return "<div class='nav'>" +
-      "<button class='icone' data-acao='nav' data-d='-1' aria-label='Anterior'>‹</button>" +
+      "<button class='icone' data-acao='nav' data-d='-1' data-tipo='" + tipo + "' aria-label='Anterior'>‹</button>" +
       "<strong>" + titulo + "</strong>" +
-      "<button class='icone' data-acao='nav' data-d='1' aria-label='Próximo'>›</button>" +
+      "<button class='icone' data-acao='nav' data-d='1' data-tipo='" + tipo + "' aria-label='Próximo'>›</button>" +
     "</div>";
   }
 
-  function htmlHistSemana() {
+  function anelSemana(feitos, meta) {
+    const C = 2 * Math.PI * 50;
+    const pct = meta ? Math.min(1, feitos / meta) : 0;
+    const centro = meta ? feitos + "/" + meta : String(feitos);
+    return "<svg viewBox='0 0 120 120' width='150' height='150' style='display:block;margin:0 auto' role='img' aria-label='Progresso da semana: " + centro + " treinos'>" +
+      "<circle cx='60' cy='60' r='50' fill='none' stroke='#EFECE6' stroke-width='12'/>" +
+      "<circle cx='60' cy='60' r='50' fill='none' stroke='#DD4E28' stroke-width='12' stroke-linecap='round' stroke-dasharray='" + (pct * C) + " " + C + "' transform='rotate(-90 60 60)'/>" +
+      "<text x='60' y='62' text-anchor='middle' font-size='20' font-weight='600' fill='#2B2420'>" + centro + "</text>" +
+      "<text x='60' y='80' text-anchor='middle' font-size='10' fill='#6B6259'>treinos</text>" +
+    "</svg>";
+  }
+
+  function htmlCalendario(ano, mes) {
+    const primeiro = new Date(ano, mes, 1).getDay();
+    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+    let grade = NOMES.map(d => "<div class='cal-cab'>" + d + "</div>").join("");
+    for (let k = 0; k < primeiro; k++) grade += "<div></div>";
+    for (let d = 1; d <= diasNoMes; d++) {
+      const iso = isoDe(new Date(ano, mes, d));
+      const treinou = sessoesDoDia(iso).length > 0;
+      grade += "<div class='cal-dia" + (treinou ? " treinado" : "") + (iso === hojeISO() ? " hoje" : "") + "'><span>" + d + "</span>" +
+        (treinou ? ICONE_CHECK : "") + "</div>";
+    }
+    return "<div class='calendario'>" + grade + "</div>";
+  }
+
+  function htmlAbaHistorico() {
+    const agora = new Date();
     const ref = somar(hojeISO(), T.offsetSemana * 7);
     const ini = inicioSemana(ref);
     const fim = somar(ini, 6);
-    const n = contarEntre(ini, fim);
-    const itens = [];
-    for (let k = 0; k < 7; k++) {
-      const iso = somar(ini, k);
-      itens.push({ valor: sessoesDoDia(iso).length, rotulo: NOMES[diaSemana(iso)] });
-    }
-    return navegacao(dataCurta(ini) + " a " + dataCurta(fim)) +
-      "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + (T.metas.semanal ? " de " + T.metas.semanal : "") + " nesta semana</p>" +
-      barras(itens, 110);
-  }
+    const dias = diasTreinados(ini, fim);
+    const meta = T.metas.semanal;
+    const mref = new Date(agora.getFullYear(), agora.getMonth() + T.offsetMes, 1);
+    const anoAtual = agora.getFullYear();
 
-  function htmlHistMes() {
-    const agora = new Date();
-    const ref = new Date(agora.getFullYear(), agora.getMonth() + T.offsetMes, 1);
-    const ano = ref.getFullYear();
-    const mes = ref.getMonth();
-    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-    const ini = isoDe(new Date(ano, mes, 1));
-    const fim = isoDe(new Date(ano, mes + 1, 0));
-    const n = contarEntre(ini, fim);
-    const itens = [];
-    for (let d = 1; d <= diasNoMes; d++) {
-      const iso = isoDe(new Date(ano, mes, d));
-      itens.push({ valor: sessoesDoDia(iso).length, rotulo: (d === 1 || d % 5 === 0) ? String(d) : null });
-    }
-    return navegacao(capitalizar(MESES[mes]) + " de " + ano) +
-      "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + " neste mês</p>" +
-      barras(itens, 110);
-  }
+    let h = "<section class='bloco'><h3>Semana</h3>" +
+      navegacao(dataCurta(ini) + " a " + dataCurta(fim), "semana") +
+      anelSemana(dias, meta) +
+      (meta ? "" : "<p class='vazio'>Defina sua meta semanal no botão de alvo.</p>") +
+    "</section>";
 
-  function htmlHistTotal() {
-    const ano = new Date().getFullYear() + T.offsetAno;
-    const meses = MESES.map((m, k) => {
-      const ini = isoDe(new Date(ano, k, 1));
-      const fim = isoDe(new Date(ano, k + 1, 0));
-      return { valor: contarEntre(ini, fim), rotulo: m.slice(0, 3) };
-    });
-    const noAno = meses.reduce((acc, x) => acc + x.valor, 0);
-    let h = navegacao(String(ano)) +
-      "<p class='resumo'>Em " + ano + ": <strong>" + noAno + "</strong> treinos · Total desde o início: <strong>" + T.sessoes.length + "</strong></p>" +
-      barras(meses, 110);
+    h += "<section class='bloco'><h3>Mês</h3>" +
+      navegacao(capitalizar(MESES[mref.getMonth()]) + " de " + mref.getFullYear(), "mes") +
+      htmlCalendario(mref.getFullYear(), mref.getMonth()) +
+    "</section>";
 
+    const diasAno = diasTreinados(anoAtual + "-01-01", anoAtual + "-12-31");
+    const totalDias = diasTreinados("0000-01-01", "9999-12-31");
+    h += "<section class='bloco'><h3>Total</h3>" +
+      "<p class='resumo'>Em " + anoAtual + ": <strong>" + diasAno + "</strong> dias treinados · Total: <strong>" + totalDias + "</strong> dias</p>";
     if (T.metas.anual) {
-      const anoMeta = Number(T.metas.ano) || ano;
-      const feitos = T.sessoes.filter(s => s.dataISO.startsWith(String(anoMeta))).length;
+      const anoMeta = Number(T.metas.ano) || anoAtual;
+      const feitos = diasTreinados(anoMeta + "-01-01", anoMeta + "-12-31");
       const pct = Math.min(100, Math.round(feitos / Number(T.metas.anual) * 100));
-      h += "<div class='meta-bloco'><p>Meta de " + anoMeta + ": <strong>" + feitos + "</strong> de " + T.metas.anual + " treinos</p>" +
+      h += "<div class='meta-bloco'><p>Meta de " + anoMeta + ": <strong>" + feitos + "</strong> de " + T.metas.anual + " dias</p>" +
         "<div class='barra-meta'><div style='width:" + pct + "%'></div></div></div>";
     }
-    return h;
+    return h + "</section>";
   }
 
   // ---------- editores ----------
@@ -896,7 +882,7 @@
       case "hist": T.hist = el.dataset.v; renderTreinos(); break;
       case "nav": {
         const d = Number(el.dataset.d);
-        if (T.hist === "semana") T.offsetSemana += d; else if (T.hist === "total") T.offsetAno += d; else T.offsetMes += d;
+        if (el.dataset.tipo === "semana") T.offsetSemana += d; else T.offsetMes += d;
         renderTreinos();
         break;
       }
