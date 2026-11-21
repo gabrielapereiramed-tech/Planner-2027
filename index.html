@@ -15,7 +15,7 @@
     --burgundy: #770523;
     --pistachio: #D0D996;
     --fuchsia: #D81A67;
-    --blood: #DD4E28;
+    --blood: #D81A67;
     --branco: #FFFFFF;
     color-scheme: light;
     padding-top: env(safe-area-inset-top, 0px);
@@ -176,8 +176,8 @@
   @media (max-width: 719px) {
     .menu { flex-direction: row; overflow-x: auto; gap: 0.4rem; padding: 0.5rem; background: #FFFFFF; }
     .menu-topo { display: none; }
-    .item { width: auto; flex-shrink: 0; border: none; background: var(--fuchsia); color: #FFFFFF; border-radius: 999px; padding: 0.45rem 0.8rem; font-size: 0.8rem; font-weight: 600; }
-    .item.ativo { background: var(--burgundy); box-shadow: none; }
+    .item { width: auto; flex-shrink: 0; border: none; background: var(--burgundy); color: #FFFFFF; border-radius: 999px; padding: 0.45rem 0.8rem; font-size: 0.8rem; font-weight: 600; }
+    .item.ativo { background: var(--burgundy); box-shadow: none; outline: 2px solid var(--fuchsia); outline-offset: 2px; }
     .item.sair { width: auto; margin-top: 0; }
   }
 
@@ -259,6 +259,23 @@
   .chips { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
   .chip { width: auto; padding: 0.4rem 0.75rem; background: #FFFFFF; color: #2B2420; border: 1px solid #D6D3CE; font-size: 0.85rem; }
   .chip.ativo { background: var(--burgundy); color: #FFFFFF; border-color: var(--burgundy); }
+
+  .agenda-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+  .agenda-topo h2 { margin: 0; }
+  .agenda-grade { display: grid; grid-template-columns: 36px repeat(7, minmax(0, 1fr)); margin-top: 0.5rem; }
+  .ag-dia-cab { text-align: center; padding: 0.3rem 0; font-size: 0.75rem; color: #6B6259; }
+  .ag-dia-cab b { display: block; font-size: 1rem; font-weight: 600; color: #2B2420; margin-top: 2px; }
+  .ag-dia-cab.hoje b { background: var(--fuchsia); color: #FFFFFF; border-radius: 999px; width: 28px; height: 28px; line-height: 28px; margin: 2px auto 0; }
+  .ag-horas { font-size: 0.65rem; color: #6B6259; }
+  .ag-horas div { height: 48px; text-align: right; padding-right: 4px; }
+  .ag-coluna { position: relative; border-left: 1px solid #EFECE6; }
+  .ag-evento { position: absolute; left: 2px; right: 2px; width: auto !important; padding: 3px 5px; border: none; border-radius: 8px; text-align: left; font-size: 0.72rem; font-weight: 600; overflow: hidden; display: flex; flex-direction: column; line-height: 1.2; }
+  .ag-evento small { font-weight: 400; font-size: 0.62rem; opacity: 0.9; }
+  .ag-form { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
+  .ag-linha { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 0.4rem; }
+  .ag-linha input { margin-bottom: 0; padding: 0.6rem 0.7rem; font-size: 0.9rem; min-width: 0; }
+  .chip.cor { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid transparent; }
+  .chip.cor.ativo { outline: 2px solid #2B2420; outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -275,7 +292,7 @@
     if (!b) {
       b = document.createElement("div");
       b.id = "erro-banner";
-      b.style.cssText = "position:fixed;left:8px;right:8px;bottom:8px;background:#DD4E28;color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;z-index:99;";
+      b.style.cssText = "position:fixed;left:8px;right:8px;bottom:8px;background:#D81A67;color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;z-index:99;";
       b.onclick = () => b.remove();
       document.body.appendChild(b);
     }
@@ -319,7 +336,7 @@
 
   const SECOES = [
     { id: "geral", nome: "Geral", icone: ICONES.grade },
-    { id: "bora", nome: "Bora ver", icone: ICONES.estrela },
+    { id: "bora", nome: "Meu Dia", icone: ICONES.estrela },
     { id: "pessoal", nome: "Pessoal", icone: ICONES.coracao },
     { id: "estudos", nome: "Estudos", icone: ICONES.livro },
     { id: "treinos", nome: "Treinos", icone: ICONES.halter },
@@ -487,12 +504,18 @@
 
     const voltar = "<button class='voltar' id='voltar'>← Voltar</button>";
     if (secao.id === "geral") {
-      main.innerHTML = voltar +
-        "<h2>Geral</h2>" +
-        "<p class='sub'>Visão do planner inteiro. Habit tracker e outras informações serão definidos depois.</p>";
+      main.innerHTML = voltar + "<div id='geral'></div>";
+      const g = document.getElementById("geral");
+      g.onclick = tratarCliqueGeral;
+      g.oninput = tratarEntradaGeral;
+      g.onchange = tratarEntradaGeral;
+      G.offset = 0;
+      G.formAberto = false;
+      renderGeral();
+      carregarCompromissos().then(() => renderGeral());
     } else if (secao.id === "bora") {
       main.innerHTML = voltar +
-        "<h2>Bora ver</h2>" +
+        "<h2>Meu Dia</h2>" +
         "<p class='sub'>Sua organização de tarefas do dia, da semana e do mês. Será programada depois. Por enquanto, a lista abaixo é só um teste de sincronização.</p>" +
         "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
         "<div id='status'></div><ul id='lista'></ul>";
@@ -548,6 +571,155 @@
       if (st) st.textContent = "Erro ao carregar: " + e.message;
     });
   }
+
+  // ---------- aba Geral: agenda semanal ----------
+  const G = { offset: 0, compromissos: [], formAberto: false, rascunho: null };
+  const CORES_AGENDA = [
+    { fundo: "#FAD2E1", texto: "#770523" },
+    { fundo: "#770523", texto: "#FFFFFF" },
+    { fundo: "#D0D996", texto: "#2B2420" },
+    { fundo: "#D81A67", texto: "#FFFFFF" }
+  ];
+  const HORA_INICIO = 7, HORA_FIM = 23, PX_HORA = 48;
+
+  function minutos(hhmm) {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  async function carregarCompromissos() {
+    try {
+      const snap = await colecao("compromissos").get();
+      G.compromissos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      mostrarErro(e.message);
+    }
+  }
+
+  function renderGeral() {
+    const el = document.getElementById("geral");
+    if (!el) return;
+    const ini = inicioSemana(somar(hojeISO(), G.offset * 7));
+    const dias = [0, 1, 2, 3, 4, 5, 6].map(k => somar(ini, k));
+    const fim = somar(ini, 6);
+    const hoje = hojeISO();
+
+    let h = "<div id='agenda'>" +
+      "<div class='agenda-topo'><h2>Geral</h2><button class='icone' data-acao='agenda-novo' aria-label='Novo compromisso'>+</button></div>" +
+      "<div class='nav'><button class='icone' data-acao='agenda-nav' data-d='-1' aria-label='Semana anterior'>‹</button>" +
+        "<strong>" + dataCurta(ini) + " a " + dataCurta(fim) + "</strong>" +
+        "<button class='icone' data-acao='agenda-nav' data-d='1' aria-label='Próxima semana'>›</button></div>";
+
+    if (G.formAberto && G.rascunho) h += htmlFormCompromisso();
+
+    h += "<div class='agenda-grade'>";
+    h += "<div></div>";
+    dias.forEach(d => {
+      h += "<div class='ag-dia-cab" + (d === hoje ? " hoje" : "") + "'><small>" + NOMES[diaSemana(d)] + "</small><b>" + dePara(d).getDate() + "</b></div>";
+    });
+    h += "<div class='ag-horas'>";
+    for (let k = HORA_INICIO; k < HORA_FIM; k++) h += "<div>" + k + "h</div>";
+    h += "</div>";
+    const alturaTotal = (HORA_FIM - HORA_INICIO) * PX_HORA;
+    dias.forEach(d => {
+      const evs = G.compromissos.filter(c => c.dataISO === d);
+      h += "<div class='ag-coluna' style='height:" + alturaTotal + "px'>" + evs.map(c => {
+        const top = (minutos(c.inicio) - HORA_INICIO * 60) * PX_HORA / 60;
+        const altura = Math.max(24, (minutos(c.fim) - minutos(c.inicio)) * PX_HORA / 60);
+        const cor = CORES_AGENDA[c.cor] || CORES_AGENDA[0];
+        return "<button class='ag-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + altura + "px;background:" + cor.fundo + ";color:" + cor.texto + "'>" +
+          "<span>" + esc(c.titulo) + "</span><small>" + c.inicio + "–" + c.fim + "</small></button>";
+      }).join("") + "</div>";
+    });
+    h += "</div></div>";
+    el.innerHTML = h;
+  }
+
+  function htmlFormCompromisso() {
+    const r = G.rascunho;
+    return "<div class='ag-form'>" +
+      "<input placeholder='Título do compromisso' data-campo='ag-titulo' value='" + esc(r.titulo) + "'>" +
+      "<div class='ag-linha'>" +
+        "<input type='date' data-campo='ag-data' value='" + r.dataISO + "'>" +
+        "<input type='time' data-campo='ag-inicio' value='" + r.inicio + "'>" +
+        "<input type='time' data-campo='ag-fim' value='" + r.fim + "'>" +
+      "</div>" +
+      "<div class='chips'>" + CORES_AGENDA.map((c, k) =>
+        "<button class='chip cor" + (r.cor === k ? " ativo" : "") + "' data-acao='ag-cor' data-i='" + k + "' style='background:" + c.fundo + ";border-color:" + c.fundo + "' aria-label='Cor " + (k + 1) + "'></button>"
+      ).join("") + "</div>" +
+      "<div id='ag-status' class='status'></div>" +
+      "<div class='centro'><button class='secundario' data-acao='ag-cancelar'>Cancelar</button><button class='grande' data-acao='ag-salvar'>Salvar</button></div>" +
+    "</div>";
+  }
+
+  async function tratarCliqueGeral(e) {
+    try {
+      const el = e.target.closest("[data-acao]");
+      if (!el) return;
+      const a = el.dataset.acao;
+      if (a === "agenda-nav") { G.offset += Number(el.dataset.d); renderGeral(); }
+      else if (a === "agenda-novo") {
+        G.formAberto = true;
+        G.rascunho = { titulo: "", dataISO: hojeISO(), inicio: "08:00", fim: "09:00", cor: 0 };
+        renderGeral();
+      }
+      else if (a === "ag-cancelar") { G.formAberto = false; renderGeral(); }
+      else if (a === "ag-cor") { G.rascunho.cor = Number(el.dataset.i); renderGeral(); }
+      else if (a === "ag-salvar") await salvarCompromisso();
+      else if (a === "agenda-evento") await excluirCompromisso(el.dataset.id);
+    } catch (err) {
+      mostrarErro(err.message);
+    }
+  }
+
+  function tratarEntradaGeral(e) {
+    const d = e.target.dataset;
+    if (!G.rascunho) return;
+    if (d.campo === "ag-titulo") G.rascunho.titulo = e.target.value;
+    else if (d.campo === "ag-data") G.rascunho.dataISO = e.target.value;
+    else if (d.campo === "ag-inicio") G.rascunho.inicio = e.target.value;
+    else if (d.campo === "ag-fim") G.rascunho.fim = e.target.value;
+  }
+
+  async function salvarCompromisso() {
+    const r = G.rascunho;
+    const st = document.getElementById("ag-status");
+    if (!r.titulo.trim()) { if (st) st.textContent = "Dê um título ao compromisso."; return; }
+    if (!r.dataISO || !r.inicio || !r.fim || minutos(r.fim) <= minutos(r.inicio)) {
+      if (st) st.textContent = "Confira o horário: o fim deve ser depois do início.";
+      return;
+    }
+    const obj = { titulo: r.titulo.trim(), dataISO: r.dataISO, inicio: r.inicio, fim: r.fim, cor: r.cor };
+    try {
+      const ref = await colecao("compromissos").add(obj);
+      G.compromissos.push({ id: ref.id, ...obj });
+      G.formAberto = false;
+      G.rascunho = null;
+      renderGeral();
+    } catch (err) {
+      if (st) st.textContent = "Erro ao salvar: " + err.message;
+    }
+  }
+
+  async function excluirCompromisso(id) {
+    if (!id) return;
+    if (!confirm("Excluir este compromisso?")) return;
+    try {
+      await colecao("compromissos").doc(id).delete();
+      G.compromissos = G.compromissos.filter(c => c.id !== id);
+      renderGeral();
+    } catch (err) {
+      mostrarErro(err.message);
+    }
+  }
+
+  // Ao clicar fora da agenda, volta para a semana atual
+  document.addEventListener("click", e => {
+    if (secaoAtual !== "geral" || G.offset === 0) return;
+    if (e.target.closest && (e.target.closest("[data-acao='agenda-nav']") || e.target.closest("#agenda"))) return;
+    G.offset = 0;
+    renderGeral();
+  });
 
   // ---------- treinos: tela ----------
   function renderTreinos() {
@@ -778,7 +950,7 @@
     const centro = meta ? feitos + "/" + meta : String(feitos);
     return "<svg viewBox='0 0 120 120' width='150' height='150' style='display:block;margin:0 auto' role='img' aria-label='Progresso: " + centro + " " + rotulo + "'>" +
       "<circle cx='60' cy='60' r='50' fill='none' stroke='#EFECE6' stroke-width='12'/>" +
-      "<circle cx='60' cy='60' r='50' fill='none' stroke='#DD4E28' stroke-width='12' stroke-linecap='round' stroke-dasharray='" + (pct * C) + " " + C + "' transform='rotate(-90 60 60)'/>" +
+      "<circle cx='60' cy='60' r='50' fill='none' stroke='#D81A67' stroke-width='12' stroke-linecap='round' stroke-dasharray='" + (pct * C) + " " + C + "' transform='rotate(-90 60 60)'/>" +
       "<text x='60' y='62' text-anchor='middle' font-size='20' font-weight='600' fill='#2B2420'>" + centro + "</text>" +
       "<text x='60' y='80' text-anchor='middle' font-size='10' fill='#6B6259'>" + rotulo + "</text>" +
     "</svg>";
