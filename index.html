@@ -174,10 +174,10 @@
     .voltar { display: none; }
   }
   @media (max-width: 719px) {
-    .menu { flex-direction: row; overflow-x: auto; gap: 0.4rem; padding: 0.5rem; background: #EEEEEC; }
+    .menu { flex-direction: row; overflow-x: auto; gap: 0.4rem; padding: 0.5rem; background: #FFFFFF; }
     .menu-topo { display: none; }
-    .item { width: auto; flex-shrink: 0; border: 1px solid #E7E5E4; background: #FFFFFF; border-radius: 999px; padding: 0.45rem 0.8rem; font-size: 0.8rem; }
-    .item.ativo { border-color: var(--blood); box-shadow: none; }
+    .item { width: auto; flex-shrink: 0; border: none; background: var(--fuchsia); color: #FFFFFF; border-radius: 999px; padding: 0.45rem 0.8rem; font-size: 0.8rem; font-weight: 600; }
+    .item.ativo { background: var(--burgundy); box-shadow: none; }
     .item.sair { width: auto; margin-top: 0; }
   }
 
@@ -255,6 +255,10 @@
 
   .descanso .ajuste { display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
   .descanso .ajuste button { width: auto; padding: 0.4rem 0.8rem; background: transparent; color: #FFFFFF; border: 2px solid #FFFFFF; }
+
+  .chips { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .chip { width: auto; padding: 0.4rem 0.75rem; background: #FFFFFF; color: #2B2420; border: 1px solid #D6D3CE; font-size: 0.85rem; }
+  .chip.ativo { background: var(--burgundy); color: #FFFFFF; border-color: var(--burgundy); }
 </style>
 </head>
 <body>
@@ -380,7 +384,7 @@
   // ---------- consultas ----------
   function treinoDoDia(iso) {
     if (T.trocas[iso]) return T.treinos.find(t => t.id === T.trocas[iso]) || null;
-    return T.treinos.find(t => t.diaSugerido !== null && t.diaSugerido !== undefined && Number(t.diaSugerido) === diaSemana(iso)) || null;
+    return T.treinos.find(t => (t.diasSugeridos || []).includes(diaSemana(iso))) || null;
   }
   const sessoesDoDia = iso => T.sessoes.filter(s => s.dataISO === iso);
   const contarEntre = (ini, fim) => T.sessoes.filter(s => s.dataISO >= ini && s.dataISO <= fim).length;
@@ -396,7 +400,9 @@
       ]);
       T.treinos = tr.docs.map(d => {
         const dados = d.data();
-        return { id: d.id, ...dados, exercicios: (dados.exercicios || []).map(ex => ({ ...ex, tipo: "total" })) };
+        const dias = Array.isArray(dados.diasSugeridos) ? dados.diasSugeridos.map(Number)
+          : (dados.diaSugerido !== null && dados.diaSugerido !== undefined ? [Number(dados.diaSugerido)] : []);
+        return { id: d.id, ...dados, diasSugeridos: dias, exercicios: (dados.exercicios || []).map(ex => ({ ...ex, tipo: "total" })) };
       });
       T.ultimas = {};
       ul.forEach(d => { T.ultimas[d.id] = d.data(); });
@@ -839,7 +845,7 @@
       (T.treinos.length
         ? T.treinos.map(t =>
             "<div class='linha-treino'><button class='treino-item' data-acao='editar-treino' data-id='" + t.id + "'><span>" + esc(t.nome) + "</span><small>" +
-            (t.diaSugerido === null || t.diaSugerido === undefined ? "Sem dia" : NOMES_LONGOS[Number(t.diaSugerido)]) +
+            ((t.diasSugeridos || []).length ? t.diasSugeridos.map(d => NOMES[d]).join(", ") : "Sem dia") +
             "</small></button><button class='excluir' data-acao='excluir-lista' data-id='" + t.id + "' aria-label='Excluir treino'>" + ICONES.lixeira + "</button></div>").join("")
         : "<p class='vazio'>Nenhum treino cadastrado ainda.</p>") +
       "<button data-acao='novo-treino'>+ Novo treino</button>" +
@@ -850,10 +856,10 @@
     const e = T.editor;
     let h = "<h2>" + (e.id ? "Editar treino" : "Novo treino") + "</h2>" +
       "<input placeholder='Nome do treino (ex.: Costas e bíceps)' data-campo='nome' value='" + esc(e.nome) + "'>" +
-      "<label>Qual dia você pretende fazer?</label>" +
-      "<select data-campo='dia'><option value=''>Sem dia</option>" +
-        NOMES_LONGOS.map((n, i) => "<option value='" + i + "'" + (e.diaSugerido !== null && Number(e.diaSugerido) === i ? " selected" : "") + ">" + n + "</option>").join("") +
-      "</select>" +
+      "<label>Quais dias você pretende fazer?</label>" +
+      "<div class='chips'>" +
+        NOMES.map((n, i) => "<button class='chip" + ((e.diasSugeridos || []).includes(i) ? " ativo" : "") + "' data-acao='dia-treino' data-i='" + i + "'>" + n + "</button>").join("") +
+      "</div>" +
       "<label>Exercícios</label>";
 
     e.exercicios.forEach((ex, i) => {
@@ -965,7 +971,7 @@
       case "fechar-editor": T.editorTipo = null; T.editor = null; renderTreinos(); break;
       case "voltar-lista": T.editorTipo = "lista"; T.editor = null; renderTreinos(); break;
       case "novo-treino":
-        T.editor = { id: null, nome: "", diaSugerido: null, exercicios: [] };
+        T.editor = { id: null, nome: "", diasSugeridos: [], exercicios: [] };
         T.editorTipo = "treino";
         renderTreinos();
         break;
@@ -974,6 +980,12 @@
         if (!t) break;
         T.editor = JSON.parse(JSON.stringify(t));
         T.editorTipo = "treino";
+        renderTreinos();
+        break;
+      }
+      case "dia-treino": {
+        const lista = T.editor.diasSugeridos || [];
+        T.editor.diasSugeridos = lista.includes(i) ? lista.filter(x => x !== i) : lista.concat([i]);
         renderTreinos();
         break;
       }
@@ -1035,7 +1047,6 @@
     switch (d.campo) {
       case "descricao": T.descricao = e.target.value; break;
       case "nome": if (T.editor) T.editor.nome = e.target.value; break;
-      case "dia": if (T.editor) T.editor.diaSugerido = e.target.value === "" ? null : Number(e.target.value); break;
       case "exNome": if (T.editor) T.editor.exercicios[i].nome = e.target.value; break;
       case "exSeries": if (T.editor) T.editor.exercicios[i].series = e.target.value; break;
       case "exReps": if (T.editor) T.editor.exercicios[i].reps = e.target.value; break;
@@ -1118,7 +1129,7 @@
     if (!nome) { if (st) st.textContent = "Dê um nome ao treino."; return; }
     const limpo = {
       nome: nome,
-      diaSugerido: e.diaSugerido === null || e.diaSugerido === undefined || e.diaSugerido === "" ? null : Number(e.diaSugerido),
+      diasSugeridos: (e.diasSugeridos || []).slice().sort((a, b) => a - b),
       exercicios: e.exercicios
         .filter(x => (x.nome || "").trim() !== "")
         .map(x => ({ nome: x.nome.trim(), series: x.series || "", reps: x.reps || "", tipo: "total" }))
