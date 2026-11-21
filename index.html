@@ -140,7 +140,7 @@
   .barra-meta div { height: 100%; background: var(--blood); border-radius: 999px; }
   .meta-bloco { margin: 0.6rem 0 1rem; }
   .meta-bloco p { margin: 0 0 0.2rem; }
-  .lin-edit { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr auto; gap: 0.4rem; margin-bottom: 0.5rem; align-items: center; }
+  .lin-edit { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.4rem; margin-bottom: 0.5rem; align-items: center; }
   .lin-edit input, .lin-edit select { margin-bottom: 0; padding: 0.6rem 0.8rem; }
   .calendario { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
   .cal-cab { font-size: 0.75rem; text-align: center; color: #6B6259; padding: 4px 0; }
@@ -252,6 +252,9 @@
   .descanso { background: var(--blood); color: #FFFFFF; border: none; }
   .descanso strong { font-size: 2.4rem; color: #FFFFFF; font-variant-numeric: tabular-nums; }
   .descanso button { border-color: #FFFFFF; color: #FFFFFF; }
+
+  .descanso .ajuste { display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .descanso .ajuste button { width: auto; padding: 0.4rem 0.8rem; background: transparent; color: #FFFFFF; border: 2px solid #FFFFFF; }
 </style>
 </head>
 <body>
@@ -391,7 +394,10 @@
         colecao("trocas").get(),
         colecao("config").doc("metas").get()
       ]);
-      T.treinos = tr.docs.map(d => ({ id: d.id, ...d.data() }));
+      T.treinos = tr.docs.map(d => {
+        const dados = d.data();
+        return { id: d.id, ...dados, exercicios: (dados.exercicios || []).map(ex => ({ ...ex, tipo: "total" })) };
+      });
       T.ultimas = {};
       ul.forEach(d => { T.ultimas[d.id] = d.data(); });
       T.sessoes = ss.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -701,11 +707,16 @@
     const t = T.treinoHoje;
     let h = "<h2>" + esc(t.nome) + "</h2><div class='cronometro'><small>tempo de treino</small><strong id='tempo'></strong></div>";
     if (T.descanso) {
-      h += "<div class='descanso'>Descanso<strong id='descanso'></strong><button data-acao='pular'>Pular descanso</button></div>";
+      h += "<div class='descanso'>Descanso<strong id='descanso'></strong><div class='ajuste'><button data-acao='descanso-menos'>−15 s</button><button data-acao='descanso-mais'>+15 s</button><button data-acao='pular'>Pular</button></div></div>";
     }
     h += t.exercicios.map((ex, i) => cardExercicio(ex, i)).join("");
     h += "<div class='centro'><button class='grande' data-acao='finalizar'>Finalizar treino</button></div>";
     return h;
+  }
+
+  function descansoPadrao() {
+    const v = Number(T.metas.descanso);
+    return v > 0 ? v : 60;
   }
 
   function numSeries(ex, i) {
@@ -850,10 +861,6 @@
         "<input placeholder='Exercício' data-campo='exNome' data-i='" + i + "' value='" + esc(ex.nome) + "'>" +
         "<input type='number' placeholder='Séries' data-campo='exSeries' data-i='" + i + "' value='" + esc(ex.series) + "'>" +
         "<input type='number' placeholder='Reps' data-campo='exReps' data-i='" + i + "' value='" + esc(ex.reps) + "'>" +
-        "<select data-campo='exTipo' data-i='" + i + "'>" +
-          "<option value='total'" + (ex.tipo !== "lado" ? " selected" : "") + ">Total</option>" +
-          "<option value='lado'" + (ex.tipo === "lado" ? " selected" : "") + ">Por lado</option>" +
-        "</select>" +
         "<button class='excluir' data-acao='ex-del' data-i='" + i + "'>×</button>" +
       "</div>";
     });
@@ -875,6 +882,8 @@
       "<input type='number' inputmode='numeric' placeholder='Ex.: 4' data-campo='meta' data-chave='semanal' value='" + (r.semanal ?? "") + "'>" +
       "<label>Treinos no ano</label>" +
       "<input type='number' inputmode='numeric' placeholder='Ex.: 150' data-campo='meta' data-chave='anual' value='" + (r.anual ?? "") + "'>" +
+      "<label>Descanso padrão (segundos)</label>" +
+      "<input type='number' inputmode='numeric' placeholder='60' data-campo='meta' data-chave='descanso' value='" + (r.descanso ?? "") + "'>" +
       "<div id='treino-status' class='status'></div>" +
       "<div class='centro'>" +
         "<button class='secundario' data-acao='fechar-editor'>Cancelar</button>" +
@@ -933,7 +942,7 @@
         const serie = T.series[i] && T.series[i][j];
         if (!serie) break;
         serie.feito = !serie.feito;
-        if (serie.feito) T.descanso = { fim: Date.now() + 60000 };
+        if (serie.feito) T.descanso = { fim: Date.now() + descansoPadrao() * 1000 };
         renderTreinos();
         break;
       }
@@ -944,6 +953,8 @@
         break;
       }
       case "pular": T.descanso = null; renderTreinos(); break;
+      case "descanso-mais": if (T.descanso) { T.descanso.fim += 15000; renderTreinos(); } break;
+      case "descanso-menos": if (T.descanso) { T.descanso.fim = Math.max(Date.now() + 1000, T.descanso.fim - 15000); renderTreinos(); } break;
       case "finalizar": await finalizarTreino(); break;
       case "registrar-abrir": T.registrando = true; renderTreinos(); break;
       case "registrar-cancelar": T.registrando = false; renderTreinos(); break;
@@ -1110,7 +1121,7 @@
       diaSugerido: e.diaSugerido === null || e.diaSugerido === undefined || e.diaSugerido === "" ? null : Number(e.diaSugerido),
       exercicios: e.exercicios
         .filter(x => (x.nome || "").trim() !== "")
-        .map(x => ({ nome: x.nome.trim(), series: x.series || "", reps: x.reps || "", tipo: x.tipo === "lado" ? "lado" : "total" }))
+        .map(x => ({ nome: x.nome.trim(), series: x.series || "", reps: x.reps || "", tipo: "total" }))
     };
     try {
       let id = e.id;
@@ -1157,7 +1168,7 @@
     const r = T.metaRascunho;
     const st = document.getElementById("treino-status");
     const num = v => (v === "" || v === null || v === undefined) ? null : Number(v);
-    const obj = { semanal: num(r.semanal), anual: num(r.anual), ano: new Date().getFullYear() };
+    const obj = { semanal: num(r.semanal), anual: num(r.anual), ano: new Date().getFullYear(), descanso: num(r.descanso) || 60 };
     try {
       await colecao("config").doc("metas").set(obj);
       T.metas = obj;
