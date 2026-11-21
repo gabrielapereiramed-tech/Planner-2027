@@ -338,7 +338,7 @@
   .md-evento-topo { display: flex; flex-direction: column; margin-bottom: 0.3rem; }
   .md-evento-topo small { color: #6B6259; font-size: 0.75rem; }
   .md-evento .tarefa-linha { font-size: 0.9rem; }
-  .md-evento .bolinha { width: 26px !important; height: 26px; }
+  .md-evento .bolinha { width: var(--b, 22px) !important; height: var(--b, 22px) !important; }
   .md-evento .bolinha svg { width: 14px; height: 14px; }
 
   .cor-linha { display: flex; gap: 0.4rem; align-items: center; margin: 0.3rem 0 0.6rem; }
@@ -368,7 +368,7 @@
   .md-tarefas { display: grid; grid-template-columns: 1fr; gap: 2px 12px; }
   .md-tarefas.duas { grid-template-columns: 1fr 1fr; }
   .md-evento .tarefa-linha { font-size: 0.78rem; padding: 2px 0; }
-  .md-evento .bolinha { width: 22px !important; height: 22px; }
+  .md-evento .bolinha { width: var(--b, 22px) !important; height: var(--b, 22px) !important; min-width: 0; flex-shrink: 0; border-radius: 50%; padding: 0; }
   .md-evento .bolinha svg { width: 12px; height: 12px; }
   .md-evento-topo strong { font-size: 0.95rem; }
 
@@ -386,6 +386,8 @@
   .md-evento-topo.curto { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 0.4rem; }
   .md-evento-topo.curto small { font-size: 0.72rem; }
   .md-evento .bolinha svg { width: 60%; height: 60%; }
+
+  .legenda-acoes { display: flex; gap: 0.4rem; }
 </style>
 </head>
 <body>
@@ -709,7 +711,7 @@
   }
 
   // ---------- aba Geral (agenda semanal) e Meu Dia (agenda diária) ----------
-  const G = { offset: 0, compromissos: [], legenda: [], formAberto: false, rascunho: null, novaLegenda: { nome: "", cor: "#D81A67" }, editandoLegenda: false };
+  const G = { offset: 0, compromissos: [], legenda: [], formAberto: false, rascunho: null, novaLegenda: { nome: "", cor: "#D81A67" }, editandoLegenda: false, novaCorAberta: false };
   const MD = { dia: null, vindoDaAgenda: false };
   const LEGENDA_PADRAO = [
     { id: "rosa", nome: "Rosa", cor: "#FAD2E1" },
@@ -906,6 +908,12 @@
     renderCaixa();
   }
 
+  function tintar(hex, p) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    const m = c => Math.round(c + (255 - c) * p).toString(16).padStart(2, "0");
+    return "#" + m(r) + m(g) + m(b);
+  }
+
   function corTextoLegivel(hex) {
     const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
     const yiq = (r * 299 + g * 587 + b * 114) / 1000;
@@ -929,12 +937,12 @@
       const curto = alt < 64;
       const tarefas = (c.tarefas || []).map((t, i) =>
         "<div class='tarefa-linha'><button class='bolinha" + (t.feita ? " feita" : "") + "' data-acao='tarefa-marcar' data-cid='" + c.id + "' data-i='" + i + "' style='" +
-          "width:" + bolinha + "px;height:" + bolinha + "px;" +
+          "--b:" + bolinha + "px;" +
           (t.feita ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
           "' aria-label='Marcar tarefa'>" + (t.feita ? ICONE_CHECK : "") + "</button>" +
           "<span class='" + (t.feita ? "riscado" : "") + "'>" + esc(t.texto) + "</span></div>"
       ).join("");
-      return "<div class='md-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + alt + "px;border-color:" + cor + "'>" +
+      return "<div class='md-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + alt + "px;border-color:" + cor + ";background:" + tintar(cor, 0.85) + "'>" +
         "<div class='md-evento-topo" + (curto ? " curto" : "") + "'><strong style='color:" + corTextoLegivel(cor) + "'>" + esc(c.titulo) + "</strong><small>" + c.inicio + "–" + c.fim + "</small></div>" +
         "<div class='md-tarefas" + (n >= 2 ? " duas" : "") + "' style='font-size:" + fontePx + "px'>" + tarefas + "</div></div>";
     }).join("");
@@ -995,13 +1003,15 @@
         "<input type='time' data-campo='ag-inicio' value='" + r.inicio + "'>" +
         "<input type='time' data-campo='ag-fim' value='" + r.fim + "'>" +
       "</div>" +
-      "<div class='legenda-cab'><label>Legenda de cores</label><button class='secundario' data-acao='leg-editar'>" + (G.editandoLegenda ? "Pronto" : "Editar legenda") + "</button></div>" +
+      "<div class='legenda-cab'><label>Legenda de cores</label><div class='legenda-acoes'>" +
+        "<button class='btn-lapis' data-acao='leg-nova' aria-label='Adicionar cor nova'>+</button>" +
+        "<button class='btn-lapis' data-acao='leg-editar' aria-label='Editar legenda'>" + ICONES.lapis + "</button></div></div>" +
       legenda +
       htmlSeletorCor("ag", r.cor, null) +
-      (G.editandoLegenda ? "" :
+      (G.novaCorAberta && !G.editandoLegenda ?
         "<div class='ag-linha nova-cor'><input placeholder='Nome da nova cor' data-campo='leg-nome' value='" + esc(nova.nome) + "'>" +
         "<button class='secundario' data-acao='leg-salvar'>Adicionar cor</button></div>" +
-        htmlSeletorCor("nova", nova.cor, null)) +
+        htmlSeletorCor("nova", nova.cor, null) : "") +
       (comTarefas ? "<label>Tarefas</label>" + tarefas + "<button class='secundario' data-acao='tarefa-add'>+ Tarefa</button>" : "") +
       "<div id='ag-status' class='status'></div>" +
       "<div class='centro'>" +
@@ -1048,6 +1058,7 @@
       else if (a === "ag-salvar") await salvarCompromisso();
       else if (a === "ag-excluir") await excluirCompromisso(el.dataset.id);
       else if (a === "leg-editar") { G.editandoLegenda = !G.editandoLegenda; renderAtual(); }
+      else if (a === "leg-nova") { G.novaCorAberta = !G.novaCorAberta; renderAtual(); }
       else if (a === "leg-salvar") await salvarNovaCor();
       else if (a === "leg-excluir") await excluirCor(el.dataset.id);
       else if (a === "tarefa-add") { r.tarefas.push({ texto: "", feita: false }); renderAtual(); }
@@ -1102,7 +1113,16 @@
     const r = G.rascunho;
     if (d.campo === "ag-titulo") r.titulo = e.target.value;
     else if (d.campo === "ag-data") r.dataISO = e.target.value;
-    else if (d.campo === "ag-inicio") r.inicio = e.target.value;
+    else if (d.campo === "ag-inicio") {
+      r.inicio = e.target.value;
+      if (/^\d{2}:\d{2}$/.test(r.inicio)) {
+        const [h, m] = r.inicio.split(":").map(Number);
+        const fimMin = Math.min(h * 60 + m + 60, 1439);
+        r.fim = String(Math.floor(fimMin / 60)).padStart(2, "0") + ":" + String(fimMin % 60).padStart(2, "0");
+        const campoFim = e.target.closest(".ag-linha").querySelector("[data-campo='ag-fim']");
+        if (campoFim) campoFim.value = r.fim;
+      }
+    }
     else if (d.campo === "ag-fim") r.fim = e.target.value;
     else if (d.campo === "tarefa-texto") r.tarefas[Number(d.i)].texto = e.target.value;
   }
