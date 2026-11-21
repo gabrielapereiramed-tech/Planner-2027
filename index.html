@@ -15,8 +15,8 @@
     --peony: #FAD2E1;
     --burgundy: #770523;
     --pistachio: #D0D996;
-    --fuchsia: #D81A67;
-    --blood: #D81A67;
+    --fuchsia: #770523;
+    --blood: #770523;
     --branco: #FFFFFF;
     color-scheme: light;
     padding-top: env(safe-area-inset-top, 0px);
@@ -48,11 +48,11 @@
     border-radius: 999px; background: var(--burgundy); color: var(--branco); cursor: pointer;
   }
   button.secundario { width: auto; padding: 0.6rem 1.1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
-  button.excluir { width: auto; padding: 0.4rem 0.75rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
+  button.excluir { width: auto; padding: 0.4rem 0.75rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
   button.icone { width: auto; padding: 0.3rem 0.8rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); font-size: 1.1rem; }
   button.grande { width: auto; padding: 0.9rem 2.2rem; }
-  #status { margin-top: 0.9rem; font-size: 0.9rem; min-height: 1.2em; color: var(--blood); }
-  .status { font-size: 0.9rem; min-height: 1.2em; color: var(--blood); margin: 0.4rem 0; }
+  #status { margin-top: 0.9rem; font-size: 0.9rem; min-height: 1.2em; color: var(--burgundy); }
+  .status { font-size: 0.9rem; min-height: 1.2em; color: var(--burgundy); margin: 0.4rem 0; }
 
   /* ---------- Login ---------- */
   .painel-login { display: flex; flex-direction: column; gap: 1.5rem; align-items: center; width: 100%; max-width: 980px; margin: 0 auto; }
@@ -73,7 +73,7 @@
     font-family: "Poppins", system-ui, sans-serif; font-weight: 400; font-size: 0.85rem;
   }
   .item svg { width: 18px; height: 18px; flex-shrink: 0; }
-  .item.ativo { background: #FFFFFF; box-shadow: inset 3px 0 0 var(--blood); }
+  .item.ativo { background: #FFFFFF; box-shadow: inset 3px 0 0 var(--burgundy); }
   .item.sair { background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); justify-content: center; margin-top: 0.5rem; }
   .conteudo { background: #FFFFFF; border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
   .voltar { display: none; }
@@ -85,13 +85,13 @@
     display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
     padding: 0.8rem 1rem; margin-bottom: 0.5rem; background: var(--pistachio); border-radius: 16px;
   }
-  li button { width: auto; padding: 0.3rem 0.75rem; font-size: 0.85rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
+  li button { width: auto; padding: 0.3rem 0.75rem; font-size: 0.85rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
   .vazio { text-align: center; opacity: 0.7; margin: 1rem 0 0; }
 
   /* ---------- Treinos ---------- */
   .abas { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
   .aba { width: auto; padding: 0.5rem 1.1rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); font-size: 0.95rem; }
-  .aba.ativo { background: var(--blood); color: var(--branco); border-color: var(--blood); }
+  .aba.ativo { background: var(--burgundy); color: var(--branco); border-color: var(--burgundy); }
   .semana { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; margin-bottom: 0.6rem; }
   .roleta { --gap: 0.3rem; display: flex; gap: var(--gap); width: 100%; max-width: 100%; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0.3rem 0 0.6rem; scrollbar-width: none; }
   .roleta::-webkit-scrollbar { display: none; }
@@ -102,10 +102,10 @@
   .dia small { font-size: 0.7rem; }
   .dia b { font-size: 1.05rem; font-weight: 600; }
   .dia i { display: block; height: 14px; }
-  .dia svg { width: 14px; height: 14px; color: var(--blood); }
+  .dia svg { width: 14px; height: 14px; color: var(--burgundy); }
   .dia.hoje { background: var(--pistachio); }
-  .dia.sel { background: transparent; color: #2B2420; outline: 2px solid var(--blood); outline-offset: -2px; }
-  .dia.sel svg { color: var(--blood); }
+  .dia.sel { background: transparent; color: #2B2420; outline: 2px solid var(--burgundy); outline-offset: -2px; }
+  .dia.sel svg { color: var(--burgundy); }
   .resumo { font-size: 0.95rem; margin: 0.4rem 0 0.8rem; }
   .painel-dia { margin-top: 0.5rem; }
   .prog { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin: 0.6rem 0; }
@@ -115,7 +115,7 @@
     border: 2px solid var(--peony); text-align: left; margin-bottom: 0.5rem; padding: 0.9rem 1.1rem;
   }
   .treino-item small { font-weight: 300; }
-  .descanso { background: var(--blood); color: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; text-align: center; margin: 0.6rem 0 1rem; }
+  .descanso { background: var(--burgundy); color: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; text-align: center; margin: 0.6rem 0 1rem; }
   .descanso strong { display: block; font-size: 1.8rem; margin: 0.2rem 0; }
   .descanso button { width: auto; padding: 0.4rem 1rem; background: transparent; border: 2px solid var(--branco); }
   .ex { background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
@@ -132,13 +132,13 @@
   .linha-ex { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.9rem; padding: 0.2rem 0; }
   .linha-dia { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.6rem 0; border-bottom: 1px solid var(--pistachio); font-size: 0.95rem; }
   .linha-dia .dir { display: flex; align-items: center; gap: 0.4rem; text-align: right; }
-  .linha-dia .dir svg { width: 16px; height: 16px; color: var(--blood); flex-shrink: 0; }
+  .linha-dia .dir svg { width: 16px; height: 16px; color: var(--burgundy); flex-shrink: 0; }
   .linha-dia em { opacity: 0.6; }
   .dia-sessao small { display: block; margin-bottom: 0.2rem; opacity: 0.7; }
   .nav { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin: 0.4rem 0 0.8rem; }
   .nav strong { font-weight: 600; text-align: center; }
   .barra-meta { height: 10px; background: var(--pistachio); border-radius: 999px; overflow: hidden; margin-top: 0.4rem; }
-  .barra-meta div { height: 100%; background: var(--blood); border-radius: 999px; }
+  .barra-meta div { height: 100%; background: var(--burgundy); border-radius: 999px; }
   .meta-bloco { margin: 0.6rem 0 1rem; }
   .meta-bloco p { margin: 0 0 0.2rem; }
   .lin-edit { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 0.4rem; margin-bottom: 0.5rem; align-items: center; }
@@ -147,12 +147,12 @@
   .cal-cab { font-size: 0.75rem; text-align: center; color: #6B6259; padding: 4px 0; }
   .cal-dia { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; padding: 6px 0; width: 100%; background: var(--branco); color: #2B2420; border: 1px solid #E7E5E4; border-radius: 10px; font-size: 0.9rem; font-weight: 500; }
   .cal-dia.hoje { background: var(--pistachio); }
-  .cal-dia.sel { background: var(--blood); color: var(--branco); border-color: var(--blood); }
+  .cal-dia.sel { background: var(--burgundy); color: var(--branco); border-color: var(--burgundy); }
   .cal-dia.sel svg { color: var(--branco); }
   .cal-dia i { display: block; height: 14px; }
-  .cal-dia svg { width: 14px; height: 14px; color: var(--blood); }
+  .cal-dia svg { width: 14px; height: 14px; color: var(--burgundy); }
   .detalhe-dia { margin-top: 1rem; }
-  .feito-card button.excluir-sessao { width: auto; margin-top: 0.6rem; padding: 0.4rem 0.9rem; font-size: 0.85rem; background: transparent; color: var(--blood); border: 2px solid var(--blood); }
+  .feito-card button.excluir-sessao { width: auto; margin-top: 0.6rem; padding: 0.4rem 0.9rem; font-size: 0.85rem; background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); }
   .detalhe-dia h3 { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; margin: 0 0 0.5rem; }
   .linha-treino { display: flex; gap: 0.5rem; align-items: center; }
   .linha-treino .treino-item { flex: 1; margin-bottom: 0.5rem; }
@@ -188,11 +188,11 @@
   .sub { font-size: 0.9rem; margin: 0.25rem 0 0.9rem; color: #6B6259; }
   .abas { gap: 1.5rem; border-bottom: 1px solid #E7E5E4; margin-bottom: 1.25rem; }
   .aba { width: auto; background: transparent; color: #6B6259; border: none; border-radius: 0; padding: 0.4rem 0; font-weight: 500; font-size: 0.95rem; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .aba.ativo { color: #2B2420; background: transparent; border-bottom-color: var(--blood); }
+  .aba.ativo { color: #2B2420; background: transparent; border-bottom-color: var(--burgundy); }
   .semana, .roleta { gap: 0.25rem; }
   .dia { border-radius: 12px; }
   .dia.hoje { background: #EEF2DA; }
-  .dia.sel { background: transparent; outline: 2px solid var(--blood); outline-offset: -2px; }
+  .dia.sel { background: transparent; outline: 2px solid var(--burgundy); outline-offset: -2px; }
   .dia.hoje.sel { background: #EEF2DA; }
   .prog, .ex, .feito-card, .treino-item, .treino-item, .descanso {
     border-radius: 14px;
@@ -217,9 +217,9 @@
   .feito-card .nome-feito { font-weight: 500; }
   .linha-dia { border-bottom: 1px solid #EFECE6; }
   .barra-meta { background: #EFECE6; }
-  .barra-meta div { background: var(--blood); }
+  .barra-meta div { background: var(--burgundy); }
   .descanso { background: #FFFFFF; color: #2B2420; border: 1px solid #E7E5E4; }
-  .descanso strong { color: var(--blood); }
+  .descanso strong { color: var(--burgundy); }
   .descanso button { border-color: #2B2420; color: #2B2420; }
   .vazio { color: #6B6259; }
 
@@ -238,11 +238,11 @@
   .bloco h3 { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; margin: 0 0 0.6rem; }
   .cal-dia.treinado { background: var(--pistachio); border-color: var(--pistachio); }
   .cal-dia.treinado svg { color: #2B2420; }
-  .cal-dia.hoje { border: 2px solid var(--blood); }
+  .cal-dia.hoje { border: 2px solid var(--burgundy); }
   .cal-dia div, .cal-dia { min-height: 52px; }
 
-  .cal-dia.hoje:not(.treinado) { background: #FFFFFF; border: 2px solid var(--blood); }
-  .cal-dia.hoje.treinado { border: 2px solid var(--blood); }
+  .cal-dia.hoje:not(.treinado) { background: #FFFFFF; border: 2px solid var(--burgundy); }
+  .cal-dia.hoje.treinado { border: 2px solid var(--burgundy); }
   .etiqueta { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--pistachio); color: #2B2420; border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.8rem; font-weight: 600; }
   .etiqueta svg { width: 14px; height: 14px; }
   .feito-card .nome-feito { font-weight: 600; font-size: 1rem; color: #1F1A17; }
@@ -250,7 +250,7 @@
   .cronometro { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 1rem; text-align: center; margin-bottom: 1rem; }
   .cronometro small { color: #6B6259; font-size: 0.85rem; }
   .cronometro strong { display: block; font-size: 2.6rem; font-weight: 600; color: #2B2420; font-variant-numeric: tabular-nums; }
-  .descanso { background: var(--blood); color: #FFFFFF; border: none; }
+  .descanso { background: var(--burgundy); color: #FFFFFF; border: none; }
   .descanso strong { font-size: 2.4rem; color: #FFFFFF; font-variant-numeric: tabular-nums; }
   .descanso button { border-color: #FFFFFF; color: #FFFFFF; }
 
@@ -360,7 +360,7 @@
   .cx-tipo { display: flex; gap: 0.4rem; margin-bottom: 0.6rem; }
   .cx-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid #EFECE6; }
   .cx-item span { flex: 1; }
-  .cx-item.gasto strong { color: #D81A67; }
+  .cx-item.gasto strong { color: #770523; }
   .cx-item.ganho strong { color: #2F5A0C; }
   .cx-item .excluir { width: auto; padding: 0.2rem 0.55rem; }
 
@@ -412,7 +412,7 @@
   .geral-topo > .bloco { margin-bottom: 0; }
   @media (max-width: 719px) { .geral-topo { grid-template-columns: 1fr; } }
   .calendario .cal-dia { min-height: 42px; padding: 4px 0; font-size: 0.8rem; background: #FFFFFF; }
-  .calendario .cal-dia.hoje { border: 2px solid var(--blood); }
+  .calendario .cal-dia.hoje { border: 2px solid var(--burgundy); }
   .pontinho { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--burgundy); margin: 0 auto; }
   .bolinha-cumprido { position: absolute; top: 6px; right: 6px; width: 20px !important; height: 20px !important; border-radius: 50%; border: 2px solid #D0D996; background: #FFFFFF; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; color: #2B2420; z-index: 3; min-width: 0; }
   .bolinha-cumprido.feita { background: #D0D996; }
@@ -467,6 +467,18 @@
   .barra-fundo.fina { height: 5px; }
   .barra-fundo.fina div { background: #D6D3CE; }
   .hab-anterior { font-size: 0.7rem; color: #6B6259; }
+
+  .calendario .cal-dia { position: relative; justify-content: center; }
+  .calendario .cal-dia > i:not(.pontinho) { display: none; }
+  .calendario .cal-dia .pontinho { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); }
+  .calendario .cal-dia.hoje { background: var(--burgundy); border: 2px solid var(--burgundy); color: #FFFFFF; }
+  .calendario .cal-dia.hoje .pontinho { background: #FFFFFF; }
+  .calendario .cal-dia.sel:not(.hoje) { border: 2px solid var(--burgundy); }
+  .lb-linha { display: flex; gap: 0.6rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #EFECE6; font-size: 0.9rem; }
+  .lb-linha > span:nth-child(2) { flex: 1; }
+  .lb-data { color: #6B6259; font-size: 0.8rem; min-width: 70px; }
+  .lb-linha .excluir { width: auto; padding: 0.2rem 0.55rem; }
+  .bloco h3 { margin: 0 0 0.6rem; }
 </style>
 </head>
 <body>
@@ -529,6 +541,7 @@
 
   const SECOES = [
     { id: "geral", nome: "Geral", icone: ICONES.grade },
+    { id: "lembretes", nome: "Lembretes", icone: ICONES.sino },
     { id: "bora", nome: "Meu Dia", icone: ICONES.estrela },
     { id: "pessoal", nome: "Habit Tracker", icone: ICONES.coracao },
     { id: "estudos", nome: "Estudos", icone: ICONES.livro },
@@ -712,6 +725,7 @@
       G.formAberto = false;
       renderGeral();
       carregarCompromissos().then(() => renderGeral());
+      carregarLembretes().then(() => renderGeral());
     } else if (secao.id === "bora") {
       main.innerHTML = voltar + "<h2>Meu Dia</h2><div id='meu-dia'></div>";
       const md = document.getElementById("meu-dia");
@@ -720,6 +734,14 @@
       md.onchange = tratarEntradaGeral;
       renderMeuDia();
       Promise.all([carregarNaoEsquecer(), carregarCaixa()]).then(() => renderMeuDia());
+    } else if (secao.id === "lembretes") {
+      main.innerHTML = voltar + "<div id='lembretes'></div>";
+      const lb = document.getElementById("lembretes");
+      lb.onclick = tratarCliqueLembretes;
+      lb.oninput = tratarEntradaLembretes;
+      lb.onchange = tratarEntradaLembretes;
+      renderLembretes();
+      carregarLembretes().then(renderLembretes);
     } else if (secao.id === "nao") {
       main.innerHTML = voltar + "<h2>Não esquecer</h2><div id='nao'></div>";
       const el = document.getElementById("nao");
@@ -997,7 +1019,8 @@
   }
 
   function renderAtual() {
-    if (secaoAtual === "bora") renderMeuDia();
+    if (secaoAtual === "lembretes") renderLembretes();
+    else if (secaoAtual === "bora") renderMeuDia();
     else if (secaoAtual === "pessoal") renderHabitTracker();
     else renderGeral();
   }
@@ -1102,7 +1125,7 @@
     const PX = pxParaTopo(el, 150);
     const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
 
-    let h = "<div class='geral-topo'>" + htmlMetasSemanal() +
+    let h = "<div class='geral-topo'>" + htmlLembretesResumo() +
       "<div class='bloco'><div class='habitos-topo'><div class='nav' style='margin:0;flex:1'>" +
         "<button class='icone' data-acao='cal-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
         "<strong>" + capitalizar(MESES[MC.mes]) + " de " + MC.ano + "</strong>" +
@@ -1194,6 +1217,7 @@
         return "<div class='habito'><button class='bolinha" + (feito ? " feita" : "") + "' data-acao='habito-marcar' data-id='" + hb.id + "' style='" +
           (feito ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
           "' aria-label='Marcar hábito'>" + (feito ? ICONE_CHECK : "") + "</button>" +
+          (hb.icone && ICONES_HABITO[hb.icone] ? "<span class='hab-icone' style='color:" + (hb.cor || "#770523") + "'>" + ICONES_HABITO[hb.icone] + "</span>" : "") +
           "<span class='" + (feito ? "riscado" : "") + "'>" + esc(hb.nome) + "</span>" +
 
         "</div>";
@@ -1794,6 +1818,131 @@
     if (d.campo === "ne-texto") NE.novoTexto = e.target.value;
     else if (d.campo === "cx-valor") CX.valor = e.target.value;
     else if (d.campo === "cx-desc") CX.descricao = e.target.value;
+  }
+
+  // ---------- Lembretes ----------
+  const LB = { ano: null, mes: null, dia: null, lista: [], formAberto: false, r: null };
+
+  async function carregarLembretes() {
+    try {
+      const snap = await colecao("lembretes").get();
+      LB.lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { mostrarErro(e.message); }
+  }
+
+  function lembretesOrdenados(lista) {
+    return lista.slice().sort((a, b) => (a.dataISO + (a.hora || "99:99")).localeCompare(b.dataISO + (b.hora || "99:99")));
+  }
+
+  function htmlLembretesResumo() {
+    const hoje = hojeISO();
+    const proximos = lembretesOrdenados(LB.lista.filter(x => x.dataISO >= hoje)).slice(0, 4);
+    return "<div class='bloco faixa faixa-metas'><div class='habitos-topo'><h3>Lembretes e prazos</h3></div>" +
+      (proximos.length
+        ? proximos.map(x => "<div class='lb-linha'><span class='lb-data'>" + dataCurta(x.dataISO) + (x.hora ? " · " + x.hora : "") + "</span><span>" + esc(x.titulo) + "</span></div>").join("")
+        : "<p class='vazio'>Nenhum lembrete próximo. Cadastre na aba Lembretes.</p>") +
+    "</div>";
+  }
+
+  function renderLembretes() {
+    const el = document.getElementById("lembretes");
+    if (!el) return;
+    if (LB.ano === null) { const h = new Date(); LB.ano = h.getFullYear(); LB.mes = h.getMonth(); LB.dia = hojeISO(); }
+    const primeiro = new Date(LB.ano, LB.mes, 1).getDay();
+    const dias = new Date(LB.ano, LB.mes + 1, 0).getDate();
+    const hoje = hojeISO();
+    let grade = NOMES.map(n => "<div class='cal-cab'>" + n.charAt(0) + "</div>").join("");
+    for (let k = 0; k < primeiro; k++) grade += "<div></div>";
+    for (let d = 1; d <= dias; d++) {
+      const iso = isoDe(new Date(LB.ano, LB.mes, d));
+      const tem = LB.lista.some(x => x.dataISO === iso);
+      grade += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + (iso === LB.dia ? " sel" : "") + "' data-acao='lb-dia' data-iso='" + iso + "'><span>" + d + "</span>" +
+        (tem ? "<i class='pontinho'></i>" : "<i></i>") + "</button>";
+    }
+    const doDia = lembretesOrdenados(LB.lista.filter(x => x.dataISO === LB.dia));
+    let form = "";
+    if (LB.formAberto && LB.r) {
+      const r = LB.r;
+      form = "<div class='ag-form'><h3>Novo lembrete</h3>" +
+        "<input placeholder='O que você não pode esquecer?' data-campo='lb-titulo' value='" + esc(r.titulo) + "'>" +
+        "<div class='ag-linha'><input type='date' data-campo='lb-data' value='" + r.dataISO + "'>" +
+        "<input type='time' data-campo='lb-hora' value='" + (r.hora || "") + "' aria-label='Horário (opcional)'></div>" +
+        "<label>Repetir</label><select data-campo='lb-rep-tipo'>" +
+          "<option value='nao'" + (r.repete === "nao" ? " selected" : "") + ">Não repete</option>" +
+          "<option value='semanal'" + (r.repete === "semanal" ? " selected" : "") + ">Toda semana</option>" +
+          "<option value='mensal'" + (r.repete === "mensal" ? " selected" : "") + ">Todo mês</option></select>" +
+        (r.repete === "semanal" ? "<div class='chips'>" + NOMES.map((n, i) => "<button class='chip" + ((r.diasSemana || []).includes(i) ? " ativo" : "") + "' data-acao='lb-rep-dia' data-i='" + i + "'>" + n + "</button>").join("") + "</div>" : "") +
+        (r.repete === "mensal" ? "<input type='number' inputmode='numeric' placeholder='Dia do mês' data-campo='lb-rep-dia-mes' value='" + (r.diaMes || "") + "'>" : "") +
+        (r.repete !== "nao" ? "<input type='number' inputmode='numeric' placeholder='Quantas vezes repete' data-campo='lb-rep-vezes' value='" + (r.vezes || "") + "'>" : "") +
+        "<div id='lb-status' class='status'></div>" +
+        "<div class='centro'><button class='secundario' data-acao='lb-cancelar'>Cancelar</button><button class='grande' data-acao='lb-salvar'>Salvar</button></div></div>";
+    }
+    el.innerHTML = "<div class='bloco'>" +
+      "<div class='habitos-topo'><div class='nav' style='margin:0;flex:1'>" +
+        "<button class='icone' data-acao='lb-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
+        "<strong>" + capitalizar(MESES[LB.mes]) + " de " + LB.ano + "</strong>" +
+        "<button class='icone' data-acao='lb-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
+        "<button class='btn-lapis' data-acao='lb-novo' aria-label='Novo lembrete'>+</button></div>" +
+      "<div class='calendario'>" + grade + "</div>" +
+    "</div>" + form +
+    "<div class='bloco'><h3>" + tituloDia(LB.dia) + "</h3>" +
+      (doDia.length ? doDia.map(x => "<div class='lb-linha'><span class='lb-data'>" + (x.hora || "sem horário") + "</span><span>" + esc(x.titulo) + (x.grupo ? " <small>(repete)</small>" : "") + "</span>" +
+        "<button class='excluir' data-acao='lb-excluir' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>").join("")
+        : "<p class='vazio'>Nenhum lembrete neste dia.</p>") +
+    "</div>";
+  }
+
+  async function tratarCliqueLembretes(e) {
+    try {
+      const el = e.target.closest("[data-acao]");
+      if (!el) return;
+      const a = el.dataset.acao;
+      const r = LB.r;
+      if (a === "lb-nav") { const m = LB.mes + Number(el.dataset.d); LB.ano += Math.floor(m / 12); LB.mes = ((m % 12) + 12) % 12; renderLembretes(); }
+      else if (a === "lb-dia") { LB.dia = el.dataset.iso; renderLembretes(); }
+      else if (a === "lb-novo") { LB.formAberto = true; LB.r = { titulo: "", dataISO: LB.dia || hojeISO(), hora: "", repete: "nao", diasSemana: [], diaMes: "", vezes: "" }; renderLembretes(); }
+      else if (a === "lb-cancelar") { LB.formAberto = false; LB.r = null; renderLembretes(); }
+      else if (a === "lb-rep-dia") { const i = Number(el.dataset.i); const l = r.diasSemana || []; r.diasSemana = l.includes(i) ? l.filter(x => x !== i) : l.concat([i]); renderLembretes(); }
+      else if (a === "lb-salvar") await salvarLembrete();
+      else if (a === "lb-excluir") {
+        if (!(await confirmar("Excluir este lembrete?"))) return;
+        await colecao("lembretes").doc(el.dataset.id).delete();
+        LB.lista = LB.lista.filter(x => x.id !== el.dataset.id);
+        renderLembretes();
+      }
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  function tratarEntradaLembretes(e) {
+    const d = e.target.dataset;
+    const r = LB.r;
+    if (!r) return;
+    if (d.campo === "lb-titulo") r.titulo = e.target.value;
+    else if (d.campo === "lb-data") r.dataISO = e.target.value;
+    else if (d.campo === "lb-hora") r.hora = e.target.value;
+    else if (d.campo === "lb-rep-dia-mes") r.diaMes = e.target.value;
+    else if (d.campo === "lb-rep-vezes") r.vezes = e.target.value;
+    else if (d.campo === "lb-rep-tipo" && e.type === "change") { r.repete = e.target.value; renderLembretes(); }
+  }
+
+  async function salvarLembrete() {
+    const r = LB.r;
+    const st = document.getElementById("lb-status");
+    if (!r.titulo.trim()) { if (st) st.textContent = "Escreva o lembrete."; return; }
+    if (!r.dataISO) { if (st) st.textContent = "Escolha a data."; return; }
+    const datas = ocorrencias({ dataISO: r.dataISO, repete: r.repete, diasSemana: r.diasSemana, diaMes: r.diaMes, vezes: r.vezes });
+    const grupo = datas.length > 1 ? "g" + Date.now() : null;
+    try {
+      for (const d of datas) {
+        const o = { titulo: r.titulo.trim(), dataISO: d, hora: r.hora || null };
+        if (grupo) o.grupo = grupo;
+        const ref = await colecao("lembretes").add(o);
+        LB.lista.push({ id: ref.id, ...o });
+      }
+      LB.formAberto = false;
+      LB.r = null;
+      renderLembretes();
+    } catch (err) { if (st) st.textContent = "Erro ao salvar: " + err.message; }
   }
 
   // ---------- lembretes de compromissos ----------
