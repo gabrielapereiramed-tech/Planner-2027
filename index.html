@@ -236,7 +236,7 @@
   .bloco h3 { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; margin: 0 0 0.6rem; }
   .cal-dia.treinado { background: var(--pistachio); border-color: var(--pistachio); }
   .cal-dia.treinado svg { color: #2B2420; }
-  .cal-dia.hoje span { text-decoration: underline; text-decoration-color: var(--blood); text-underline-offset: 3px; }
+  .cal-dia.hoje { border: 2px solid var(--blood); }
   .cal-dia div, .cal-dia { min-height: 52px; }
 </style>
 </head>
@@ -477,6 +477,7 @@
       el.onclick = tratarClique;
       el.oninput = tratarEntrada;
       el.onchange = tratarEntrada;
+      T.centralizar = true;
       renderTreinos();
       carregarTudo().then(() => renderTreinos());
     } else {
@@ -878,7 +879,7 @@
     const i = Number(el.dataset.i);
 
     switch (a) {
-      case "aba": T.aba = el.dataset.v; renderTreinos(); break;
+      case "aba": T.aba = el.dataset.v; T.centralizar = true; renderTreinos(); break;
       case "hist": T.hist = el.dataset.v; renderTreinos(); break;
       case "nav": {
         const d = Number(el.dataset.d);
