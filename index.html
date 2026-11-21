@@ -340,6 +340,29 @@
   .md-evento .tarefa-linha { font-size: 0.9rem; }
   .md-evento .bolinha { width: 26px !important; height: 26px; }
   .md-evento .bolinha svg { width: 14px; height: 14px; }
+
+  .cor-linha { display: flex; gap: 0.4rem; align-items: center; margin: 0.3rem 0 0.6rem; }
+  .cor-linha input[type=color] { width: 44px; height: 38px; padding: 0.15rem; margin-bottom: 0; border-radius: 10px; flex-shrink: 0; }
+  .cor-linha input.hex { margin-bottom: 0; padding: 0.55rem 0.7rem; font-family: monospace; flex: 1; min-width: 0; }
+  .ne-add { display: flex; gap: 0.4rem; margin-bottom: 0.8rem; }
+  .ne-add input { margin-bottom: 0; flex: 1; min-width: 0; }
+  .ne-add button { width: auto; }
+  .ne-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid #EFECE6; }
+  .ne-item span { flex: 1; }
+  .ne-item .excluir { width: auto; padding: 0.2rem 0.55rem; }
+  .cx-resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin: 0.6rem 0 1rem; }
+  .cx-card { border-radius: 14px; padding: 0.7rem; background: #FFFFFF; border: 1px solid #E7E5E4; }
+  .cx-card small { display: block; color: #6B6259; font-size: 0.75rem; }
+  .cx-card strong { font-size: 1.05rem; }
+  .cx-card.ganho { background: #D0D996; border-color: #D0D996; }
+  .cx-card.gasto { background: #FAD2E1; border-color: #FAD2E1; }
+  .cx-form { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
+  .cx-tipo { display: flex; gap: 0.4rem; margin-bottom: 0.6rem; }
+  .cx-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid #EFECE6; }
+  .cx-item span { flex: 1; }
+  .cx-item.gasto strong { color: #D81A67; }
+  .cx-item.ganho strong { color: #2F5A0C; }
+  .cx-item .excluir { width: auto; padding: 0.2rem 0.55rem; }
 </style>
 </head>
 <body>
@@ -398,10 +421,14 @@
 
   ICONES.lixeira = svg('<path d="M4 7 H20 M9 7 V4 H15 V7 M6 7 L7 20 H17 L18 7"/>');
 
+  ICONES.sino = svg('<path d="M6 16 V11 a6 6 0 0 1 12 0 V16 L19.5 18 H4.5 Z"/><path d="M10 20.5 a2 2 0 0 0 4 0"/>');
+
   const SECOES = [
     { id: "geral", nome: "Geral", icone: ICONES.grade },
     { id: "bora", nome: "Meu Dia", icone: ICONES.estrela },
+    { id: "nao", nome: "Não esquecer", icone: ICONES.sino },
     { id: "pessoal", nome: "Habit Tracker", icone: ICONES.coracao },
+    { id: "caixa", nome: "Caixa do dia", icone: ICONES.dinheiro },
     { id: "estudos", nome: "Estudos", icone: ICONES.livro },
     { id: "treinos", nome: "Treinos", icone: ICONES.halter },
     { id: "financeiro", nome: "Financeiro", icone: ICONES.dinheiro },
@@ -582,16 +609,29 @@
       renderGeral();
       carregarCompromissos().then(() => renderGeral());
     } else if (secao.id === "bora") {
-      main.innerHTML = voltar + "<h2>Meu Dia</h2><div id='meu-dia'></div>" +
-        "<div class='bloco'><h3>Teste de sincronização</h3>" +
-        "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
-        "<div id='status'></div><ul id='lista'></ul></div>";
+      main.innerHTML = voltar + "<h2>Meu Dia</h2><div id='meu-dia'></div>";
       const md = document.getElementById("meu-dia");
       md.onclick = tratarCliqueGeral;
       md.oninput = tratarEntradaGeral;
       md.onchange = tratarEntradaGeral;
       renderMeuDia();
-      ligarTeste();
+    } else if (secao.id === "nao") {
+      main.innerHTML = voltar + "<h2>Não esquecer</h2><div id='nao'></div>";
+      const el = document.getElementById("nao");
+      el.onclick = tratarCliqueSecoes;
+      el.oninput = tratarEntradaSecoes;
+      el.onchange = tratarEntradaSecoes;
+      renderNaoEsquecer();
+      carregarNaoEsquecer().then(renderNaoEsquecer);
+    } else if (secao.id === "caixa") {
+      main.innerHTML = voltar + "<h2>Caixa do dia</h2><div id='caixa'></div>";
+      const el = document.getElementById("caixa");
+      el.onclick = tratarCliqueSecoes;
+      el.oninput = tratarEntradaSecoes;
+      el.onchange = tratarEntradaSecoes;
+      CX.dia = hojeISO();
+      renderCaixa();
+      carregarCaixa().then(renderCaixa);
     } else if (secao.id === "treinos") {
       main.innerHTML = voltar + "<div id='treinos'></div>";
       const el = document.getElementById("treinos");
@@ -784,13 +824,26 @@
     el.innerHTML = h;
   }
 
+  function pxDoDia(evs, PX) {
+    const base = evs.length ? PX : 28;
+    let px = base;
+    evs.forEach(c => {
+      const dur = minutosFim(c.fim) - minutos(c.inicio);
+      const precisa = 72 + (c.tarefas || []).length * 48;
+      px = Math.max(px, Math.ceil(precisa * 60 / dur));
+    });
+    return px;
+  }
+
   function renderMeuDia() {
     const el = document.getElementById("meu-dia");
     if (!el) return;
     if (!MD.dia) MD.dia = hojeISO();
-    const PX = pxParaTopo(el, 170);
-    const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
+    const PXbase = pxParaTopo(el, 170);
     const evs = G.compromissos.filter(c => c.dataISO === MD.dia);
+    const PX = pxDoDia(evs, PXbase);
+    const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
+
     let agenda = "<div class='nav'><button class='icone' data-acao='md-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
       "<strong>" + tituloDia(MD.dia) + "</strong>" +
       "<button class='icone' data-acao='md-nav' data-d='1' aria-label='Próximo dia'>›</button></div>" +
@@ -821,18 +874,27 @@
   function eventosMeuDia(evs, PX) {
     return evs.map(c => {
       const top = (minutos(c.inicio) - INICIO_MIN) * PX / 60;
-      const alt = Math.max(56, (minutosFim(c.fim) - minutos(c.inicio)) * PX / 60);
+      const alt = (minutosFim(c.fim) - minutos(c.inicio)) * PX / 60;
       const cor = corDoCompromisso(c);
-      const tarefas = (c.tarefas || []).map((t, i) =>
-        "<div class='tarefa-linha'><button class='bolinha" + (t.feita ? " feita" : "") + "' data-acao='tarefa-marcar' data-cid='" + c.id + "' data-i='" + i + "' style='" +
-          (t.feita ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
+      const tarefas = (c.tarefas || []).map((t, i) => {
+        const corT = t.cor || cor;
+        return "<div class='tarefa-linha'><button class='bolinha" + (t.feita ? " feita" : "") + "' data-acao='tarefa-marcar' data-cid='" + c.id + "' data-i='" + i + "' style='" +
+          (t.feita ? "background:" + corT + ";border-color:" + corT + ";color:" + textoSobre(corT) : "border-color:" + corT) +
           "' aria-label='Marcar tarefa'>" + (t.feita ? ICONE_CHECK : "") + "</button>" +
-          "<span class='" + (t.feita ? "riscado" : "") + "'>" + esc(t.texto) + "</span></div>"
-      ).join("");
-      return "<div class='md-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;min-height:" + alt + "px;border-color:" + cor + "'>" +
+          "<span class='" + (t.feita ? "riscado" : "") + "'>" + esc(t.texto) + "</span></div>";
+      }).join("");
+      return "<div class='md-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + alt + "px;border-color:" + cor + "'>" +
         "<div class='md-evento-topo'><strong>" + esc(c.titulo) + "</strong><small>" + c.inicio + "–" + c.fim + "</small></div>" +
         tarefas + "</div>";
     }).join("");
+  }
+
+  function htmlSeletorCor(campo, valor, i) {
+    const idx = i === null || i === undefined ? "" : " data-i='" + i + "'";
+    return "<div class='cor-linha'>" +
+      "<input type='color' data-campo='" + campo + "-cor'" + idx + " value='" + valor + "' aria-label='Escolher cor'>" +
+      "<input class='hex' data-campo='" + campo + "-hex'" + idx + " value='" + valor + "' maxlength='7' placeholder='#RRGGBB' aria-label='Código da cor'>" +
+    "</div>";
   }
 
   function htmlNovoHabito() {
@@ -842,6 +904,7 @@
       "<div class='legenda'>" + cores.map(l =>
         "<button class='legenda-item" + (H.novaCor === l.cor ? " ativo" : "") + "' data-acao='habito-cor' data-cor='" + l.cor + "' aria-label='" + esc(l.nome) + "'><span class='swatch' style='background:" + l.cor + "'></span></button>"
       ).join("") + "</div>" +
+      htmlSeletorCor("habito", H.novaCor, null) +
       "<button class='secundario' data-acao='habito-add'>Adicionar hábito</button></div>";
   }
 
@@ -870,7 +933,8 @@
     const tarefas = r.tarefas.map((t, i) =>
       "<div class='tarefa'><button class='bolinha' data-acao='tarefa-feita' data-i='" + i + "'>" + (t.feita ? ICONE_CHECK : "") + "</button>" +
       "<input data-campo='tarefa-texto' data-i='" + i + "' value='" + esc(t.texto) + "' placeholder='Tarefa'>" +
-      "<button class='excluir' data-acao='tarefa-del' data-i='" + i + "' aria-label='Remover tarefa'>×</button></div>"
+      "<button class='excluir' data-acao='tarefa-del' data-i='" + i + "' aria-label='Remover tarefa'>×</button></div>" +
+      htmlSeletorCor("tarefa", t.cor || r.cor, i)
     ).join("");
 
     return "<div class='ag-form'>" +
@@ -883,10 +947,11 @@
       "</div>" +
       "<div class='legenda-cab'><label>Legenda de cores</label><button class='secundario' data-acao='leg-editar'>" + (G.editandoLegenda ? "Pronto" : "Editar legenda") + "</button></div>" +
       legenda +
+      htmlSeletorCor("ag", r.cor, null) +
       (G.editandoLegenda ? "" :
         "<div class='ag-linha nova-cor'><input placeholder='Nome da nova cor' data-campo='leg-nome' value='" + esc(nova.nome) + "'>" +
-        "<input type='color' data-campo='leg-cor' value='" + nova.cor + "'>" +
-        "<button class='secundario' data-acao='leg-salvar'>Adicionar cor</button></div>") +
+        "<button class='secundario' data-acao='leg-salvar'>Adicionar cor</button></div>" +
+        htmlSeletorCor("nova", nova.cor, null)) +
       (comTarefas ? "<label>Tarefas</label>" + tarefas + "<button class='secundario' data-acao='tarefa-add'>+ Tarefa</button>" : "") +
       "<div id='ag-status' class='status'></div>" +
       "<div class='centro'>" +
@@ -910,7 +975,7 @@
     G.editandoLegenda = false;
     G.rascunho = {
       id: c.id, titulo: c.titulo, dataISO: c.dataISO, inicio: c.inicio, fim: c.fim, cor: corDoCompromisso(c),
-      tarefas: (c.tarefas || []).map(t => ({ texto: t.texto, feita: !!t.feita }))
+      tarefas: (c.tarefas || []).map(t => ({ texto: t.texto, feita: !!t.feita, cor: t.cor || null }))
     };
   }
 
@@ -953,7 +1018,19 @@
     const d = e.target.dataset;
     if (d.campo === "habito-nome") { H.novoNome = e.target.value; return; }
     if (d.campo === "leg-nome") { G.novaLegenda.nome = e.target.value; return; }
-    if (d.campo === "leg-cor") { G.novaLegenda.cor = e.target.value; return; }
+    const cor = d.campo ? d.campo.match(/^(nova|habito|ag|tarefa)-(cor|hex)$/) : null;
+    if (cor) {
+      const valor = cor[2] === "cor" ? e.target.value : e.target.value.trim();
+      if (!/^#[0-9a-fA-F]{6}$/.test(valor)) return;
+      const v = valor.toLowerCase();
+      if (cor[1] === "nova") G.novaLegenda.cor = v;
+      else if (cor[1] === "habito") H.novaCor = v;
+      else if (cor[1] === "ag" && G.rascunho) G.rascunho.cor = v;
+      else if (cor[1] === "tarefa" && G.rascunho) G.rascunho.tarefas[Number(d.i)].cor = v;
+      const linha = e.target.closest(".cor-linha");
+      if (linha) linha.querySelectorAll("input").forEach(x => { if (x !== e.target) x.value = v; });
+      return;
+    }
     if (d.campo === "leg-renomear") {
       const cor = G.legenda.find(l => l.id === d.id);
       if (cor) cor.nome = e.target.value;
@@ -1069,7 +1146,7 @@
     }
     const obj = {
       titulo: r.titulo.trim(), dataISO: r.dataISO, inicio: r.inicio, fim: r.fim, cor: r.cor,
-      tarefas: r.tarefas.filter(t => (t.texto || "").trim() !== "").map(t => ({ texto: t.texto.trim(), feita: !!t.feita }))
+      tarefas: r.tarefas.filter(t => (t.texto || "").trim() !== "").map(t => ({ texto: t.texto.trim(), feita: !!t.feita, cor: t.cor || null }))
     };
     try {
       if (r.id) {
@@ -1115,6 +1192,151 @@
     if (ativo && (ativo.tagName === "INPUT" || ativo.tagName === "TEXTAREA")) return;
     if (secaoAtual === "geral" || secaoAtual === "bora") renderAtual();
   });
+
+  // ---------- Não esquecer ----------
+  const NE = { lista: [], novoTexto: "" };
+
+  async function carregarNaoEsquecer() {
+    try {
+      const snap = await colecao("naoEsquecer").get();
+      NE.lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { mostrarErro(e.message); }
+  }
+
+  function renderNaoEsquecer() {
+    const el = document.getElementById("nao");
+    if (!el) return;
+    el.innerHTML = "<div class='ne-add'><input placeholder='O que você não pode esquecer?' data-campo='ne-texto' value='" + esc(NE.novoTexto) + "'>" +
+      "<button class='secundario' data-acao='ne-add'>Adicionar</button></div>" +
+      (NE.lista.length
+        ? NE.lista.map(it =>
+            "<div class='ne-item'><button class='bolinha" + (it.feito ? " feita" : "") + "' data-acao='ne-feito' data-id='" + it.id + "' aria-label='Marcar'>" +
+            (it.feito ? ICONE_CHECK : "") + "</button><span class='" + (it.feito ? "riscado" : "") + "'>" + esc(it.texto) + "</span>" +
+            "<button class='excluir' data-acao='ne-del' data-id='" + it.id + "' aria-label='Excluir'>×</button></div>"
+          ).join("")
+        : "<p class='vazio'>Nada anotado ainda.</p>");
+  }
+
+  async function neAdicionar() {
+    const texto = (NE.novoTexto || "").trim();
+    if (!texto) return;
+    const obj = { texto: texto, feito: false };
+    try {
+      const ref = await colecao("naoEsquecer").add(obj);
+      NE.lista.push({ id: ref.id, ...obj });
+      NE.novoTexto = "";
+      renderNaoEsquecer();
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  async function neAlternar(id) {
+    const it = NE.lista.find(x => x.id === id);
+    if (!it) return;
+    it.feito = !it.feito;
+    renderNaoEsquecer();
+    try { await colecao("naoEsquecer").doc(id).update({ feito: it.feito }); }
+    catch (err) { mostrarErro(err.message); }
+  }
+
+  async function neExcluir(id) {
+    if (!confirm("Excluir este item?")) return;
+    try {
+      await colecao("naoEsquecer").doc(id).delete();
+      NE.lista = NE.lista.filter(x => x.id !== id);
+      renderNaoEsquecer();
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  // ---------- Caixa do dia ----------
+  const CX = { dia: null, lista: [], tipo: "gasto", valor: "", descricao: "" };
+
+  async function carregarCaixa() {
+    try {
+      const snap = await colecao("caixa").get();
+      CX.lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { mostrarErro(e.message); }
+  }
+
+  function renderCaixa() {
+    const el = document.getElementById("caixa");
+    if (!el) return;
+    if (!CX.dia) CX.dia = hojeISO();
+    const dia = CX.lista.filter(x => x.dataISO === CX.dia);
+    const ganhos = dia.filter(x => x.tipo === "ganho").reduce((a, x) => a + Number(x.valor), 0);
+    const gastos = dia.filter(x => x.tipo === "gasto").reduce((a, x) => a + Number(x.valor), 0);
+    const fmt = v => "R$ " + v.toFixed(2).replace(".", ",");
+
+    el.innerHTML = "<div class='nav'><button class='icone' data-acao='cx-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
+      "<strong>" + tituloDia(CX.dia) + "</strong>" +
+      "<button class='icone' data-acao='cx-nav' data-d='1' aria-label='Próximo dia'>›</button></div>" +
+      "<div class='cx-resumo'>" +
+        "<div class='cx-card ganho'><small>Ganhos</small><strong>" + fmt(ganhos) + "</strong></div>" +
+        "<div class='cx-card gasto'><small>Gastos</small><strong>" + fmt(gastos) + "</strong></div>" +
+        "<div class='cx-card'><small>Saldo</small><strong>" + fmt(ganhos - gastos) + "</strong></div>" +
+      "</div>" +
+      "<div class='cx-form'>" +
+        "<div class='cx-tipo'>" +
+          "<button class='chip" + (CX.tipo === "gasto" ? " ativo" : "") + "' data-acao='cx-tipo' data-tipo='gasto'>Gasto</button>" +
+          "<button class='chip" + (CX.tipo === "ganho" ? " ativo" : "") + "' data-acao='cx-tipo' data-tipo='ganho'>Ganho</button>" +
+        "</div>" +
+        "<div class='ag-linha'>" +
+          "<input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='cx-valor' value='" + esc(CX.valor) + "'>" +
+          "<input placeholder='Descrição' data-campo='cx-desc' value='" + esc(CX.descricao) + "'>" +
+        "</div>" +
+        "<button class='grande' data-acao='cx-add'>Adicionar</button>" +
+      "</div>" +
+      (dia.length
+        ? dia.map(x =>
+            "<div class='cx-item " + x.tipo + "'><span>" + esc(x.descricao || (x.tipo === "gasto" ? "Gasto" : "Ganho")) + "</span>" +
+            "<strong>" + (x.tipo === "gasto" ? "− " : "+ ") + fmt(Number(x.valor)) + "</strong>" +
+            "<button class='excluir' data-acao='cx-del' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>"
+          ).join("")
+        : "<p class='vazio'>Nenhum lançamento neste dia.</p>");
+  }
+
+  async function cxAdicionar() {
+    const valor = Number(String(CX.valor).replace(",", "."));
+    if (!valor || valor <= 0) { mostrarErro("Digite um valor maior que zero."); return; }
+    const obj = { dataISO: CX.dia, tipo: CX.tipo, valor: valor, descricao: (CX.descricao || "").trim() };
+    try {
+      const ref = await colecao("caixa").add(obj);
+      CX.lista.push({ id: ref.id, ...obj });
+      CX.valor = "";
+      CX.descricao = "";
+      renderCaixa();
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  async function cxExcluir(id) {
+    if (!confirm("Excluir este lançamento?")) return;
+    try {
+      await colecao("caixa").doc(id).delete();
+      CX.lista = CX.lista.filter(x => x.id !== id);
+      renderCaixa();
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  async function tratarCliqueSecoes(e) {
+    try {
+      const el = e.target.closest("[data-acao]");
+      if (!el) return;
+      const a = el.dataset.acao;
+      if (a === "ne-add") await neAdicionar();
+      else if (a === "ne-feito") await neAlternar(el.dataset.id);
+      else if (a === "ne-del") await neExcluir(el.dataset.id);
+      else if (a === "cx-nav") { CX.dia = somar(CX.dia || hojeISO(), Number(el.dataset.d)); renderCaixa(); }
+      else if (a === "cx-tipo") { CX.tipo = el.dataset.tipo; renderCaixa(); }
+      else if (a === "cx-add") await cxAdicionar();
+      else if (a === "cx-del") await cxExcluir(el.dataset.id);
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  function tratarEntradaSecoes(e) {
+    const d = e.target.dataset;
+    if (d.campo === "ne-texto") NE.novoTexto = e.target.value;
+    else if (d.campo === "cx-valor") CX.valor = e.target.value;
+    else if (d.campo === "cx-desc") CX.descricao = e.target.value;
+  }
 
   // ---------- treinos: tela ----------
   function renderTreinos() {
