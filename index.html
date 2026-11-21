@@ -541,13 +541,13 @@
 
   const SECOES = [
     { id: "geral", nome: "Geral", icone: ICONES.grade },
-    { id: "lembretes", nome: "Lembretes", icone: ICONES.sino },
     { id: "bora", nome: "Meu Dia", icone: ICONES.estrela },
     { id: "pessoal", nome: "Habit Tracker", icone: ICONES.coracao },
     { id: "estudos", nome: "Estudos", icone: ICONES.livro },
     { id: "treinos", nome: "Treinos", icone: ICONES.halter },
     { id: "financeiro", nome: "Financeiro", icone: ICONES.dinheiro },
-    { id: "trabalho", nome: "Trabalho", icone: ICONES.notebook }
+    { id: "trabalho", nome: "Trabalho", icone: ICONES.notebook },
+    { id: "lembretes", nome: "Lembretes", icone: ICONES.sino }
   ];
 
   // ---------- estado ----------
@@ -987,8 +987,7 @@
     for (let d = 1; d <= dias; d++) {
       const iso = isoDe(new Date(ano, mes, d));
       const tem = G.compromissos.some(c => c.dataISO === iso);
-      g += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + "' data-acao='cal-dia' data-iso='" + iso + "'><span>" + d + "</span>" +
-        (tem ? "<i class='pontinho'></i>" : "<i></i>") + "</button>";
+      g += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + "' data-acao='cal-dia' data-iso='" + iso + "'><span>" + d + "</span></button>";
     }
     return g;
   }
@@ -1835,14 +1834,16 @@
   }
 
   function htmlLembretesResumo() {
-    const hoje = hojeISO();
-    const proximos = lembretesOrdenados(LB.lista.filter(x => x.dataISO >= hoje)).slice(0, 4);
-    return "<div class='bloco faixa faixa-metas'><div class='habitos-topo'><h3>Lembretes e prazos</h3></div>" +
-      (proximos.length
-        ? proximos.map(x => "<div class='lb-linha'><span class='lb-data'>" + dataCurta(x.dataISO) + (x.hora ? " · " + x.hora : "") + "</span><span>" + esc(x.titulo) + "</span></div>").join("")
-        : "<p class='vazio'>Nenhum lembrete próximo. Cadastre na aba Lembretes.</p>") +
+    const ini = inicioSemana(hojeISO());
+    const fim = somar(ini, 6);
+    const semana = lembretesOrdenados(LB.lista.filter(x => x.dataISO >= ini && x.dataISO <= fim));
+    return "<div class='bloco faixa faixa-metas'><div class='habitos-topo'><h3>Lembretes e prazos da semana</h3></div>" +
+      (semana.length
+        ? semana.map(x => "<div class='lb-linha'><span class='lb-data'>" + dataCurta(x.dataISO) + " " + NOMES[diaSemana(x.dataISO)] + (x.hora ? " · " + x.hora : "") + "</span><span>" + esc(x.titulo) + "</span></div>").join("")
+        : "<p class='vazio'>Nenhum lembrete nesta semana.</p>") +
     "</div>";
   }
+
 
   function renderLembretes() {
     const el = document.getElementById("lembretes");
@@ -1856,8 +1857,7 @@
     for (let d = 1; d <= dias; d++) {
       const iso = isoDe(new Date(LB.ano, LB.mes, d));
       const tem = LB.lista.some(x => x.dataISO === iso);
-      grade += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + (iso === LB.dia ? " sel" : "") + "' data-acao='lb-dia' data-iso='" + iso + "'><span>" + d + "</span>" +
-        (tem ? "<i class='pontinho'></i>" : "<i></i>") + "</button>";
+      grade += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + (iso === LB.dia ? " sel" : "") + "' data-acao='lb-dia' data-iso='" + iso + "'><span>" + d + "</span></button>";
     }
     const doDia = lembretesOrdenados(LB.lista.filter(x => x.dataISO === LB.dia));
     let form = "";
@@ -2222,7 +2222,7 @@
     const centro = meta ? feitos + "/" + meta : String(feitos);
     return "<svg viewBox='0 0 120 120' width='150' height='150' style='display:block;margin:0 auto' role='img' aria-label='Progresso: " + centro + " " + rotulo + "'>" +
       "<circle cx='60' cy='60' r='50' fill='none' stroke='#EFECE6' stroke-width='12'/>" +
-      "<circle cx='60' cy='60' r='50' fill='none' stroke='#D81A67' stroke-width='12' stroke-linecap='round' stroke-dasharray='" + (pct * C) + " " + C + "' transform='rotate(-90 60 60)'/>" +
+      "<circle cx='60' cy='60' r='50' fill='none' stroke='#770523' stroke-width='12' stroke-linecap='round' stroke-dasharray='" + (pct * C) + " " + C + "' transform='rotate(-90 60 60)'/>" +
       "<text x='60' y='62' text-anchor='middle' font-size='20' font-weight='600' fill='#2B2420'>" + centro + "</text>" +
       "<text x='60' y='80' text-anchor='middle' font-size='10' fill='#6B6259'>" + rotulo + "</text>" +
     "</svg>";
