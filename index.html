@@ -42,7 +42,7 @@
     display: block; width: 100%; min-height: 110px; font-family: inherit; font-size: 1rem; padding: 0.9rem 1rem;
     border: 2px solid var(--burgundy); border-radius: 18px; background: var(--branco); color: var(--burgundy); margin-bottom: 0.75rem;
   }
-  input:focus, select:focus, textarea:focus { border-color: var(--fuchsia); outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--burgundy); outline: none; }
   button {
     font-family: inherit; font-size: 1rem; font-weight: 600; width: 100%; padding: 0.95rem; border: none;
     border-radius: 999px; background: var(--burgundy); color: var(--branco); cursor: pointer;
@@ -178,7 +178,7 @@
     .menu { flex-direction: row; overflow-x: auto; gap: 0.4rem; padding: 0.5rem; background: #FFFFFF; }
     .menu-topo { display: none; }
     .item { width: auto; flex-shrink: 0; border: none; background: var(--burgundy); color: #FFFFFF; border-radius: 999px; padding: 0.45rem 0.8rem; font-size: 0.8rem; font-weight: 600; }
-    .item.ativo { background: var(--burgundy); box-shadow: none; outline: 2px solid var(--fuchsia); outline-offset: 2px; }
+    .item.ativo { background: var(--burgundy); box-shadow: none; outline: 2px solid var(--burgundy); outline-offset: 2px; }
     .item.sair { width: auto; margin-top: 0; }
   }
 
@@ -266,7 +266,7 @@
   .agenda-grade { display: grid; grid-template-columns: 36px repeat(7, minmax(0, 1fr)); margin-top: 0.5rem; }
   .ag-dia-cab { text-align: center; padding: 0.3rem 0; font-size: 0.75rem; color: #6B6259; }
   .ag-dia-cab b { display: block; font-size: 1rem; font-weight: 600; color: #2B2420; margin-top: 2px; }
-  .ag-dia-cab.hoje b { background: var(--fuchsia); color: #FFFFFF; border-radius: 999px; width: 28px; height: 28px; line-height: 28px; margin: 2px auto 0; }
+  .ag-dia-cab.hoje b { background: var(--burgundy); color: #FFFFFF; border-radius: 999px; width: 28px; height: 28px; line-height: 28px; margin: 2px auto 0; }
   .ag-horas { font-size: 0.65rem; color: #6B6259; }
   .ag-horas div { height: 48px; text-align: right; padding-right: 4px; }
   .ag-coluna { position: relative; border-left: 1px solid #EFECE6; }
@@ -278,12 +278,12 @@
   .chip.cor { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid transparent; }
   .chip.cor.ativo { outline: 2px solid #2B2420; outline-offset: 2px; }
 
-  .pill-semana { display: inline-block; background: var(--fuchsia); color: #FFFFFF; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-left: 0.4rem; vertical-align: middle; }
+  .pill-semana { display: inline-block; background: var(--burgundy); color: #FFFFFF; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-left: 0.4rem; vertical-align: middle; }
   .ag-dia-cab.semana { background: #FCE7F0; border-radius: 10px 10px 0 0; }
   .ag-coluna.semana { background: #FFF8FB; }
   .ag-horas div { padding-right: 4px; }
 
-  .intervalo.semana { background: var(--fuchsia); color: #FFFFFF; border-radius: 999px; padding: 2px 12px; }
+  .intervalo.semana { background: var(--burgundy); color: #FFFFFF; border-radius: 999px; padding: 2px 12px; }
   .ag-dia-cab { cursor: pointer; }
   .legenda { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
   .legenda-item { width: auto; display: flex; align-items: center; gap: 0.4rem; background: #FFFFFF; color: #2B2420; border: 1px solid #D6D3CE; padding: 0.35rem 0.7rem; font-size: 0.8rem; font-weight: 500; }
@@ -395,13 +395,13 @@
   .ag-evento.curto small { white-space: nowrap; flex-shrink: 0; }
 
   .md-scroll { overflow-y: auto; position: relative; }
-  .linha-agora { position: absolute; left: 0; right: 0; height: 2px; background: var(--fuchsia); z-index: 2; pointer-events: none; }
+  .linha-agora { position: absolute; left: 0; right: 0; height: 2px; background: var(--burgundy); z-index: 2; pointer-events: none; }
   .check-concluido { position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; z-index: 3; }
   .check-concluido svg { width: 18px; height: 18px; }
   .faixa { border-top: 4px solid #E7E5E4; }
   .faixa-nao { border-top-color: #770523; }
-  .faixa-habitos { border-top-color: #D81A67; }
-  .faixa-caixa { border-top-color: #D0D996; }
+  .faixa-habitos { border-top-color: #770523; }
+  .faixa-caixa { border-top-color: #770523; }
   .faixa-metas { border-top-color: #F2A7C3; }
 
   .ag-horas { position: relative; }
@@ -413,7 +413,7 @@
   @media (max-width: 719px) { .geral-topo { grid-template-columns: 1fr; } }
   .calendario .cal-dia { min-height: 42px; padding: 4px 0; font-size: 0.8rem; background: #FFFFFF; }
   .calendario .cal-dia.hoje { border: 2px solid var(--blood); }
-  .pontinho { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--fuchsia); margin: 0 auto; }
+  .pontinho { display: block; width: 5px; height: 5px; border-radius: 50%; background: var(--burgundy); margin: 0 auto; }
   .bolinha-cumprido { position: absolute; top: 6px; right: 6px; width: 20px !important; height: 20px !important; border-radius: 50%; border: 2px solid #D0D996; background: #FFFFFF; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; color: #2B2420; z-index: 3; min-width: 0; }
   .bolinha-cumprido.feita { background: #D0D996; }
   .bolinha-cumprido svg { width: 12px; height: 12px; }
@@ -424,7 +424,10 @@
   .intervalo.semana { background: var(--burgundy); }
   .ag-dia-cab.hoje b { background: var(--burgundy); }
   .ag-dia-cab.hoje small { color: var(--burgundy); }
-  .calendario .cal-dia.hoje { border: 2px solid var(--burgundy); }
+  .calendario .cal-dia { align-items: center; justify-content: center; text-align: center; }
+  .calendario .cal-dia span { width: 100%; text-align: center; }
+  .calendario .cal-dia.hoje { background: var(--burgundy); border: 2px solid var(--burgundy); color: #FFFFFF; }
+  .calendario .cal-dia.hoje svg { color: #FFFFFF; }
   .geral-topo .nav strong { color: var(--burgundy); }
   .faixa-metas { border-top-color: var(--burgundy); }
   .md-scroll, .menu { scrollbar-width: none; -ms-overflow-style: none; }
@@ -451,6 +454,19 @@
   .confirm-caixa p { margin: 0 0 1rem; font-size: 0.95rem; line-height: 1.4; }
   .confirm-acoes { display: flex; gap: 0.5rem; justify-content: flex-end; }
   .confirm-acoes button { width: auto; padding: 0.6rem 1rem; }
+
+  .ht-resumo { color: #2B2420; font-weight: 600; text-align: center; margin: 0 0 0.6rem; font-size: 0.9rem; }
+  .ht-resumo strong { font-weight: 700; }
+  .hab-barra { margin-bottom: 0.8rem; }
+  .hab-barra-topo { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; margin-bottom: 4px; }
+  .hab-barra-topo .hab-nome { flex: 1; font-weight: 600; }
+  .hab-barra-topo .hab-num { color: #2B2420; font-weight: 700; font-size: 0.8rem; }
+  .hab-barra-topo .excluir { width: auto; padding: 0.1rem 0.5rem; }
+  .barra-fundo { height: 10px; background: #EFECE6; border-radius: 999px; overflow: hidden; margin-bottom: 3px; }
+  .barra-fundo div { height: 100%; border-radius: 999px; }
+  .barra-fundo.fina { height: 5px; }
+  .barra-fundo.fina div { background: #D6D3CE; }
+  .hab-anterior { font-size: 0.7rem; color: #6B6259; }
 </style>
 </head>
 <body>
@@ -815,7 +831,7 @@
     return Math.max(24, Math.min(56, Math.floor(disponivel / ((FIM_MIN - INICIO_MIN) / 60))));
   }
 
-  const H = { lista: [], dias: {}, novoNome: "", adicionando: false, novaCor: "#D81A67", novoIcone: null, novaMeta: 7 };
+  const H = { lista: [], dias: {}, novoNome: "", adicionando: false, novaCor: "#770523", novoIcone: null, novaMeta: 7 };
   const HT = { ano: null, mes: null };
   const ICONES_HABITO = {
     sono: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/></svg>",
@@ -992,6 +1008,12 @@
     return c;
   }
 
+  function cumpridosNoIntervalo(hid, ini, n) {
+    let c = 0;
+    for (let k = 0; k < n; k++) if ((H.dias[somar(ini, k)] || []).includes(hid)) c++;
+    return c;
+  }
+
   function renderHabitTracker() {
     const el = document.getElementById("habitos-tracker");
     if (!el) return;
@@ -1010,16 +1032,16 @@
 
     let fatias = "";
     H.lista.forEach((hb, i) => {
-      const r1 = rInt + i * dr, r2 = r1 + dr - 2;
-      const cor = hb.cor || "#D81A67";
+      const r1 = rInt + i * dr, r2 = r1 + dr - 3;
+      const cor = hb.cor || "#770523";
       for (let d = 1; d <= 31; d++) {
-        const a1 = (d - 1) * passo + 0.5, a2 = d * passo - 0.5;
+        const a1 = (d - 1) * passo + 0.9, a2 = d * passo - 0.9;
         if (d <= diasNoMes) {
           const iso = isoDe(new Date(HT.ano, HT.mes, d));
           const feito = (H.dias[iso] || []).includes(hb.id);
-          fatias += "<path d='" + fatia(r1, r2, a1, a2) + "' fill='" + (feito ? cor : "#FFFFFF") + "' stroke='#E7E5E4' stroke-width='0.8' data-acao='tr-toggle' data-hid='" + hb.id + "' data-iso='" + iso + "'/>";
+          fatias += "<path d='" + fatia(r1, r2, a1, a2) + "' fill='" + (feito ? cor : "#FFFFFF") + "' stroke='#D6D3CE' stroke-width='1.2' stroke-linejoin='round' data-acao='tr-toggle' data-hid='" + hb.id + "' data-iso='" + iso + "'/>";
         } else {
-          fatias += "<path d='" + fatia(r1, r2, a1, a2) + "' fill='#F5F5F4' stroke='#E7E5E4' stroke-width='0.8'/>";
+          fatias += "<path d='" + fatia(r1, r2, a1, a2) + "' fill='#F5F5F4' stroke='#D6D3CE' stroke-width='1.2' stroke-linejoin='round'/>";
         }
       }
     });
@@ -1032,22 +1054,26 @@
     const ini = inicioSemana(hojeISO());
     const ant = somar(ini, -7);
     let totalAtual = 0, totalMeta = 0, totalAnt = 0;
-    const linhas = H.lista.map(hb => {
-      let feitos = 0;
-      for (let d = 1; d <= diasNoMes; d++) if ((H.dias[isoDe(new Date(HT.ano, HT.mes, d))] || []).includes(hb.id)) feitos++;
+    const barras = H.lista.map(hb => {
       const atual = cumpridosNoIntervalo(hb.id, ini, 7);
       const anterior = cumpridosNoIntervalo(hb.id, ant, 7);
       const meta = hb.meta || 7;
       totalAtual += atual; totalAnt += anterior; totalMeta += meta;
+      const pctAtual = Math.min(100, Math.round(atual / meta * 100));
+      const pctAnt = Math.min(100, Math.round(anterior / meta * 100));
       const seta = atual > anterior ? "↑" : (atual < anterior ? "↓" : "=");
+      const cor = hb.cor || "#770523";
       const icone = hb.icone && ICONES_HABITO[hb.icone] ? ICONES_HABITO[hb.icone] : "";
-      return "<div class='hab-linha'>" +
-        "<span class='hab-icone' style='color:" + (hb.cor || "#D81A67") + "'>" + icone + "</span>" +
-        "<span class='hab-nome'>" + esc(hb.nome) + "</span>" +
-        "<span class='hab-num'>" + atual + "/" + meta + " na semana · " + anterior + " na anterior " + seta + "</span>" +
-        "<span class='hab-mes'>" + feitos + "/" + diasNoMes + "</span>" +
-        (H.adicionando ? "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button>" : "") +
-        "</div>";
+      return "<div class='hab-barra'>" +
+        "<div class='hab-barra-topo'><span class='hab-icone' style='color:" + cor + "'>" + icone + "</span>" +
+          "<span class='hab-nome'>" + esc(hb.nome) + "</span>" +
+          "<span class='hab-num'>" + atual + "/" + meta + " " + seta + "</span>" +
+          (H.adicionando ? "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button>" : "") +
+        "</div>" +
+        "<div class='barra-fundo'><div style='width:" + pctAtual + "%;background:" + cor + "'></div></div>" +
+        "<div class='barra-fundo fina'><div style='width:" + pctAnt + "%'></div></div>" +
+        "<div class='hab-anterior'>semana passada: " + anterior + "/" + meta + "</div>" +
+      "</div>";
     }).join("");
 
     el.innerHTML = "<div class='bloco'>" +
@@ -1055,9 +1081,9 @@
         "<button class='icone' data-acao='tr-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
         "<strong>" + capitalizar(MESES[HT.mes]) + " de " + HT.ano + "</strong>" +
         "<button class='icone' data-acao='tr-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
-      (k ? "<p class='resumo ht-resumo'>Semana: <strong>" + totalAtual + "</strong> de " + totalMeta + " cumpridos · semana passada: " + totalAnt + "</p>" +
-           "<svg viewBox='0 0 380 380' width='100%' style='max-width:380px;display:block;margin:4px auto'>" + fatias + rotulos + "</svg>" +
-           "<div class='hab-lista'>" + linhas + "</div>"
+      (k ? "<svg viewBox='0 0 380 380' width='100%' style='max-width:380px;display:block;margin:4px auto'>" + fatias + rotulos + "</svg>" +
+           "<p class='ht-resumo'>Semana atual x anterior: <strong>" + totalAtual + "</strong> de " + totalMeta + " cumpridos · semana passada: " + totalAnt + "</p>" +
+           "<div class='hab-lista'>" + barras + "</div>"
          : "<p class='vazio'>Nenhum hábito cadastrado ainda. Toque no lápis para adicionar.</p>") +
       (H.adicionando ? htmlNovoHabito() : "") +
       "<div class='ht-rodape'><button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
@@ -1164,7 +1190,7 @@
         "</div>" +
       (H.lista.length ? H.lista.map(hb => {
         const feito = (H.dias[MD.dia] || []).includes(hb.id);
-        const cor = hb.cor || "#D81A67";
+        const cor = hb.cor || "#770523";
         return "<div class='habito'><button class='bolinha" + (feito ? " feita" : "") + "' data-acao='habito-marcar' data-id='" + hb.id + "' style='" +
           (feito ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
           "' aria-label='Marcar hábito'>" + (feito ? ICONE_CHECK : "") + "</button>" +
@@ -1398,6 +1424,7 @@
       else if (a === "habito-add") await adicionarHabito();
       else if (a === "habito-editar") { H.adicionando = !H.adicionando; renderAtual(); }
       else if (a === "habito-cor") { H.novaCor = el.dataset.cor; renderAtual(); }
+      else if (a === "habito-icone") { H.novoIcone = el.dataset.icone; renderAtual(); }
       else if (a === "habito-del") await excluirHabito(el.dataset.id);
       else if (a === "ne-editar") { NE.adicionando = !NE.adicionando; renderNaoEsquecer(); }
       else if (a === "ne-add") await neAdicionar();
@@ -1414,6 +1441,7 @@
   function tratarEntradaGeral(e) {
     const d = e.target.dataset;
     if (d.campo === "habito-nome") { H.novoNome = e.target.value; return; }
+    if (d.campo === "habito-meta") { H.novaMeta = e.target.value; return; }
     if (d.campo === "ne-texto") { NE.novoTexto = e.target.value; return; }
     if (d.campo === "cx-valor") { CX.valor = e.target.value; return; }
     if (d.campo === "cx-desc") { CX.descricao = e.target.value; return; }
