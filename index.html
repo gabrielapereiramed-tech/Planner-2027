@@ -547,7 +547,7 @@
   function renderTreinos() {
     const el = document.getElementById("treinos");
     if (!el) return;
-    if (T.editorTipo) { el.innerHTML = htmlEditorAtual(); return; }
+    if (T.editorTipo) { T.centralizar = true; el.innerHTML = htmlEditorAtual(); return; }
 
     let h = "<h2>Treinos</h2><div class='abas'>" +
       "<button class='aba" + (T.aba === "geral" ? " ativo" : "") + "' data-acao='aba' data-v='geral'>Geral</button>" +
