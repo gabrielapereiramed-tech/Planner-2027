@@ -103,8 +103,8 @@
   .dia i { display: block; height: 14px; }
   .dia svg { width: 14px; height: 14px; color: var(--blood); }
   .dia.hoje { background: var(--pistachio); }
-  .dia.sel { background: var(--blood); color: var(--branco); }
-  .dia.sel svg { color: var(--branco); }
+  .dia.sel { background: transparent; color: #2B2420; outline: 2px solid var(--blood); outline-offset: -2px; }
+  .dia.sel svg { color: var(--blood); }
   .resumo { font-size: 0.95rem; margin: 0.4rem 0 0.8rem; }
   .painel-dia { margin-top: 0.5rem; }
   .prog { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; background: var(--branco); border-radius: 18px; padding: 0.9rem 1rem; margin: 0.6rem 0; }
@@ -191,7 +191,8 @@
   .semana, .roleta { gap: 0.25rem; }
   .dia { border-radius: 12px; }
   .dia.hoje { background: #EEF2DA; }
-  .dia.sel { background: var(--blood); }
+  .dia.sel { background: transparent; outline: 2px solid var(--blood); outline-offset: -2px; }
+  .dia.hoje.sel { background: #EEF2DA; }
   .prog, .ex, .feito-card, .treino-item, .treino-item, .descanso {
     border-radius: 14px;
   }
