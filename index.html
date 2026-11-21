@@ -220,6 +220,17 @@
   .descanso strong { color: var(--blood); }
   .descanso button { border-color: #2B2420; color: #2B2420; }
   .vazio { color: #6B6259; }
+
+  .series { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.6rem; }
+  .serie { display: grid; grid-template-columns: 28px 1fr 1fr 36px; gap: 0.4rem; align-items: center; }
+  .serie.cab { font-size: 0.75rem; color: #6B6259; }
+  .serie input { margin-bottom: 0; padding: 0.55rem 0.7rem; min-width: 0; }
+  .serie-n { text-align: center; font-weight: 500; }
+  .bolinha { width: 36px !important; height: 36px; padding: 0; margin: 0; border-radius: 50%; background: #FFFFFF; border: 2px solid #2B2420; display: flex; align-items: center; justify-content: center; color: #FFFFFF; }
+  .bolinha svg { width: 18px; height: 18px; color: #2B2420; }
+  .serie.feita .bolinha { background: var(--pistachio); border-color: var(--pistachio); }
+  .serie.feita .bolinha svg { color: #2B2420; }
+  .ex .secundario { margin-top: 0.6rem; }
 </style>
 </head>
 <body>
@@ -298,7 +309,7 @@
     aba: "geral", hist: "mes", offsetSemana: 0, offsetMes: 0, offsetAno: 0,
     selecionado: null, centralizar: true,
     treinos: [], sessoes: [], ultimas: {}, trocas: {}, metas: {},
-    treinoHoje: null, sessao: null, feitos: {}, cargas: {}, descanso: null,
+    treinoHoje: null, sessao: null, feitos: {}, cargas: {}, series: {}, numSeries: {}, descanso: null,
     trocando: false, registrando: false, descricao: "",
     editorTipo: null, editor: null, metaRascunho: {}
   };
@@ -628,7 +639,7 @@
     if (!t) return;
     const obj = {
       dataISO: T.selecionado, nome: t.nome, treinoId: t.id, manual: false, duracaoSeg: null,
-      exercicios: t.exercicios.map(ex => ({ nome: ex.nome, tipo: ex.tipo, carga: null, feito: true }))
+      exercicios: t.exercicios.map(ex => ({ nome: ex.nome, tipo: ex.tipo, carga: null, feito: true, series: Array.from({ length: Number(ex.series) || 0 }, (_, k) => ({ n: k + 1, peso: null, reps: Number(ex.reps) || null })) }))
     };
     try {
       const ref = await colecao("sessoes").add({ ...obj, data: firebase.firestore.FieldValue.serverTimestamp() });
@@ -648,8 +659,16 @@
     } else {
       h += "<p class='nome-feito'>" + esc(s.nome) + "</p>";
       (s.exercicios || []).forEach(ex => {
-        const carga = ex.carga === null || ex.carga === undefined ? "sem carga" : ex.carga + " kg" + (ex.tipo === "lado" ? " por lado" : "");
-        h += "<div class='linha-ex'><span>" + esc(ex.nome) + (ex.feito ? "" : " (pulado)") + "</span><span>" + carga + "</span></div>";
+        let detalhe;
+        if (ex.series && ex.series.length) {
+          detalhe = ex.series.map(x =>
+            (x.peso !== null && x.peso !== undefined ? x.peso + " kg" : "–") + " × " +
+            (x.reps !== null && x.reps !== undefined ? x.reps : "–")
+          ).join(" · ");
+        } else {
+          detalhe = ex.carga === null || ex.carga === undefined ? "sem carga" : ex.carga + " kg";
+        }
+        h += "<div class='linha-ex'><span>" + esc(ex.nome) + (ex.feito ? "" : " (pulado)") + "</span><span>" + detalhe + "</span></div>";
       });
     }
     if (s.id) h += "<button class='excluir-sessao' data-acao='excluir-sessao' data-id='" + s.id + "'>Excluir treino</button>";
@@ -667,23 +686,37 @@
     return h;
   }
 
-  function cardExercicio(ex, i) {
-    const feito = !!T.feitos[i];
-    const ultima = T.ultimas[slug(ex.nome)];
-    const carga = T.cargas[i] !== undefined ? T.cargas[i] : (ultima ? ultima.carga : "");
-    const lado = ex.tipo === "lado";
-    const ultimaTxt = ultima ? "Última vez: " + ultima.carga + " kg" + (lado ? " por lado" : "") : "Primeira vez";
-    const totalTxt = lado && carga !== "" ? "= " + (Number(carga) * 2) + " kg no total" : "";
+  function numSeries(ex, i) {
+    return T.numSeries[i] || Number(ex.series) || 1;
+  }
 
-    return "<div class='ex" + (feito ? " feito" : "") + "'>" +
-      "<div class='ex-topo'><span>" + esc(ex.nome) + "</span><span>" + esc(ex.series) + " × " + esc(ex.reps) + "</span></div>" +
-      "<div class='ex-linha'>" +
-        "<input type='number' inputmode='decimal' step='0.5' placeholder='kg' value='" + carga + "' data-carga='" + i + "'>" +
-        "<span>kg " + (lado ? "por lado" : "total") + "</span>" +
-        "<button data-acao='feito' data-i='" + i + "'>" + (feito ? "✓ Feito" : "Marcar") + "</button>" +
-      "</div>" +
-      "<small>" + ultimaTxt + " <span data-total='" + i + "'>" + totalTxt + "</span></small>" +
-    "</div>";
+  function obterSerie(i, j, ex, ultima) {
+    if (!T.series[i]) T.series[i] = [];
+    if (!T.series[i][j]) {
+      T.series[i][j] = { peso: ultima ? ultima.carga : "", reps: Number(ex.reps) || "", feito: false };
+    }
+    return T.series[i][j];
+  }
+
+  function cardExercicio(ex, i) {
+    const ultima = T.ultimas[slug(ex.nome)];
+    const qtd = numSeries(ex, i);
+    let h = "<div class='ex'>" +
+      "<div class='ex-topo'><span>" + esc(ex.nome) + "</span><span>" + esc(ex.series) + " × " + esc(ex.reps) + (ex.tipo === "lado" ? " por lado" : "") + "</span></div>" +
+      (ultima ? "<small>Última vez: " + ultima.carga + " kg" + (ex.tipo === "lado" ? " por lado" : "") + "</small>" : "") +
+      "<div class='series'>" +
+        "<div class='serie cab'><span></span><span>kg</span><span>repetições</span><span></span></div>";
+    for (let j = 0; j < qtd; j++) {
+      const s = obterSerie(i, j, ex, ultima);
+      h += "<div class='serie" + (s.feito ? " feita" : "") + "'>" +
+        "<span class='serie-n'>" + (j + 1) + "</span>" +
+        "<input type='number' inputmode='decimal' step='0.5' placeholder='kg' value='" + (s.peso ?? "") + "' data-campo='peso' data-i='" + i + "' data-s='" + j + "'>" +
+        "<input type='number' inputmode='numeric' placeholder='reps' value='" + (s.reps ?? "") + "' data-campo='reps' data-i='" + i + "' data-s='" + j + "'>" +
+        "<button class='bolinha' data-acao='serie-feito' data-i='" + i + "' data-s='" + j + "' aria-label='Marcar série'>" + (s.feito ? ICONE_CHECK : "") + "</button>" +
+      "</div>";
+    }
+    h += "</div><button class='secundario' data-acao='serie-add' data-i='" + i + "'>+ Série</button></div>";
+    return h;
   }
 
   // ---------- histórico ----------
@@ -705,7 +738,7 @@
       }
     });
     out += "<line x1='0' y1='" + base + "' x2='" + largura + "' y2='" + base + "' stroke='#E7E5E4'/>";
-    return "<svg viewBox='0 0 " + largura + " " + altura + "' width='100%' role='img' aria-label='Gráfico de treinos'>" + out + "</svg>";
+    return "<svg viewBox='0 0 " + largura + " " + altura + "' width='100%' style='max-width:380px;display:block;margin:0 auto' role='img' aria-label='Gráfico de treinos'>" + out + "</svg>";
   }
 
   function htmlAbaHistorico() {
@@ -738,7 +771,7 @@
     }
     return navegacao(dataCurta(ini) + " a " + dataCurta(fim)) +
       "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + (T.metas.semanal ? " de " + T.metas.semanal : "") + " nesta semana</p>" +
-      barras(itens, 170);
+      barras(itens, 110);
   }
 
   function htmlHistMes() {
@@ -757,7 +790,7 @@
     }
     return navegacao(capitalizar(MESES[mes]) + " de " + ano) +
       "<p class='resumo'>" + n + " treino" + (n === 1 ? "" : "s") + " neste mês</p>" +
-      barras(itens, 170);
+      barras(itens, 110);
   }
 
   function htmlHistTotal() {
@@ -770,7 +803,7 @@
     const noAno = meses.reduce((acc, x) => acc + x.valor, 0);
     let h = navegacao(String(ano)) +
       "<p class='resumo'>Em " + ano + ": <strong>" + noAno + "</strong> treinos · Total desde o início: <strong>" + T.sessoes.length + "</strong></p>" +
-      barras(meses, 170);
+      barras(meses, 110);
 
     if (T.metas.anual) {
       const anoMeta = Number(T.metas.ano) || ano;
@@ -890,16 +923,28 @@
         T.sessao = { inicio: Date.now() };
         T.feitos = {};
         T.cargas = {};
+        T.series = {};
+        T.numSeries = {};
         T.descanso = null;
         manterTela();
         renderTreinos();
         break;
       }
-      case "feito":
-        T.feitos[i] = !T.feitos[i];
-        if (T.feitos[i]) T.descanso = { fim: Date.now() + 60000 };
+      case "serie-feito": {
+        const j = Number(el.dataset.s);
+        const serie = T.series[i] && T.series[i][j];
+        if (!serie) break;
+        serie.feito = !serie.feito;
+        if (serie.feito) T.descanso = { fim: Date.now() + 60000 };
         renderTreinos();
         break;
+      }
+      case "serie-add": {
+        const ex = T.treinoHoje.exercicios[i];
+        T.numSeries[i] = numSeries(ex, i) + 1;
+        renderTreinos();
+        break;
+      }
       case "pular": T.descanso = null; renderTreinos(); break;
       case "finalizar": await finalizarTreino(); break;
       case "registrar-abrir": T.registrando = true; renderTreinos(); break;
@@ -973,6 +1018,11 @@
     }
     if (d.campo === undefined) return;
     const i = Number(d.i);
+    if (d.campo === "peso" || d.campo === "reps") {
+      const serie = T.series[i] && T.series[i][Number(d.s)];
+      if (serie) serie[d.campo] = e.target.value;
+      return;
+    }
     switch (d.campo) {
       case "descricao": T.descricao = e.target.value; break;
       case "nome": if (T.editor) T.editor.nome = e.target.value; break;
@@ -1006,13 +1056,17 @@
     const t = T.treinoHoje;
     if (!t || !T.sessao) return;
     const duracao = Math.round((Date.now() - T.sessao.inicio) / 1000);
-    const exercicios = t.exercicios.map((ex, i) => ({
-      nome: ex.nome,
-      tipo: ex.tipo,
-      carga: T.cargas[i] !== undefined && T.cargas[i] !== "" ? Number(T.cargas[i]) : null,
-      feito: !!T.feitos[i]
-    }));
-    const obj = { dataISO: hojeISO(), nome: t.nome, treinoId: t.id, manual: false, duracaoSeg: duracao, exercicios };
+    const exercicios = t.exercicios.map((ex, i) => {
+      const feitas = (T.series[i] || []).filter(x => x && x.feito);
+      const series = feitas.map((x, k) => ({
+        n: k + 1,
+        peso: x.peso === "" || x.peso === null || x.peso === undefined ? null : Number(x.peso),
+        reps: x.reps === "" || x.reps === null || x.reps === undefined ? null : Number(x.reps)
+      }));
+      const pesos = series.map(x => x.peso).filter(x => x !== null);
+      return { nome: ex.nome, tipo: ex.tipo, feito: feitas.length > 0, series: series, carga: pesos.length ? Math.max(...pesos) : null };
+    });
+    const obj = { dataISO: hojeISO(), nome: t.nome, treinoId: t.id, manual: false, duracaoSeg: duracao, exercicios: exercicios };
 
     try {
       const promessas = [];
@@ -1035,6 +1089,8 @@
       T.treinoHoje = null;
       T.feitos = {};
       T.cargas = {};
+      T.series = {};
+      T.numSeries = {};
       T.descanso = null;
       soltarTela();
       renderTreinos();
