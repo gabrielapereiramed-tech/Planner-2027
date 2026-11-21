@@ -293,6 +293,17 @@
   .md-item { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 12px; padding: 0.6rem 0.9rem; margin-bottom: 0.5rem; display: flex; flex-direction: column; }
   .md-item small { color: #6B6259; font-size: 0.8rem; }
   .md-item span { font-weight: 500; }
+
+  .agenda-topo h3 { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1.05rem; margin: 0; }
+  .nav strong.intervalo { display: inline-block; min-width: 130px; text-align: center; }
+  .md-grade { display: grid; grid-template-columns: 36px 1fr; }
+  .ag-form h3 { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; margin: 0 0 0.6rem; }
+  .legenda-cab { display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; }
+  .leg-edit { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem; }
+  .leg-edit input { margin-bottom: 0; padding: 0.5rem 0.7rem; flex: 1; min-width: 0; }
+  .leg-edit .swatch { width: 18px; height: 18px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .tarefa { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem; }
+  .tarefa input { margin-bottom: 0; padding: 0.5rem 0.7rem; flex: 1; min-width: 0; }
 </style>
 </head>
 <body>
@@ -525,7 +536,7 @@
 
     const voltar = "<button class='voltar' id='voltar'>← Voltar</button>";
     if (secao.id === "geral") {
-      main.innerHTML = voltar + "<div id='geral'></div>";
+      main.innerHTML = voltar + "<h2>Geral</h2><div id='geral'></div>";
       const g = document.getElementById("geral");
       g.onclick = tratarCliqueGeral;
       g.oninput = tratarEntradaGeral;
@@ -540,7 +551,9 @@
         "<div class='linha'><input id='novo' placeholder='Novo item'><button id='adicionar'>Adicionar</button></div>" +
         "<div id='status'></div><ul id='lista'></ul></div>";
       const md = document.getElementById("meu-dia");
-      md.onclick = tratarCliqueMeuDia;
+      md.onclick = tratarCliqueGeral;
+      md.oninput = tratarEntradaGeral;
+      md.onchange = tratarEntradaGeral;
       renderMeuDia();
       ligarTeste();
     } else if (secao.id === "treinos") {
@@ -595,8 +608,8 @@
     });
   }
 
-  // ---------- aba Geral: agenda semanal ----------
-  const G = { offset: 0, compromissos: [], legenda: [], formAberto: false, rascunho: null, novaLegenda: { nome: "", cor: "#D81A67" } };
+  // ---------- aba Geral (agenda semanal) e Meu Dia (agenda diária) ----------
+  const G = { offset: 0, compromissos: [], legenda: [], formAberto: false, rascunho: null, novaLegenda: { nome: "", cor: "#D81A67" }, editandoLegenda: false };
   const MD = { dia: null, vindoDaAgenda: false };
   const LEGENDA_PADRAO = [
     { id: "rosa", nome: "Rosa", cor: "#FAD2E1" },
@@ -604,21 +617,27 @@
     { id: "verde", nome: "Verde", cor: "#D0D996" },
     { id: "fucsia", nome: "Fúcsia", cor: "#D81A67" }
   ];
-  const CORES_AGENDA = [
-    { fundo: "#FAD2E1", texto: "#770523" },
-    { fundo: "#770523", texto: "#FFFFFF" },
-    { fundo: "#D0D996", texto: "#2B2420" },
-    { fundo: "#D81A67", texto: "#FFFFFF" }
-  ];
   const INICIO_MIN = 270, FIM_MIN = 1440;
 
   function minutos(hhmm) {
     const [h, m] = hhmm.split(":").map(Number);
     return h * 60 + m;
   }
-
   function minutosFim(hhmm) {
     return hhmm === "00:00" ? 1440 : minutos(hhmm);
+  }
+  function corDoCompromisso(c) {
+    if (typeof c.cor === "string" && c.cor.charAt(0) === "#") return c.cor;
+    return (LEGENDA_PADRAO[Number(c.cor)] || LEGENDA_PADRAO[0]).cor;
+  }
+  function textoSobre(hex) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#2B2420" : "#FFFFFF";
+  }
+  function pxParaTopo(el, reservado) {
+    const topo = el.getBoundingClientRect().top;
+    const disponivel = window.innerHeight - topo - reservado;
+    return Math.max(24, Math.min(56, Math.floor(disponivel / ((FIM_MIN - INICIO_MIN) / 60))));
   }
 
   async function carregarCompromissos() {
@@ -636,37 +655,28 @@
     }
   }
 
-  function corDoCompromisso(c) {
-    if (typeof c.cor === "string" && c.cor.charAt(0) === "#") return c.cor;
-    return (LEGENDA_PADRAO[Number(c.cor)] || LEGENDA_PADRAO[0]).cor;
+  function gradeHoras(PX) {
+    let h = "<div class='ag-horas' style='height:" + ((FIM_MIN - INICIO_MIN) / 60 * PX) + "px'>";
+    for (let m = INICIO_MIN; m < FIM_MIN; m += 60) {
+      const meia = m + 60 > FIM_MIN;
+      h += "<div style='height:" + (meia ? PX / 2 : PX) + "px'>" + Math.floor(m / 60) + "h" + (m % 60 ? "30" : "00") + "</div>";
+    }
+    return h + "</div>";
   }
 
-  function textoSobre(hex) {
-    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-    return (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#2B2420" : "#FFFFFF";
+  function eventosHTML(evs, PX) {
+    return evs.map(c => {
+      const top = (minutos(c.inicio) - INICIO_MIN) * PX / 60;
+      const alt = Math.max(24, (minutosFim(c.fim) - minutos(c.inicio)) * PX / 60);
+      const cor = corDoCompromisso(c);
+      return "<button class='ag-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + alt + "px;background:" + cor + ";color:" + textoSobre(cor) + "'>" +
+        "<span>" + esc(c.titulo) + "</span><small>" + c.inicio + "–" + c.fim + "</small></button>";
+    }).join("");
   }
 
-  // ---------- Meu Dia: detalhe do dia escolhido na agenda ----------
-  function renderMeuDia() {
-    const el = document.getElementById("meu-dia");
-    if (!el) return;
-    if (!MD.dia) MD.dia = hojeISO();
-    const evs = G.compromissos.filter(c => c.dataISO === MD.dia).sort((a, b) => a.inicio.localeCompare(b.inicio));
-    let h = "<div class='nav'><button class='icone' data-acao='md-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
-      "<strong>" + tituloDia(MD.dia) + "</strong>" +
-      "<button class='icone' data-acao='md-nav' data-d='1' aria-label='Próximo dia'>›</button></div>";
-    h += evs.length
-      ? evs.map(c => "<div class='md-item' style='border-left:6px solid " + corDoCompromisso(c) + "'><small>" + c.inicio + "–" + c.fim + "</small><span>" + esc(c.titulo) + "</span></div>").join("")
-      : "<p class='vazio'>Nenhum compromisso neste dia.</p>";
-    h += "<p class='sub'>As tarefas deste dia serão programadas depois.</p>";
-    el.innerHTML = h;
-  }
-
-  function tratarCliqueMeuDia(e) {
-    const el = e.target.closest("[data-acao='md-nav']");
-    if (!el) return;
-    MD.dia = somar(MD.dia || hojeISO(), Number(el.dataset.d));
-    renderMeuDia();
+  function renderAtual() {
+    if (secaoAtual === "bora") renderMeuDia();
+    else renderGeral();
   }
 
   function renderGeral() {
@@ -677,73 +687,101 @@
     const fim = somar(ini, 6);
     const hoje = hojeISO();
     const atual = G.offset === 0;
-
-    const topo = el.getBoundingClientRect().top;
-    const disponivel = window.innerHeight - topo - 150;
-    const PX = Math.max(24, Math.min(56, Math.floor(disponivel / ((FIM_MIN - INICIO_MIN) / 60))));
+    const PX = pxParaTopo(el, 150);
     const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
 
     let h = "<div id='agenda'>" +
-      "<div class='agenda-topo'><h2>Agenda semanal</h2><button class='icone' data-acao='agenda-novo' aria-label='Novo compromisso'>+</button></div>" +
+      "<div class='agenda-topo'><h3>Agenda semanal</h3><button class='icone' data-acao='agenda-novo' aria-label='Novo compromisso'>+</button></div>" +
       "<div class='nav'><button class='icone' data-acao='agenda-nav' data-d='-1' aria-label='Semana anterior'>‹</button>" +
         "<strong class='intervalo" + (atual ? " semana" : "") + "'>" + dataCurta(ini) + " a " + dataCurta(fim) + "</strong>" +
         "<button class='icone' data-acao='agenda-nav' data-d='1' aria-label='Próxima semana'>›</button></div>";
-
     if (G.formAberto && G.rascunho) h += htmlFormCompromisso();
-
     h += "<div class='agenda-grade'><div></div>";
     dias.forEach(d => {
       h += "<div class='ag-dia-cab" + (d === hoje ? " hoje" : "") + "' data-acao='agenda-dia' data-iso='" + d + "'><small>" + NOMES[diaSemana(d)] + "</small><b>" + dePara(d).getDate() + "</b></div>";
     });
-
-    h += "<div class='ag-horas' style='height:" + altura + "px'>";
-    for (let m = INICIO_MIN; m < FIM_MIN; m += 60) {
-      const meia = m + 60 > FIM_MIN;
-      h += "<div style='height:" + (meia ? PX / 2 : PX) + "px'>" + Math.floor(m / 60) + "h" + (m % 60 ? "30" : "00") + "</div>";
-    }
-    h += "</div>";
-
+    h += gradeHoras(PX);
     dias.forEach(d => {
       const evs = G.compromissos.filter(c => c.dataISO === d);
-      h += "<div class='ag-coluna' style='height:" + altura + "px'>" + evs.map(c => {
-        const top = (minutos(c.inicio) - INICIO_MIN) * PX / 60;
-        const alt = Math.max(24, (minutosFim(c.fim) - minutos(c.inicio)) * PX / 60);
-        const cor = corDoCompromisso(c);
-        return "<button class='ag-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + alt + "px;background:" + cor + ";color:" + textoSobre(cor) + "'>" +
-          "<span>" + esc(c.titulo) + "</span><small>" + c.inicio + "–" + c.fim + "</small></button>";
-      }).join("") + "</div>";
+      h += "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosHTML(evs, PX) + "</div>";
     });
     h += "</div></div>";
     el.innerHTML = h;
   }
 
-  window.addEventListener("resize", () => {
-    if (secaoAtual === "geral") renderGeral();
-  });
+  function renderMeuDia() {
+    const el = document.getElementById("meu-dia");
+    if (!el) return;
+    if (!MD.dia) MD.dia = hojeISO();
+    const PX = pxParaTopo(el, 170);
+    const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
+    const evs = G.compromissos.filter(c => c.dataISO === MD.dia);
+    let h = "<div class='nav'><button class='icone' data-acao='md-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
+      "<strong>" + tituloDia(MD.dia) + "</strong>" +
+      "<button class='icone' data-acao='md-nav' data-d='1' aria-label='Próximo dia'>›</button></div>" +
+      "<div class='agenda-topo'><span></span><button class='icone' data-acao='md-novo' aria-label='Novo compromisso'>+</button></div>";
+    if (G.formAberto && G.rascunho) h += htmlFormCompromisso();
+    h += "<div class='md-grade'>" + gradeHoras(PX) +
+      "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosHTML(evs, PX) + "</div></div>";
+    el.innerHTML = h;
+  }
 
   function htmlFormCompromisso() {
     const r = G.rascunho;
     const nova = G.novaLegenda;
+    const legenda = G.editandoLegenda
+      ? G.legenda.map(l => "<div class='leg-edit'><span class='swatch' style='background:" + l.cor + "'></span>" +
+          "<input data-campo='leg-renomear' data-id='" + l.id + "' value='" + esc(l.nome) + "'>" +
+          "<button class='excluir' data-acao='leg-excluir' data-id='" + l.id + "' aria-label='Excluir cor'>×</button></div>").join("")
+      : "<div class='legenda'>" + G.legenda.map(l =>
+          "<button class='legenda-item" + (r.cor === l.cor ? " ativo" : "") + "' data-acao='ag-cor' data-cor='" + l.cor + "'>" +
+          "<span class='swatch' style='background:" + l.cor + "'></span><small>" + esc(l.nome) + "</small></button>").join("") + "</div>";
+    const tarefas = r.tarefas.map((t, i) =>
+      "<div class='tarefa'><button class='bolinha' data-acao='tarefa-feita' data-i='" + i + "'>" + (t.feita ? ICONE_CHECK : "") + "</button>" +
+      "<input data-campo='tarefa-texto' data-i='" + i + "' value='" + esc(t.texto) + "' placeholder='Tarefa'>" +
+      "<button class='excluir' data-acao='tarefa-del' data-i='" + i + "' aria-label='Remover tarefa'>×</button></div>"
+    ).join("");
+
     return "<div class='ag-form'>" +
+      "<h3>" + (r.id ? "Editar compromisso" : "Novo compromisso") + "</h3>" +
       "<input placeholder='Título do compromisso' data-campo='ag-titulo' value='" + esc(r.titulo) + "'>" +
       "<div class='ag-linha'>" +
         "<input type='date' data-campo='ag-data' value='" + r.dataISO + "'>" +
         "<input type='time' data-campo='ag-inicio' value='" + r.inicio + "'>" +
         "<input type='time' data-campo='ag-fim' value='" + r.fim + "'>" +
       "</div>" +
-      "<label>Legenda de cores</label>" +
-      "<div class='legenda'>" + G.legenda.map(l =>
-        "<button class='legenda-item" + (r.cor === l.cor ? " ativo" : "") + "' data-acao='ag-cor' data-cor='" + l.cor + "'>" +
-          "<span class='swatch' style='background:" + l.cor + "'></span><small>" + esc(l.nome) + "</small></button>"
-      ).join("") + "</div>" +
-      "<div class='ag-linha nova-cor'>" +
-        "<input placeholder='Nome da nova cor' data-campo='leg-nome' value='" + esc(nova.nome) + "'>" +
+      "<div class='legenda-cab'><label>Legenda de cores</label><button class='secundario' data-acao='leg-editar'>" + (G.editandoLegenda ? "Pronto" : "Editar legenda") + "</button></div>" +
+      legenda +
+      (G.editandoLegenda ? "" :
+        "<div class='ag-linha nova-cor'><input placeholder='Nome da nova cor' data-campo='leg-nome' value='" + esc(nova.nome) + "'>" +
         "<input type='color' data-campo='leg-cor' value='" + nova.cor + "'>" +
-        "<button class='secundario' data-acao='leg-salvar'>Adicionar cor</button>" +
-      "</div>" +
+        "<button class='secundario' data-acao='leg-salvar'>Adicionar cor</button></div>") +
+      "<label>Tarefas</label>" + tarefas +
+      "<button class='secundario' data-acao='tarefa-add'>+ Tarefa</button>" +
       "<div id='ag-status' class='status'></div>" +
-      "<div class='centro'><button class='secundario' data-acao='ag-cancelar'>Cancelar</button><button class='grande' data-acao='ag-salvar'>Salvar</button></div>" +
+      "<div class='centro'>" +
+        (r.id ? "<button class='excluir' data-acao='ag-excluir' data-id='" + r.id + "'>Excluir</button>" : "") +
+        "<button class='secundario' data-acao='ag-cancelar'>Cancelar</button>" +
+        "<button class='grande' data-acao='ag-salvar'>Salvar</button>" +
+      "</div>" +
     "</div>";
+  }
+
+  function abrirFormNovo(dataISO) {
+    G.formAberto = true;
+    G.editandoLegenda = false;
+    G.rascunho = { id: null, titulo: "", dataISO: dataISO, inicio: "08:00", fim: "09:00", cor: (G.legenda[0] || LEGENDA_PADRAO[0]).cor, tarefas: [] };
+  }
+
+  function abrirFormEdicao(id) {
+    const c = G.compromissos.find(x => x.id === id);
+    if (!c) return;
+    G.formAberto = true;
+    G.editandoLegenda = false;
+    G.rascunho = {
+      id: c.id, titulo: c.titulo, dataISO: c.dataISO, inicio: c.inicio, fim: c.fim, cor: corDoCompromisso(c),
+      tarefas: (c.tarefas || []).map(t => ({ texto: t.texto, feita: !!t.feita }))
+    };
   }
 
   async function tratarCliqueGeral(e) {
@@ -751,18 +789,25 @@
       const el = e.target.closest("[data-acao]");
       if (!el) return;
       const a = el.dataset.acao;
+      const i = Number(el.dataset.i);
+      const r = G.rascunho;
+
       if (a === "agenda-nav") { G.offset += Number(el.dataset.d); renderGeral(); }
       else if (a === "agenda-dia") { MD.dia = el.dataset.iso; MD.vindoDaAgenda = true; irPara("bora"); }
-      else if (a === "agenda-novo") {
-        G.formAberto = true;
-        G.rascunho = { titulo: "", dataISO: hojeISO(), inicio: "08:00", fim: "09:00", cor: (G.legenda[0] || LEGENDA_PADRAO[0]).cor };
-        renderGeral();
-      }
-      else if (a === "leg-salvar") await salvarNovaCor();
-      else if (a === "ag-cancelar") { G.formAberto = false; renderGeral(); }
-      else if (a === "ag-cor") { G.rascunho.cor = el.dataset.cor; renderGeral(); }
+      else if (a === "agenda-novo") { abrirFormNovo(hojeISO()); renderGeral(); }
+      else if (a === "agenda-evento") { abrirFormEdicao(el.dataset.id); renderAtual(); }
+      else if (a === "md-nav") { MD.dia = somar(MD.dia || hojeISO(), Number(el.dataset.d)); renderMeuDia(); }
+      else if (a === "md-novo") { abrirFormNovo(MD.dia || hojeISO()); renderMeuDia(); }
+      else if (a === "ag-cancelar") { G.formAberto = false; G.rascunho = null; G.editandoLegenda = false; renderAtual(); }
+      else if (a === "ag-cor") { r.cor = el.dataset.cor; renderAtual(); }
       else if (a === "ag-salvar") await salvarCompromisso();
-      else if (a === "agenda-evento") await excluirCompromisso(el.dataset.id);
+      else if (a === "ag-excluir") await excluirCompromisso(el.dataset.id);
+      else if (a === "leg-editar") { G.editandoLegenda = !G.editandoLegenda; renderAtual(); }
+      else if (a === "leg-salvar") await salvarNovaCor();
+      else if (a === "leg-excluir") await excluirCor(el.dataset.id);
+      else if (a === "tarefa-add") { r.tarefas.push({ texto: "", feita: false }); renderAtual(); }
+      else if (a === "tarefa-del") { r.tarefas.splice(i, 1); renderAtual(); }
+      else if (a === "tarefa-feita") { r.tarefas[i].feita = !r.tarefas[i].feita; renderAtual(); }
     } catch (err) {
       mostrarErro(err.message);
     }
@@ -772,11 +817,29 @@
     const d = e.target.dataset;
     if (d.campo === "leg-nome") { G.novaLegenda.nome = e.target.value; return; }
     if (d.campo === "leg-cor") { G.novaLegenda.cor = e.target.value; return; }
+    if (d.campo === "leg-renomear") {
+      const cor = G.legenda.find(l => l.id === d.id);
+      if (cor) cor.nome = e.target.value;
+      if (e.type === "change") persistirNomeCor(d.id, e.target.value);
+      return;
+    }
     if (!G.rascunho) return;
-    if (d.campo === "ag-titulo") G.rascunho.titulo = e.target.value;
-    else if (d.campo === "ag-data") G.rascunho.dataISO = e.target.value;
-    else if (d.campo === "ag-inicio") G.rascunho.inicio = e.target.value;
-    else if (d.campo === "ag-fim") G.rascunho.fim = e.target.value;
+    const r = G.rascunho;
+    if (d.campo === "ag-titulo") r.titulo = e.target.value;
+    else if (d.campo === "ag-data") r.dataISO = e.target.value;
+    else if (d.campo === "ag-inicio") r.inicio = e.target.value;
+    else if (d.campo === "ag-fim") r.fim = e.target.value;
+    else if (d.campo === "tarefa-texto") r.tarefas[Number(d.i)].texto = e.target.value;
+  }
+
+  async function persistirNomeCor(id, nome) {
+    const nomeLimpo = (nome || "").trim();
+    if (!nomeLimpo) return;
+    try {
+      await colecao("legenda").doc(id).update({ nome: nomeLimpo });
+    } catch (err) {
+      mostrarErro(err.message);
+    }
   }
 
   async function salvarNovaCor() {
@@ -786,9 +849,23 @@
     try {
       const ref = await colecao("legenda").add({ nome: nome, cor: cor });
       G.legenda.push({ id: ref.id, nome: nome, cor: cor });
-      G.rascunho.cor = cor;
+      if (G.rascunho) G.rascunho.cor = cor;
       G.novaLegenda = { nome: "", cor: "#D81A67" };
-      renderGeral();
+      renderAtual();
+    } catch (err) {
+      mostrarErro(err.message);
+    }
+  }
+
+  async function excluirCor(id) {
+    const cor = G.legenda.find(l => l.id === id);
+    if (!cor) return;
+    if (!confirm("Excluir a cor \"" + cor.nome + "\"? Os compromissos que já usam essa cor continuam com ela.")) return;
+    try {
+      await colecao("legenda").doc(id).delete();
+      G.legenda = G.legenda.filter(l => l.id !== id);
+      if (G.rascunho && G.rascunho.cor === cor.cor) G.rascunho.cor = (G.legenda[0] || LEGENDA_PADRAO[0]).cor;
+      renderAtual();
     } catch (err) {
       mostrarErro(err.message);
     }
@@ -802,13 +879,23 @@
       if (st) st.textContent = "Confira o horário: o fim deve ser depois do início.";
       return;
     }
-    const obj = { titulo: r.titulo.trim(), dataISO: r.dataISO, inicio: r.inicio, fim: r.fim, cor: r.cor };
+    const obj = {
+      titulo: r.titulo.trim(), dataISO: r.dataISO, inicio: r.inicio, fim: r.fim, cor: r.cor,
+      tarefas: r.tarefas.filter(t => (t.texto || "").trim() !== "").map(t => ({ texto: t.texto.trim(), feita: !!t.feita }))
+    };
     try {
-      const ref = await colecao("compromissos").add(obj);
-      G.compromissos.push({ id: ref.id, ...obj });
+      if (r.id) {
+        await colecao("compromissos").doc(r.id).set(obj);
+        const idx = G.compromissos.findIndex(c => c.id === r.id);
+        if (idx >= 0) G.compromissos[idx] = { id: r.id, ...obj };
+      } else {
+        const ref = await colecao("compromissos").add(obj);
+        G.compromissos.push({ id: ref.id, ...obj });
+      }
       G.formAberto = false;
       G.rascunho = null;
-      renderGeral();
+      G.editandoLegenda = false;
+      renderAtual();
     } catch (err) {
       if (st) st.textContent = "Erro ao salvar: " + err.message;
     }
@@ -820,18 +907,23 @@
     try {
       await colecao("compromissos").doc(id).delete();
       G.compromissos = G.compromissos.filter(c => c.id !== id);
-      renderGeral();
+      if (G.rascunho && G.rascunho.id === id) { G.formAberto = false; G.rascunho = null; }
+      renderAtual();
     } catch (err) {
       mostrarErro(err.message);
     }
   }
 
-  // Ao clicar fora da agenda, volta para a semana atual
+  // Ao clicar fora da agenda semanal, volta para a semana atual
   document.addEventListener("click", e => {
     if (secaoAtual !== "geral" || G.offset === 0) return;
     if (e.target.closest && (e.target.closest("[data-acao='agenda-nav']") || e.target.closest("#agenda"))) return;
     G.offset = 0;
     renderGeral();
+  });
+
+  window.addEventListener("resize", () => {
+    if (secaoAtual === "geral" || secaoAtual === "bora") renderAtual();
   });
 
   // ---------- treinos: tela ----------
