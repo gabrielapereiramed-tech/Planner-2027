@@ -371,6 +371,12 @@
   .md-evento .bolinha { width: 22px !important; height: 22px; }
   .md-evento .bolinha svg { width: 12px; height: 12px; }
   .md-evento-topo strong { font-size: 0.95rem; }
+
+  @media (orientation: landscape) and (min-width: 720px) {
+    .md-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+    .md-agenda, .md-col { min-width: 0; }
+    .md-habitos { flex: none; }
+  }
 </style>
 </head>
 <body>
@@ -863,7 +869,7 @@
     agenda += "<div class='md-grade'>" + gradeHoras(PX) +
       "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosMeuDia(evs, PX) + "</div></div>";
 
-    const naoEsqueco = "<div class='bloco'><h3>Não esquecer</h3><div id='nao'></div></div>";
+    const naoEsqueco = "<div class='bloco'><div class='habitos-topo'><h3>Não esquecer</h3><button class='btn-lapis' data-acao='ne-editar' aria-label='Editar lista'>" + ICONES.lapis + "</button></div><div id='nao'></div></div>";
 
     const habitos = "<div class='bloco md-habitos'>" +
       "<div class='habitos-topo'><h3>Hábitos de hoje</h3>" +
@@ -1025,6 +1031,7 @@
       else if (a === "habito-add") await adicionarHabito();
       else if (a === "habito-editar") { H.adicionando = !H.adicionando; renderMeuDia(); }
       else if (a === "habito-cor") { H.novaCor = el.dataset.cor; renderMeuDia(); }
+      else if (a === "ne-editar") { NE.adicionando = !NE.adicionando; renderNaoEsquecer(); }
       else if (a === "ne-add") await neAdicionar();
       else if (a === "ne-feito") await neAlternar(el.dataset.id);
       else if (a === "ne-del") await neExcluir(el.dataset.id);
@@ -1221,7 +1228,7 @@
   });
 
   // ---------- Não esquecer ----------
-  const NE = { lista: [], novoTexto: "" };
+  const NE = { lista: [], novoTexto: "", adicionando: false };
 
   async function carregarNaoEsquecer() {
     try {
@@ -1233,15 +1240,19 @@
   function renderNaoEsquecer() {
     const el = document.getElementById("nao");
     if (!el) return;
-    el.innerHTML = "<div class='ne-add'><input placeholder='O que você não pode esquecer?' data-campo='ne-texto' value='" + esc(NE.novoTexto) + "'>" +
-      "<button class='secundario' data-acao='ne-add'>Adicionar</button></div>" +
-      (NE.lista.length
-        ? NE.lista.map(it =>
-            "<div class='ne-item'><button class='bolinha" + (it.feito ? " feita" : "") + "' data-acao='ne-feito' data-id='" + it.id + "' aria-label='Marcar'>" +
-            (it.feito ? ICONE_CHECK : "") + "</button><span class='" + (it.feito ? "riscado" : "") + "'>" + esc(it.texto) + "</span>" +
-            "<button class='excluir' data-acao='ne-del' data-id='" + it.id + "' aria-label='Excluir'>×</button></div>"
-          ).join("")
-        : "<p class='vazio'>Nada anotado ainda.</p>");
+    let h = NE.lista.length
+      ? NE.lista.map(it =>
+          "<div class='ne-item'><button class='bolinha" + (it.feito ? " feita" : "") + "' data-acao='ne-feito' data-id='" + it.id + "' aria-label='Marcar'>" +
+          (it.feito ? ICONE_CHECK : "") + "</button><span class='" + (it.feito ? "riscado" : "") + "'>" + esc(it.texto) + "</span>" +
+          (NE.adicionando ? "<button class='excluir' data-acao='ne-del' data-id='" + it.id + "' aria-label='Excluir'>×</button>" : "") +
+          "</div>"
+        ).join("")
+      : "<p class='vazio'>Nada anotado ainda.</p>";
+    if (NE.adicionando) {
+      h += "<div class='ne-add'><input placeholder='O que você não pode esquecer?' data-campo='ne-texto' value='" + esc(NE.novoTexto) + "'>" +
+        "<button class='secundario' data-acao='ne-add'>Adicionar</button></div>";
+    }
+    el.innerHTML = h;
   }
 
   async function neAdicionar() {
