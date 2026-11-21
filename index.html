@@ -393,6 +393,16 @@
   .ag-evento.curto { flex-direction: row; align-items: center; gap: 6px; padding: 0 5px; }
   .ag-evento.curto span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .ag-evento.curto small { white-space: nowrap; flex-shrink: 0; }
+
+  .md-scroll { overflow-y: auto; position: relative; }
+  .linha-agora { position: absolute; left: 0; right: 0; height: 2px; background: var(--fuchsia); z-index: 2; pointer-events: none; }
+  .check-concluido { position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; z-index: 3; }
+  .check-concluido svg { width: 18px; height: 18px; }
+  .faixa { border-top: 4px solid #E7E5E4; }
+  .faixa-nao { border-top-color: #770523; }
+  .faixa-habitos { border-top-color: #F2A7C3; }
+  .faixa-caixa { border-top-color: #D0D996; }
+  .faixa-metas { border-top-color: #D81A67; }
 </style>
 </head>
 <body>
@@ -871,26 +881,51 @@
     return px;
   }
 
+  function htmlMetasSemanal() {
+    const ini = inicioSemana(hojeISO());
+    const fim = somar(ini, 6);
+    const feitos = diasTreinados(ini, fim);
+    const meta = T.metas.semanal;
+    const pct = meta ? Math.min(100, Math.round(feitos / meta * 100)) : 0;
+    return "<div class='bloco faixa faixa-metas'><h3>Metas semanais</h3>" +
+      (meta
+        ? "<p class='resumo'><strong>" + feitos + "</strong> de " + meta + " dias treinados nesta semana</p>" +
+          "<div class='barra-meta'><div style='width:" + pct + "%'></div></div>"
+        : "<p class='vazio'>Defina sua meta semanal no botão de alvo da aba Treinos.</p>") +
+    "</div>";
+  }
+
   function renderMeuDia() {
     const el = document.getElementById("meu-dia");
     if (!el) return;
     if (!MD.dia) MD.dia = hojeISO();
+    CX.dia = MD.dia;
+    const antigo = el.querySelector(".md-scroll");
+    const posAntiga = antigo ? antigo.scrollTop : null;
+    const diaMudou = MD.scrollDia !== MD.dia;
+
     const PXbase = pxParaTopo(el, 170);
     const evs = G.compromissos.filter(c => c.dataISO === MD.dia);
     const PX = pxDoDia(evs, PXbase);
     const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
+    const maxAlt = Math.max(240, window.innerHeight - el.getBoundingClientRect().top - 190);
+    const agora = new Date();
+    const minAgora = agora.getHours() * 60 + agora.getMinutes();
+    const eHoje = MD.dia === hojeISO();
+    const linhaAgora = eHoje && minAgora >= INICIO_MIN && minAgora <= FIM_MIN
+      ? "<div class='linha-agora' style='top:" + ((minAgora - INICIO_MIN) * PX / 60) + "px'></div>" : "";
 
     let agenda = "<div class='nav'><button class='icone' data-acao='md-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
       "<strong>" + tituloDia(MD.dia) + "</strong>" +
       "<button class='icone' data-acao='md-nav' data-d='1' aria-label='Próximo dia'>›</button></div>" +
       "<div class='agenda-topo'><span></span><button class='icone' data-acao='md-novo' aria-label='Novo compromisso'>+</button></div>";
     if (G.formAberto && G.rascunho) agenda += htmlFormCompromisso(true);
-    agenda += "<div class='md-grade'>" + gradeHoras(PX) +
-      "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosMeuDia(evs, PX) + "</div></div>";
+    agenda += "<div class='md-scroll' style='max-height:" + maxAlt + "px'><div class='md-grade'>" + gradeHoras(PX) +
+      "<div class='ag-coluna' style='height:" + altura + "px'>" + linhaAgora + eventosMeuDia(evs, PX) + "</div></div></div>";
 
-    const naoEsqueco = "<div class='bloco'><div class='habitos-topo'><h3>Não esquecer</h3><button class='btn-lapis' data-acao='ne-editar' aria-label='Editar lista'>" + ICONES.lapis + "</button></div><div id='nao'></div></div>";
+    const naoEsqueco = "<div class='bloco faixa faixa-nao'><div class='habitos-topo'><h3>Não esquecer</h3><button class='btn-lapis' data-acao='ne-editar' aria-label='Editar lista'>" + ICONES.lapis + "</button></div><div id='nao'></div></div>";
 
-    const habitos = "<div class='bloco md-habitos'>" +
+    const habitos = "<div class='bloco faixa faixa-habitos md-habitos'>" +
       "<div class='habitos-topo'><h3>Hábitos de hoje</h3>" +
         "<button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
       (H.lista.length ? H.lista.map(hb => {
@@ -906,10 +941,18 @@
       (H.adicionando ? htmlNovoHabito() : "") +
     "</div>";
 
-    const caixa = "<div class='bloco'><h3>Caixa do dia</h3><div id='caixa'></div></div>";
+    const caixa = "<div class='bloco faixa faixa-caixa'><h3>Caixa do dia</h3><div id='caixa'></div></div>";
 
     el.innerHTML = "<div class='md-layout'><div class='md-agenda'>" + agenda + "</div>" +
-      "<div class='md-col'>" + naoEsqueco + habitos + caixa + "</div></div>";
+      "<div class='md-col'>" + naoEsqueco + habitos + htmlMetasSemanal() + caixa + "</div></div>";
+
+    const rolagem = el.querySelector(".md-scroll");
+    if (rolagem) {
+      if (diaMudou) rolagem.scrollTop = eHoje ? Math.max(0, (minAgora - INICIO_MIN) * PX / 60 - maxAlt / 3) : 0;
+      else if (posAntiga !== null) rolagem.scrollTop = posAntiga;
+    }
+    MD.scrollDia = MD.dia;
+
     renderNaoEsquecer();
     renderCaixa();
   }
@@ -941,6 +984,7 @@
       const fontePx = Math.max(10, Math.min(14, Math.floor((alvo - 6) / 1.9)));
       const bolinha = Math.min(22, Math.round(fontePx * 1.5));
       const curto = alt < 64;
+      const todas = n > 0 && c.tarefas.every(t => t.feita);
       const tarefas = (c.tarefas || []).map((t, i) =>
         "<div class='tarefa-linha'><button class='bolinha" + (t.feita ? " feita" : "") + "' data-acao='tarefa-marcar' data-cid='" + c.id + "' data-i='" + i + "' style='" +
           "--b:" + bolinha + "px;" +
@@ -949,6 +993,7 @@
           "<span class='" + (t.feita ? "riscado" : "") + "'>" + esc(t.texto) + "</span></div>"
       ).join("");
       return "<div class='md-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + alt + "px;border-color:" + cor + ";background:" + tintar(cor, 0.85) + "'>" +
+        (todas ? "<span class='check-concluido' style='color:" + corTextoLegivel(cor) + "'>" + ICONE_CHECK + "</span>" : "") +
         "<div class='md-evento-topo" + (curto ? " curto" : "") + "'><strong style='color:" + corTextoLegivel(cor) + "'>" + esc(c.titulo) + "</strong><small>" + c.inicio + "–" + c.fim + "</small></div>" +
         "<div class='md-tarefas" + (n >= 2 ? " duas" : "") + "' style='font-size:" + fontePx + "px'>" + tarefas + "</div></div>";
     }).join("");
@@ -1013,7 +1058,7 @@
         "<button class='btn-lapis' data-acao='leg-nova' aria-label='Adicionar cor nova'>+</button>" +
         "<button class='btn-lapis' data-acao='leg-editar' aria-label='Editar legenda'>" + ICONES.lapis + "</button></div></div>" +
       legenda +
-      htmlSeletorCor("ag", r.cor, null) +
+      (G.novaCorAberta ? htmlSeletorCor("ag", r.cor, null) : "") +
       (G.novaCorAberta && !G.editandoLegenda ?
         "<div class='ag-linha nova-cor'><input placeholder='Nome da nova cor' data-campo='leg-nome' value='" + esc(nova.nome) + "'>" +
         "<button class='secundario' data-acao='leg-salvar'>Adicionar cor</button></div>" +
@@ -1357,7 +1402,7 @@
     const gastos = dia.filter(x => x.tipo === "gasto").reduce((a, x) => a + Number(x.valor), 0);
     const fmt = v => "R$ " + v.toFixed(2).replace(".", ",");
 
-    el.innerHTML = "<div class='nav'><button class='icone' data-acao='cx-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
+    el.innerHTML = "<p class='sub'>" + tituloDia(CX.dia) + "</p>" +
       "<strong>" + tituloDia(CX.dia) + "</strong>" +
       "<button class='icone' data-acao='cx-nav' data-d='1' aria-label='Próximo dia'>›</button></div>" +
       "<div class='cx-resumo'>" +
@@ -1428,6 +1473,38 @@
     else if (d.campo === "cx-valor") CX.valor = e.target.value;
     else if (d.campo === "cx-desc") CX.descricao = e.target.value;
   }
+
+  // ---------- lembretes de compromissos ----------
+  const AVISADOS = new Set();
+
+  function mostrarAviso(msg) {
+    let b = document.getElementById("aviso-banner");
+    if (!b) {
+      b = document.createElement("div");
+      b.id = "aviso-banner";
+      b.style.cssText = "position:fixed;left:8px;right:8px;top:8px;background:#770523;color:#fff;padding:10px 12px;border-radius:12px;font-size:13px;z-index:99;";
+      b.onclick = () => b.remove();
+      document.body.appendChild(b);
+    }
+    b.textContent = msg + " (toque para fechar)";
+  }
+
+  function verificarLembretes() {
+    if (!usuario) return;
+    const hoje = hojeISO();
+    const agora = new Date();
+    const minAgora = agora.getHours() * 60 + agora.getMinutes();
+    G.compromissos.filter(c => c.dataISO === hoje).forEach(c => {
+      const falta = minutos(c.inicio) - minAgora;
+      const chave = c.id + "|" + hoje;
+      if (falta >= 0 && falta <= 10 && !AVISADOS.has(chave)) {
+        AVISADOS.add(chave);
+        if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+        mostrarAviso("Em " + falta + " min: " + c.titulo);
+      }
+    });
+  }
+  setInterval(verificarLembretes, 30000);
 
   // ---------- treinos: tela ----------
   function renderTreinos() {
