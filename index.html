@@ -23,7 +23,7 @@
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; min-height: 100vh; background: var(--creme); color: #2B2420;
+    margin: 0; min-height: 100vh; background: #FFFFFF; color: #2B2420;
     font-family: "Poppins", system-ui, -apple-system, sans-serif; font-weight: 400;
     display: flex; justify-content: center; align-items: flex-start;
   }
@@ -72,9 +72,9 @@
     font-family: "Poppins", system-ui, sans-serif; font-weight: 400; font-size: 0.85rem;
   }
   .item svg { width: 18px; height: 18px; flex-shrink: 0; }
-  .item.ativo { background: var(--creme); box-shadow: inset 3px 0 0 var(--blood); }
+  .item.ativo { background: #FFFFFF; box-shadow: inset 3px 0 0 var(--blood); }
   .item.sair { background: transparent; color: var(--burgundy); border: 2px solid var(--burgundy); justify-content: center; margin-top: 0.5rem; }
-  .conteudo { background: var(--creme); border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
+  .conteudo { background: #FFFFFF; border-radius: 24px; padding: 1.25rem; min-height: 60vh; }
   .voltar { display: none; }
   .linha { display: flex; gap: 0.5rem; margin-top: 1rem; }
   .linha input { margin-bottom: 0; }
@@ -167,14 +167,14 @@
   @media (min-width: 720px) {
     .wrap { max-width: none; padding: 0; }
     .app { flex-direction: row; align-items: stretch; min-height: 100vh; gap: 0; }
-    .menu { width: 170px; flex-shrink: 0; display: flex !important; padding: 1.25rem 0.6rem; background: var(--branco); border-right: 1px solid #E7E5E4; }
+    .menu { width: 170px; flex-shrink: 0; display: flex !important; padding: 1.25rem 0.6rem; background: #EEEEEC; }
     .menu-topo { color: var(--burgundy); font-size: 1.1rem; padding: 0 0.5rem 0.8rem; }
     .item.sair { background: transparent; }
     .conteudo { flex: 1; min-width: 0; display: block !important; border-radius: 0; padding: 2.5rem; min-height: 100vh; }
     .voltar { display: none; }
   }
   @media (max-width: 719px) {
-    .menu { flex-direction: row; overflow-x: auto; gap: 0.4rem; padding-bottom: 0.25rem; }
+    .menu { flex-direction: row; overflow-x: auto; gap: 0.4rem; padding: 0.5rem; background: #EEEEEC; }
     .menu-topo { display: none; }
     .item { width: auto; flex-shrink: 0; border: 1px solid #E7E5E4; background: #FFFFFF; border-radius: 999px; padding: 0.45rem 0.8rem; font-size: 0.8rem; }
     .item.ativo { border-color: var(--blood); box-shadow: none; }
@@ -182,7 +182,7 @@
   }
 
   /* ---- refinamento: visual limpo ---- */
-  .conteudo { background: var(--creme); }
+  .conteudo { background: #FFFFFF; }
   h2 { font-size: 1.5rem; margin: 0 0 1rem; }
   .sub { font-size: 0.9rem; margin: 0.25rem 0 0.9rem; color: #6B6259; }
   .abas { gap: 1.5rem; border-bottom: 1px solid #E7E5E4; margin-bottom: 1.25rem; }
@@ -238,6 +238,19 @@
   .cal-dia.treinado svg { color: #2B2420; }
   .cal-dia.hoje { border: 2px solid var(--blood); }
   .cal-dia div, .cal-dia { min-height: 52px; }
+
+  .cal-dia.hoje:not(.treinado) { background: #FFFFFF; border: 2px solid var(--blood); }
+  .cal-dia.hoje.treinado { border: 2px solid var(--blood); }
+  .etiqueta { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--pistachio); color: #2B2420; border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.8rem; font-weight: 600; }
+  .etiqueta svg { width: 14px; height: 14px; }
+  .feito-card .nome-feito { font-weight: 600; font-size: 1rem; color: #1F1A17; }
+  .feito-card .linha-ex { color: #6B6259; font-size: 0.85rem; }
+  .cronometro { background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 16px; padding: 1rem; text-align: center; margin-bottom: 1rem; }
+  .cronometro small { color: #6B6259; font-size: 0.85rem; }
+  .cronometro strong { display: block; font-size: 2.6rem; font-weight: 600; color: #2B2420; font-variant-numeric: tabular-nums; }
+  .descanso { background: var(--blood); color: #FFFFFF; border: none; }
+  .descanso strong { font-size: 2.4rem; color: #FFFFFF; font-variant-numeric: tabular-nums; }
+  .descanso button { border-color: #FFFFFF; color: #FFFFFF; }
 </style>
 </head>
 <body>
@@ -660,7 +673,7 @@
   }
 
   function htmlSessaoFeita(s) {
-    let h = "<div class='feito-card'><div class='ex-topo'><span>" + (s.manual ? "Registro manual" : "Treino feito") + "</span><span>" +
+    let h = "<div class='feito-card'><div class='ex-topo'><span>" + (s.manual ? "Registro manual" : "<span class='etiqueta'>" + ICONE_CHECK + " Concluído</span>") + "</span><span>" +
       (s.manual || !s.duracaoSeg ? "" : formatar(s.duracaoSeg)) + "</span></div>";
     if (s.manual) {
       h += "<p class='texto'>" + esc(s.descricao) + "</p>";
@@ -685,7 +698,7 @@
 
   function htmlSessaoAtiva() {
     const t = T.treinoHoje;
-    let h = "<h2>" + esc(t.nome) + "</h2><div class='centro'>Tempo: <strong id='tempo'></strong></div>";
+    let h = "<h2>" + esc(t.nome) + "</h2><div class='cronometro'><small>tempo de treino</small><strong id='tempo'></strong></div>";
     if (T.descanso) {
       h += "<div class='descanso'>Descanso<strong id='descanso'></strong><button data-acao='pular'>Pular descanso</button></div>";
     }
@@ -741,16 +754,20 @@
     "</div>";
   }
 
-  function anelSemana(feitos, meta) {
+  function anel(feitos, meta, rotulo) {
     const C = 2 * Math.PI * 50;
     const pct = meta ? Math.min(1, feitos / meta) : 0;
     const centro = meta ? feitos + "/" + meta : String(feitos);
-    return "<svg viewBox='0 0 120 120' width='150' height='150' style='display:block;margin:0 auto' role='img' aria-label='Progresso da semana: " + centro + " treinos'>" +
+    return "<svg viewBox='0 0 120 120' width='150' height='150' style='display:block;margin:0 auto' role='img' aria-label='Progresso: " + centro + " " + rotulo + "'>" +
       "<circle cx='60' cy='60' r='50' fill='none' stroke='#EFECE6' stroke-width='12'/>" +
       "<circle cx='60' cy='60' r='50' fill='none' stroke='#DD4E28' stroke-width='12' stroke-linecap='round' stroke-dasharray='" + (pct * C) + " " + C + "' transform='rotate(-90 60 60)'/>" +
       "<text x='60' y='62' text-anchor='middle' font-size='20' font-weight='600' fill='#2B2420'>" + centro + "</text>" +
-      "<text x='60' y='80' text-anchor='middle' font-size='10' fill='#6B6259'>treinos</text>" +
+      "<text x='60' y='80' text-anchor='middle' font-size='10' fill='#6B6259'>" + rotulo + "</text>" +
     "</svg>";
+  }
+
+  function anelSemana(feitos, meta) {
+    return anel(feitos, meta, "treinos");
   }
 
   function htmlCalendario(ano, mes) {
@@ -789,17 +806,12 @@
     "</section>";
 
     const diasAno = diasTreinados(anoAtual + "-01-01", anoAtual + "-12-31");
-    const totalDias = diasTreinados("0000-01-01", "9999-12-31");
-    h += "<section class='bloco'><h3>Total</h3>" +
-      "<p class='resumo'>Em " + anoAtual + ": <strong>" + diasAno + "</strong> dias treinados · Total: <strong>" + totalDias + "</strong> dias</p>";
-    if (T.metas.anual) {
-      const anoMeta = Number(T.metas.ano) || anoAtual;
-      const feitos = diasTreinados(anoMeta + "-01-01", anoMeta + "-12-31");
-      const pct = Math.min(100, Math.round(feitos / Number(T.metas.anual) * 100));
-      h += "<div class='meta-bloco'><p>Meta de " + anoMeta + ": <strong>" + feitos + "</strong> de " + T.metas.anual + " dias</p>" +
-        "<div class='barra-meta'><div style='width:" + pct + "%'></div></div></div>";
-    }
-    return h + "</section>";
+    h += "<section class='bloco'><h3>Total de " + anoAtual + "</h3>" +
+      anel(diasAno, T.metas.anual, "dias") +
+      (T.metas.anual ? "" : "<p class='vazio'>Defina sua meta anual no botão de alvo.</p>") +
+      "<p class='resumo'>Total desde o início: <strong>" + diasTreinados("0000-01-01", "9999-12-31") + "</strong> dias</p>" +
+    "</section>";
+    return h;
   }
 
   // ---------- editores ----------
@@ -862,8 +874,6 @@
       "<input type='number' inputmode='numeric' placeholder='Ex.: 4' data-campo='meta' data-chave='semanal' value='" + (r.semanal ?? "") + "'>" +
       "<label>Treinos no ano</label>" +
       "<input type='number' inputmode='numeric' placeholder='Ex.: 150' data-campo='meta' data-chave='anual' value='" + (r.anual ?? "") + "'>" +
-      "<label>Ano da meta</label>" +
-      "<input type='number' inputmode='numeric' placeholder='Ex.: 2027' data-campo='meta' data-chave='ano' value='" + (r.ano ?? "") + "'>" +
       "<div id='treino-status' class='status'></div>" +
       "<div class='centro'>" +
         "<button class='secundario' data-acao='fechar-editor'>Cancelar</button>" +
@@ -1146,7 +1156,7 @@
     const r = T.metaRascunho;
     const st = document.getElementById("treino-status");
     const num = v => (v === "" || v === null || v === undefined) ? null : Number(v);
-    const obj = { semanal: num(r.semanal), anual: num(r.anual), ano: num(r.ano) };
+    const obj = { semanal: num(r.semanal), anual: num(r.anual), ano: new Date().getFullYear() };
     try {
       await colecao("config").doc("metas").set(obj);
       T.metas = obj;
