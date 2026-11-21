@@ -276,6 +276,11 @@
   .ag-linha input { margin-bottom: 0; padding: 0.6rem 0.7rem; font-size: 0.9rem; min-width: 0; }
   .chip.cor { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid transparent; }
   .chip.cor.ativo { outline: 2px solid #2B2420; outline-offset: 2px; }
+
+  .pill-semana { display: inline-block; background: var(--fuchsia); color: #FFFFFF; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-left: 0.4rem; vertical-align: middle; }
+  .ag-dia-cab.semana { background: #FCE7F0; border-radius: 10px 10px 0 0; }
+  .ag-coluna.semana { background: #FFF8FB; }
+  .ag-horas div { padding-right: 4px; }
 </style>
 </head>
 <body>
@@ -369,7 +374,7 @@
   const somar = (iso, n) => { const d = dePara(iso); d.setDate(d.getDate() + n); return isoDe(d); };
   const hojeISO = () => isoDe(new Date());
   const diaSemana = iso => dePara(iso).getDay();
-  const inicioSemana = iso => somar(iso, -diaSemana(iso));
+  const inicioSemana = iso => somar(iso, -((diaSemana(iso) + 6) % 7));
   const tituloDia = iso => NOMES_LONGOS[diaSemana(iso)] + ", " + dePara(iso).getDate() + " de " + MESES[dePara(iso).getMonth()];
   const dataCurta = iso => dePara(iso).getDate() + "/" + pad(dePara(iso).getMonth() + 1);
   const capitalizar = t => t.replace(/^./, c => c.toUpperCase());
@@ -580,11 +585,15 @@
     { fundo: "#D0D996", texto: "#2B2420" },
     { fundo: "#D81A67", texto: "#FFFFFF" }
   ];
-  const HORA_INICIO = 7, HORA_FIM = 23, PX_HORA = 48;
+  const INICIO_MIN = 270, FIM_MIN = 1440;
 
   function minutos(hhmm) {
     const [h, m] = hhmm.split(":").map(Number);
     return h * 60 + m;
+  }
+
+  function minutosFim(hhmm) {
+    return hhmm === "00:00" ? 1440 : minutos(hhmm);
   }
 
   async function carregarCompromissos() {
@@ -603,37 +612,50 @@
     const dias = [0, 1, 2, 3, 4, 5, 6].map(k => somar(ini, k));
     const fim = somar(ini, 6);
     const hoje = hojeISO();
+    const atual = G.offset === 0;
+
+    const topo = el.getBoundingClientRect().top;
+    const disponivel = window.innerHeight - topo - 150;
+    const PX = Math.max(24, Math.min(56, Math.floor(disponivel / ((FIM_MIN - INICIO_MIN) / 60))));
+    const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
 
     let h = "<div id='agenda'>" +
       "<div class='agenda-topo'><h2>Geral</h2><button class='icone' data-acao='agenda-novo' aria-label='Novo compromisso'>+</button></div>" +
       "<div class='nav'><button class='icone' data-acao='agenda-nav' data-d='-1' aria-label='Semana anterior'>‹</button>" +
-        "<strong>" + dataCurta(ini) + " a " + dataCurta(fim) + "</strong>" +
+        "<strong>" + dataCurta(ini) + " a " + dataCurta(fim) + (atual ? " <span class='pill-semana'>Semana atual</span>" : "") + "</strong>" +
         "<button class='icone' data-acao='agenda-nav' data-d='1' aria-label='Próxima semana'>›</button></div>";
 
     if (G.formAberto && G.rascunho) h += htmlFormCompromisso();
 
-    h += "<div class='agenda-grade'>";
-    h += "<div></div>";
+    h += "<div class='agenda-grade'><div></div>";
     dias.forEach(d => {
-      h += "<div class='ag-dia-cab" + (d === hoje ? " hoje" : "") + "'><small>" + NOMES[diaSemana(d)] + "</small><b>" + dePara(d).getDate() + "</b></div>";
+      h += "<div class='ag-dia-cab" + (d === hoje ? " hoje" : "") + (atual ? " semana" : "") + "'><small>" + NOMES[diaSemana(d)] + "</small><b>" + dePara(d).getDate() + "</b></div>";
     });
-    h += "<div class='ag-horas'>";
-    for (let k = HORA_INICIO; k < HORA_FIM; k++) h += "<div>" + k + "h</div>";
+
+    h += "<div class='ag-horas' style='height:" + altura + "px'>";
+    for (let m = INICIO_MIN; m < FIM_MIN; m += 60) {
+      const meia = m + 60 > FIM_MIN;
+      h += "<div style='height:" + (meia ? PX / 2 : PX) + "px'>" + Math.floor(m / 60) + "h" + (m % 60 ? "30" : "00") + "</div>";
+    }
     h += "</div>";
-    const alturaTotal = (HORA_FIM - HORA_INICIO) * PX_HORA;
+
     dias.forEach(d => {
       const evs = G.compromissos.filter(c => c.dataISO === d);
-      h += "<div class='ag-coluna' style='height:" + alturaTotal + "px'>" + evs.map(c => {
-        const top = (minutos(c.inicio) - HORA_INICIO * 60) * PX_HORA / 60;
-        const altura = Math.max(24, (minutos(c.fim) - minutos(c.inicio)) * PX_HORA / 60);
+      h += "<div class='ag-coluna" + (atual ? " semana" : "") + "' style='height:" + altura + "px'>" + evs.map(c => {
+        const top = (minutos(c.inicio) - INICIO_MIN) * PX / 60;
+        const alt = Math.max(24, (minutosFim(c.fim) - minutos(c.inicio)) * PX / 60);
         const cor = CORES_AGENDA[c.cor] || CORES_AGENDA[0];
-        return "<button class='ag-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + altura + "px;background:" + cor.fundo + ";color:" + cor.texto + "'>" +
+        return "<button class='ag-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + alt + "px;background:" + cor.fundo + ";color:" + cor.texto + "'>" +
           "<span>" + esc(c.titulo) + "</span><small>" + c.inicio + "–" + c.fim + "</small></button>";
       }).join("") + "</div>";
     });
     h += "</div></div>";
     el.innerHTML = h;
   }
+
+  window.addEventListener("resize", () => {
+    if (secaoAtual === "geral") renderGeral();
+  });
 
   function htmlFormCompromisso() {
     const r = G.rascunho;
@@ -685,7 +707,7 @@
     const r = G.rascunho;
     const st = document.getElementById("ag-status");
     if (!r.titulo.trim()) { if (st) st.textContent = "Dê um título ao compromisso."; return; }
-    if (!r.dataISO || !r.inicio || !r.fim || minutos(r.fim) <= minutos(r.inicio)) {
+    if (!r.dataISO || !r.inicio || !r.fim || minutosFim(r.fim) <= minutos(r.inicio)) {
       if (st) st.textContent = "Confira o horário: o fim deve ser depois do início.";
       return;
     }
