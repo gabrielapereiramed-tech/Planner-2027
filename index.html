@@ -420,6 +420,37 @@
   .cx-card.ganho, .cx-card.gasto { background: #FFFFFF; border: 1px solid #E7E5E4; }
   .cx-card:not(.ganho):not(.gasto) { border: 2px solid #D0D996; }
   .cx-card.ganho strong, .cx-card.gasto strong { color: #2B2420; }
+
+  .intervalo.semana { background: var(--burgundy); }
+  .ag-dia-cab.hoje b { background: var(--burgundy); }
+  .ag-dia-cab.hoje small { color: var(--burgundy); }
+  .calendario .cal-dia.hoje { border: 2px solid var(--burgundy); }
+  .geral-topo .nav strong { color: var(--burgundy); }
+  .faixa-metas { border-top-color: var(--burgundy); }
+  .md-scroll, .menu { scrollbar-width: none; -ms-overflow-style: none; }
+  .md-scroll::-webkit-scrollbar, .menu::-webkit-scrollbar { display: none; }
+  .bolinha-cumprido { border: 2px solid #E7E5E4; background: #FFFFFF; }
+  .bolinha-cumprido.feita { background: #D0D996; border-color: #D0D996; }
+  .ht-titulo { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .ht-titulo h2 { margin: 0; }
+  .ht-frase { margin: 0; font-size: 0.85rem; color: #6B6259; font-weight: 300; }
+  .ht-rodape { display: flex; justify-content: flex-end; margin-top: 0.6rem; }
+  .ht-resumo { text-align: center; margin: 0 0 0.4rem; }
+  .hab-lista { margin-top: 0.6rem; }
+  .hab-linha { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px solid #EFECE6; font-size: 0.85rem; flex-wrap: wrap; }
+  .hab-icone svg { width: 20px; height: 20px; display: block; }
+  .hab-nome { font-weight: 600; flex: 1; min-width: 120px; }
+  .hab-num { color: #6B6259; font-size: 0.8rem; }
+  .hab-mes { color: #6B6259; font-size: 0.75rem; }
+  .icones { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; }
+  .icone-opcao { width: 40px !important; height: 40px; border-radius: 50%; padding: 0; background: #FFFFFF; color: #2B2420; border: 1px solid #D6D3CE; display: flex; align-items: center; justify-content: center; }
+  .icone-opcao.ativo { border: 2px solid var(--burgundy); }
+  .icone-opcao svg { width: 20px; height: 20px; }
+  .confirm-fundo { position: fixed; inset: 0; background: rgba(43, 36, 32, 0.35); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+  .confirm-caixa { background: #FFFFFF; border-radius: 18px; padding: 1.25rem; max-width: 340px; width: 100%; }
+  .confirm-caixa p { margin: 0 0 1rem; font-size: 0.95rem; line-height: 1.4; }
+  .confirm-acoes { display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .confirm-acoes button { width: auto; padding: 0.6rem 1rem; }
 </style>
 </head>
 <body>
@@ -701,7 +732,7 @@
       carregarTudo().then(() => renderTreinos());
     } else {
       if (secao.id === "pessoal") {
-        main.innerHTML = voltar + "<h2>Habit Tracker</h2><div id='habitos-tracker'></div>";
+        main.innerHTML = voltar + "<div class='ht-titulo'><h2>Habit Tracker</h2><p class='ht-frase'>pequenos hábitos, grandes feitos</p></div><div id='habitos-tracker'></div>";
         const ht = document.getElementById("habitos-tracker");
         ht.onclick = tratarCliqueGeral;
         ht.oninput = tratarEntradaGeral;
@@ -784,8 +815,20 @@
     return Math.max(24, Math.min(56, Math.floor(disponivel / ((FIM_MIN - INICIO_MIN) / 60))));
   }
 
-  const H = { lista: [], dias: {}, novoNome: "", adicionando: false, novaCor: "#D81A67" };
+  const H = { lista: [], dias: {}, novoNome: "", adicionando: false, novaCor: "#D81A67", novoIcone: null, novaMeta: 7 };
   const HT = { ano: null, mes: null };
+  const ICONES_HABITO = {
+    sono: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/></svg>",
+    agua: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3 C12 3 6 10 6 14 a6 6 0 0 0 12 0 C18 10 12 3 12 3 Z'/></svg>",
+    treino: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 7 V17 M18 7 V17 M3 9 V15 M21 9 V15 M6 12 H18'/></svg>",
+    leitura: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 5 C7 4 10 4.5 12 6 C14 4.5 17 4 20 5 V19 C17 18 14 18.5 12 20 C10 18.5 7 18 4 19 Z'/><path d='M12 6 V20'/></svg>",
+    meditacao: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 19 C5 11 11 6 19 5 C18 13 13 19 5 19 Z'/><path d='M5 19 L12 12'/></svg>",
+    caminhada: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='13' cy='4' r='2'/><path d='M9 22 L11 16 L14 18 L15 22 M7 14 L9 10 L13 12 L15 14'/></svg>",
+    alimentacao: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 7 C9 5 5 7 5 12 C5 16 8 20 10 20 C11 20 11.5 19.5 12 19.5 C12.5 19.5 13 20 14 20 C16 20 19 16 19 12 C19 7 15 5 12 7 Z'/><path d='M12 7 V4'/></svg>",
+    estudo: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 20 L8 19 L19 8 L16 5 L5 16 Z'/></svg>",
+    sol: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='4'/><path d='M12 2 V4 M12 20 V22 M4.9 4.9 L6.3 6.3 M17.7 17.7 L19.1 19.1 M2 12 H4 M20 12 H22 M4.9 19.1 L6.3 17.7 M17.7 6.3 L19.1 4.9'/></svg>",
+    coracao: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 21 C12 21 4 15.5 4 9.5 C4 6.5 6.2 4.5 8.5 4.5 C10 4.5 11.3 5.3 12 6.5 C12.7 5.3 14 4.5 15.5 4.5 C17.8 4.5 20 6.5 20 9.5 C20 15.5 12 21 12 21 Z'/></svg>"
+  };
 
   async function carregarCompromissos() {
     try {
@@ -943,14 +986,20 @@
     else renderGeral();
   }
 
+  function cumpridosNoIntervalo(hid, ini, n) {
+    let c = 0;
+    for (let k = 0; k < n; k++) if ((H.dias[somar(ini, k)] || []).includes(hid)) c++;
+    return c;
+  }
+
   function renderHabitTracker() {
     const el = document.getElementById("habitos-tracker");
     if (!el) return;
     if (HT.ano === null) { const h = new Date(); HT.ano = h.getFullYear(); HT.mes = h.getMonth(); }
     const diasNoMes = new Date(HT.ano, HT.mes + 1, 0).getDate();
     const k = H.lista.length;
-    const cx = 170, cy = 170, rInt = 40;
-    const dr = k ? Math.min(20, (150 - rInt) / k) : 20;
+    const cx = 190, cy = 190, R = 150, rInt = 26;
+    const dr = k ? (R - rInt) / k : (R - rInt);
     const passo = 360 / 31;
     const p = (r, a) => { const rad = (a - 90) * Math.PI / 180; return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)]; };
     const fatia = (r1, r2, a1, a2) => {
@@ -958,6 +1007,7 @@
       const grande = (a2 - a1) > 180 ? 1 : 0;
       return "M" + x1 + "," + y1 + " A" + r2 + "," + r2 + " 0 " + grande + " 1 " + x2 + "," + y2 + " L" + x3 + "," + y3 + " A" + r1 + "," + r1 + " 0 " + grande + " 0 " + x4 + "," + y4 + " Z";
     };
+
     let fatias = "";
     H.lista.forEach((hb, i) => {
       const r1 = rInt + i * dr, r2 = r1 + dr - 2;
@@ -975,29 +1025,42 @@
     });
     let rotulos = "";
     for (let d = 1; d <= 31; d++) {
-      const [x, y] = p(rInt + Math.max(k, 1) * dr + 8, (d - 0.5) * passo);
-      rotulos += "<text x='" + x + "' y='" + y + "' font-size='7.5' text-anchor='middle' dominant-baseline='middle' fill='#6B6259'>" + d + "</text>";
+      const [x, y] = p(R + 14, (d - 0.5) * passo);
+      rotulos += "<text x='" + x + "' y='" + y + "' font-size='8' text-anchor='middle' dominant-baseline='middle' fill='#6B6259'>" + d + "</text>";
     }
-    const legenda = H.lista.map(hb => {
+
+    const ini = inicioSemana(hojeISO());
+    const ant = somar(ini, -7);
+    let totalAtual = 0, totalMeta = 0, totalAnt = 0;
+    const linhas = H.lista.map(hb => {
       let feitos = 0;
       for (let d = 1; d <= diasNoMes; d++) if ((H.dias[isoDe(new Date(HT.ano, HT.mes, d))] || []).includes(hb.id)) feitos++;
-      return "<span class='legenda-item'><span class='swatch' style='background:" + (hb.cor || "#D81A67") + "'></span><small>" + esc(hb.nome) + " · " + feitos + "/" + diasNoMes + "</small></span>";
+      const atual = cumpridosNoIntervalo(hb.id, ini, 7);
+      const anterior = cumpridosNoIntervalo(hb.id, ant, 7);
+      const meta = hb.meta || 7;
+      totalAtual += atual; totalAnt += anterior; totalMeta += meta;
+      const seta = atual > anterior ? "↑" : (atual < anterior ? "↓" : "=");
+      const icone = hb.icone && ICONES_HABITO[hb.icone] ? ICONES_HABITO[hb.icone] : "";
+      return "<div class='hab-linha'>" +
+        "<span class='hab-icone' style='color:" + (hb.cor || "#D81A67") + "'>" + icone + "</span>" +
+        "<span class='hab-nome'>" + esc(hb.nome) + "</span>" +
+        "<span class='hab-num'>" + atual + "/" + meta + " na semana · " + anterior + " na anterior " + seta + "</span>" +
+        "<span class='hab-mes'>" + feitos + "/" + diasNoMes + "</span>" +
+        (H.adicionando ? "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button>" : "") +
+        "</div>";
     }).join("");
 
     el.innerHTML = "<div class='bloco'>" +
-      "<div class='habitos-topo'><div class='nav' style='margin:0;flex:1'>" +
+      "<div class='nav'>" +
         "<button class='icone' data-acao='tr-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
         "<strong>" + capitalizar(MESES[HT.mes]) + " de " + HT.ano + "</strong>" +
         "<button class='icone' data-acao='tr-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
-        "<button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
-      (k ? "<svg viewBox='0 0 340 340' width='100%' style='max-width:340px;display:block;margin:6px auto'>" + fatias + rotulos + "</svg>" +
-            "<div class='legenda' style='justify-content:center'>" + legenda + "</div>"
+      (k ? "<p class='resumo ht-resumo'>Semana: <strong>" + totalAtual + "</strong> de " + totalMeta + " cumpridos · semana passada: " + totalAnt + "</p>" +
+           "<svg viewBox='0 0 380 380' width='100%' style='max-width:380px;display:block;margin:4px auto'>" + fatias + rotulos + "</svg>" +
+           "<div class='hab-lista'>" + linhas + "</div>"
          : "<p class='vazio'>Nenhum hábito cadastrado ainda. Toque no lápis para adicionar.</p>") +
-      (H.adicionando && k ? H.lista.map(hb =>
-        "<div class='habito'><span class='swatch' style='background:" + (hb.cor || "#D81A67") + "'></span><span>" + esc(hb.nome) + "</span>" +
-        "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button></div>"
-      ).join("") : "") +
       (H.adicionando ? htmlNovoHabito() : "") +
+      "<div class='ht-rodape'><button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
     "</div>";
   }
 
@@ -1080,7 +1143,7 @@
     const evs = G.compromissos.filter(c => c.dataISO === MD.dia);
     const PX = pxDoDia(evs, PXbase);
     const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
-    const maxAlt = Math.max(240, window.innerHeight - el.getBoundingClientRect().top - 190);
+    const maxAlt = Math.max(240, window.innerHeight - el.getBoundingClientRect().top - 20);
     const agora = new Date();
     const minAgora = agora.getHours() * 60 + agora.getMinutes();
     const eHoje = MD.dia === hojeISO();
@@ -1187,12 +1250,17 @@
   function htmlNovoHabito() {
     const cores = G.legenda.length ? G.legenda : LEGENDA_PADRAO;
     return "<div class='novo-habito'>" +
-      "<input placeholder='Novo hábito' data-campo='habito-nome' value='" + esc(H.novoNome) + "'>" +
-      "<div class='legenda'>" + cores.map(l =>
+      "<input placeholder='Nome do hábito' data-campo='habito-nome' value='" + esc(H.novoNome) + "'>" +
+      "<label>Ícone</label><div class='icones'>" + Object.keys(ICONES_HABITO).map(k =>
+        "<button class='icone-opcao" + (H.novoIcone === k ? " ativo" : "") + "' data-acao='habito-icone' data-icone='" + k + "' aria-label='" + k + "'>" + ICONES_HABITO[k] + "</button>"
+      ).join("") + "</div>" +
+      "<label>Vezes por semana</label>" +
+      "<input type='number' inputmode='numeric' min='1' max='7' data-campo='habito-meta' value='" + H.novaMeta + "'>" +
+      "<label>Cor</label><div class='legenda'>" + cores.map(l =>
         "<button class='legenda-item" + (H.novaCor === l.cor ? " ativo" : "") + "' data-acao='habito-cor' data-cor='" + l.cor + "' aria-label='" + esc(l.nome) + "'><span class='swatch' style='background:" + l.cor + "'></span></button>"
       ).join("") + "</div>" +
       htmlSeletorCor("habito", H.novaCor, null) +
-      "<button class='secundario' data-acao='habito-add'>Adicionar hábito</button></div>";
+      "<button class='grande' data-acao='habito-add'>Adicionar hábito</button></div>";
   }
 
   function htmlTarefasDia(evs) {
@@ -1421,11 +1489,13 @@
   async function adicionarHabito() {
     const nome = (H.novoNome || "").trim();
     if (!nome) return;
-    const obj = { nome: nome, cor: H.novaCor };
+    const obj = { nome: nome, cor: H.novaCor, icone: H.novoIcone || null, meta: Math.min(7, Math.max(1, Number(H.novaMeta) || 7)) };
     try {
       const ref = await colecao("habitos").add(obj);
       H.lista.push({ id: ref.id, ...obj });
       H.novoNome = "";
+      H.novoIcone = null;
+      H.novaMeta = 7;
       H.adicionando = false;
       renderAtual();
     } catch (err) {
@@ -1434,7 +1504,7 @@
   }
 
   async function excluirHabito(id) {
-    if (!confirm("Excluir este hábito?")) return;
+    if (!(await confirmar("Excluir este hábito?"))) return;
     try {
       await colecao("habitos").doc(id).delete();
       H.lista = H.lista.filter(hb => hb.id !== id);
@@ -1472,7 +1542,7 @@
   async function excluirCor(id) {
     const cor = G.legenda.find(l => l.id === id);
     if (!cor) return;
-    if (!confirm("Excluir a cor \"" + cor.nome + "\"? Os compromissos que já usam essa cor continuam com ela.")) return;
+    if (!(await confirmar("Excluir a cor \"" + cor.nome + "\"? Os compromissos que já usam essa cor continuam com ela."))) return;
     try {
       await colecao("legenda").doc(id).delete();
       G.legenda = G.legenda.filter(l => l.id !== id);
@@ -1505,7 +1575,7 @@
         const datas = ocorrencias(r);
         if (!datas.length) { if (st) st.textContent = "Escolha os dias da repetição."; return; }
         const conflito = datas.some(d => G.compromissos.some(c => c.dataISO === d && sobrepoe(c, r.inicio, r.fim)));
-        if (conflito && !confirm("Este compromisso vai sobrepor outro no mesmo horário? Se confirmar, os dois ficam lado a lado.")) return;
+        if (conflito && !(await confirmar("Este compromisso vai sobrepor outro no mesmo horário? Se confirmar, os dois ficam lado a lado."))) return;
         const grupo = datas.length > 1 ? "g" + Date.now() : null;
         for (const d of datas) {
           const o = { ...obj, dataISO: d, cumprido: false };
@@ -1526,7 +1596,7 @@
 
   async function excluirCompromisso(id) {
     if (!id) return;
-    if (!confirm("Excluir este compromisso?")) return;
+    if (!(await confirmar("Excluir este compromisso?"))) return;
     try {
       await colecao("compromissos").doc(id).delete();
       G.compromissos = G.compromissos.filter(c => c.id !== id);
@@ -1601,7 +1671,7 @@
   }
 
   async function neExcluir(id) {
-    if (!confirm("Excluir este item?")) return;
+    if (!(await confirmar("Excluir este item?"))) return;
     try {
       await colecao("naoEsquecer").doc(id).delete();
       NE.lista = NE.lista.filter(x => x.id !== id);
@@ -1668,7 +1738,7 @@
   }
 
   async function cxExcluir(id) {
-    if (!confirm("Excluir este lançamento?")) return;
+    if (!(await confirmar("Excluir este lançamento?"))) return;
     try {
       await colecao("caixa").doc(id).delete();
       CX.lista = CX.lista.filter(x => x.id !== id);
@@ -1700,6 +1770,22 @@
 
   // ---------- lembretes de compromissos ----------
   const AVISADOS = new Set();
+
+  function confirmar(mensagem) {
+    return new Promise(resolve => {
+      const fundo = document.createElement("div");
+      fundo.className = "confirm-fundo";
+      fundo.innerHTML = "<div class='confirm-caixa'><p>" + esc(mensagem) + "</p><div class='confirm-acoes'>" +
+        "<button class='secundario' data-r='0'>Cancelar</button><button class='grande' data-r='1'>Confirmar</button></div></div>";
+      fundo.addEventListener("click", e => {
+        const b = e.target.closest("button[data-r]");
+        if (!b) return;
+        fundo.remove();
+        resolve(b.dataset.r === "1");
+      });
+      document.body.appendChild(fundo);
+    });
+  }
 
   function mostrarAviso(msg) {
     let b = document.getElementById("aviso-banner");
@@ -2196,7 +2282,7 @@
 
   async function excluirSessao(id) {
     if (!id) return;
-    if (!confirm("Excluir este treino concluído? Essa ação não pode ser desfeita.")) return;
+    if (!(await confirmar("Excluir este treino concluído? Essa ação não pode ser desfeita."))) return;
     try {
       await colecao("sessoes").doc(id).delete();
       T.sessoes = T.sessoes.filter(x => x.id !== id);
@@ -2336,7 +2422,7 @@
 
   async function excluirTreinoPorId(id) {
     if (!id) return;
-    if (!confirm("Excluir este treino? Os treinos já feitos com ele continuam no histórico.")) return;
+    if (!(await confirmar("Excluir este treino? Os treinos já feitos com ele continuam no histórico."))) return;
     try {
       await colecao("treinos").doc(id).delete();
       T.treinos = T.treinos.filter(x => x.id !== id);
