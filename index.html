@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Oiê!</title>
+<title>Planner 2027</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='5' width='26' height='24' rx='4' fill='white' stroke='rgb(119,5,35)' stroke-width='2'/%3E%3Crect x='3' y='5' width='26' height='7' rx='4' fill='rgb(216,26,103)'/%3E%3Crect x='9' y='2' width='3' height='6' rx='1.5' fill='rgb(119,5,35)'/%3E%3Crect x='20' y='2' width='3' height='6' rx='1.5' fill='rgb(119,5,35)'/%3E%3Ccircle cx='11' cy='19' r='2' fill='rgb(119,5,35)'/%3E%3Ccircle cx='16' cy='19' r='2' fill='rgb(119,5,35)'/%3E%3Ccircle cx='21' cy='19' r='2' fill='rgb(119,5,35)'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -323,6 +324,22 @@
     .md-agenda { flex: 1.4; }
     .md-habitos { flex: 1; margin-top: 0; }
   }
+
+  .habitos-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+  .habitos-topo h3 { margin: 0; }
+  .btn-lapis { width: 32px; height: 32px; border-radius: 50%; padding: 0; background: #FFFFFF; color: var(--burgundy); border: 2px solid var(--burgundy); display: flex; align-items: center; justify-content: center; }
+  .btn-lapis svg { width: 16px; height: 16px; }
+  .habito { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid #EFECE6; }
+  .habito span { flex: 1; }
+  .habito .bolinha { width: 30px !important; height: 30px; }
+  .novo-habito { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.6rem; }
+  .novo-habito input { margin-bottom: 0; }
+  .md-evento { position: absolute; left: 4px; right: 4px; background: #FFFFFF; border: 2px solid; border-radius: 12px; padding: 0.5rem 0.6rem; cursor: pointer; }
+  .md-evento-topo { display: flex; flex-direction: column; margin-bottom: 0.3rem; }
+  .md-evento-topo small { color: #6B6259; font-size: 0.75rem; }
+  .md-evento .tarefa-linha { font-size: 0.9rem; }
+  .md-evento .bolinha { width: 26px !important; height: 26px; }
+  .md-evento .bolinha svg { width: 14px; height: 14px; }
 </style>
 </head>
 <body>
@@ -659,7 +676,7 @@
     return Math.max(24, Math.min(56, Math.floor(disponivel / ((FIM_MIN - INICIO_MIN) / 60))));
   }
 
-  const H = { lista: [], dias: {}, novoNome: "" };
+  const H = { lista: [], dias: {}, novoNome: "", adicionando: false, novaCor: "#D81A67" };
 
   async function carregarCompromissos() {
     try {
@@ -780,20 +797,52 @@
       "<div class='agenda-topo'><span></span><button class='icone' data-acao='md-novo' aria-label='Novo compromisso'>+</button></div>";
     if (G.formAberto && G.rascunho) agenda += htmlFormCompromisso(true);
     agenda += "<div class='md-grade'>" + gradeHoras(PX) +
-      "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosHTML(evs, PX) + "</div></div>";
-    agenda += htmlTarefasDia(evs);
+      "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosMeuDia(evs, PX) + "</div></div>";
 
-    const habitos = "<div class='bloco md-habitos'><h3>Hábitos de hoje</h3>" +
+    const habitos = "<div class='bloco md-habitos'>" +
+      "<div class='habitos-topo'><h3>Hábitos de hoje</h3>" +
+        "<button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
       (H.lista.length ? H.lista.map(hb => {
         const feito = (H.dias[MD.dia] || []).includes(hb.id);
-        return "<div class='habito'><button class='bolinha" + (feito ? " feita" : "") + "' data-acao='habito-marcar' data-id='" + hb.id + "' aria-label='Marcar hábito'>" + (feito ? ICONE_CHECK : "") + "</button>" +
+        const cor = hb.cor || "#D81A67";
+        return "<div class='habito'><button class='bolinha" + (feito ? " feita" : "") + "' data-acao='habito-marcar' data-id='" + hb.id + "' style='" +
+          (feito ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
+          "' aria-label='Marcar hábito'>" + (feito ? ICONE_CHECK : "") + "</button>" +
           "<span class='" + (feito ? "riscado" : "") + "'>" + esc(hb.nome) + "</span>" +
-          "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button></div>";
+          (H.adicionando ? "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button>" : "") +
+        "</div>";
       }).join("") : "<p class='vazio'>Nenhum hábito cadastrado ainda.</p>") +
-      "<div class='ag-linha'><input placeholder='Novo hábito' data-campo='habito-nome' value='" + esc(H.novoNome) + "'>" +
-      "<button class='secundario' data-acao='habito-add'>Adicionar</button></div></div>";
+      (H.adicionando ? htmlNovoHabito() : "") +
+    "</div>";
 
     el.innerHTML = "<div class='md-layout'><div class='md-agenda'>" + agenda + "</div>" + habitos + "</div>";
+  }
+
+  function eventosMeuDia(evs, PX) {
+    return evs.map(c => {
+      const top = (minutos(c.inicio) - INICIO_MIN) * PX / 60;
+      const alt = Math.max(56, (minutosFim(c.fim) - minutos(c.inicio)) * PX / 60);
+      const cor = corDoCompromisso(c);
+      const tarefas = (c.tarefas || []).map((t, i) =>
+        "<div class='tarefa-linha'><button class='bolinha" + (t.feita ? " feita" : "") + "' data-acao='tarefa-marcar' data-cid='" + c.id + "' data-i='" + i + "' style='" +
+          (t.feita ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
+          "' aria-label='Marcar tarefa'>" + (t.feita ? ICONE_CHECK : "") + "</button>" +
+          "<span class='" + (t.feita ? "riscado" : "") + "'>" + esc(t.texto) + "</span></div>"
+      ).join("");
+      return "<div class='md-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;min-height:" + alt + "px;border-color:" + cor + "'>" +
+        "<div class='md-evento-topo'><strong>" + esc(c.titulo) + "</strong><small>" + c.inicio + "–" + c.fim + "</small></div>" +
+        tarefas + "</div>";
+    }).join("");
+  }
+
+  function htmlNovoHabito() {
+    const cores = G.legenda.length ? G.legenda : LEGENDA_PADRAO;
+    return "<div class='novo-habito'>" +
+      "<input placeholder='Novo hábito' data-campo='habito-nome' value='" + esc(H.novoNome) + "'>" +
+      "<div class='legenda'>" + cores.map(l =>
+        "<button class='legenda-item" + (H.novaCor === l.cor ? " ativo" : "") + "' data-acao='habito-cor' data-cor='" + l.cor + "' aria-label='" + esc(l.nome) + "'><span class='swatch' style='background:" + l.cor + "'></span></button>"
+      ).join("") + "</div>" +
+      "<button class='secundario' data-acao='habito-add'>Adicionar hábito</button></div>";
   }
 
   function htmlTarefasDia(evs) {
@@ -892,6 +941,8 @@
       else if (a === "tarefa-marcar") await marcarTarefa(el.dataset.cid, i);
       else if (a === "habito-marcar") await marcarHabito(el.dataset.id);
       else if (a === "habito-add") await adicionarHabito();
+      else if (a === "habito-editar") { H.adicionando = !H.adicionando; renderMeuDia(); }
+      else if (a === "habito-cor") { H.novaCor = el.dataset.cor; renderMeuDia(); }
       else if (a === "habito-del") await excluirHabito(el.dataset.id);
     } catch (err) {
       mostrarErro(err.message);
@@ -946,10 +997,12 @@
   async function adicionarHabito() {
     const nome = (H.novoNome || "").trim();
     if (!nome) return;
+    const obj = { nome: nome, cor: H.novaCor };
     try {
-      const ref = await colecao("habitos").add({ nome: nome });
-      H.lista.push({ id: ref.id, nome: nome });
+      const ref = await colecao("habitos").add(obj);
+      H.lista.push({ id: ref.id, ...obj });
       H.novoNome = "";
+      H.adicionando = false;
       renderMeuDia();
     } catch (err) {
       mostrarErro(err.message);
