@@ -405,7 +405,8 @@
   .faixa-metas { border-top-color: #F2A7C3; }
 
   .ag-horas { position: relative; }
-  .marca-agora { position: absolute; left: 0; width: 100%; height: 0; border-top: 2px solid var(--fuchsia); z-index: 2; pointer-events: none; }
+  .marca-agora { position: absolute; left: 0; width: 100%; height: 0; border-top: 2px solid #F2A7C3; z-index: 0; pointer-events: none; }
+  .ag-horas > div { position: relative; z-index: 1; }
 </style>
 </head>
 <body>
@@ -686,7 +687,17 @@
       renderTreinos();
       carregarTudo().then(() => renderTreinos());
     } else {
-      main.innerHTML = voltar + "<h2>" + secao.nome + "</h2><p class='sub'>Em breve.</p>";
+      if (secao.id === "pessoal") {
+        main.innerHTML = voltar + "<h2>Habit Tracker</h2><div id='habitos-tracker'></div>";
+        const ht = document.getElementById("habitos-tracker");
+        ht.onclick = tratarCliqueGeral;
+        ht.oninput = tratarEntradaGeral;
+        ht.onchange = tratarEntradaGeral;
+        renderHabitTracker();
+        carregarCompromissos().then(() => renderHabitTracker());
+      } else {
+        main.innerHTML = voltar + "<h2>" + secao.nome + "</h2><p class='sub'>Em breve.</p>";
+      }
     }
     const b = document.getElementById("voltar");
     if (b) b.onclick = () => irPara(null);
@@ -837,7 +848,24 @@
 
   function renderAtual() {
     if (secaoAtual === "bora") renderMeuDia();
+    else if (secaoAtual === "pessoal") renderHabitTracker();
     else renderGeral();
+  }
+
+  function renderHabitTracker() {
+    const el = document.getElementById("habitos-tracker");
+    if (!el) return;
+    el.innerHTML = "<div class='bloco'>" +
+      "<div class='habitos-topo'><h3>Meus hábitos</h3>" +
+        "<button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
+      (H.lista.length ? H.lista.map(hb =>
+        "<div class='habito'><span class='swatch' style='background:" + (hb.cor || "#D81A67") + "'></span>" +
+        "<span>" + esc(hb.nome) + "</span>" +
+        (H.adicionando ? "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button>" : "") +
+        "</div>"
+      ).join("") : "<p class='vazio'>Nenhum hábito cadastrado ainda.</p>") +
+      (H.adicionando ? htmlNovoHabito() : "") +
+    "</div>";
   }
 
   function renderGeral() {
@@ -930,7 +958,7 @@
 
     const habitos = "<div class='bloco faixa faixa-habitos md-habitos'>" +
       "<div class='habitos-topo'><h3>Hábitos de hoje</h3>" +
-        "<button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
+        "</div>" +
       (H.lista.length ? H.lista.map(hb => {
         const feito = (H.dias[MD.dia] || []).includes(hb.id);
         const cor = hb.cor || "#D81A67";
@@ -938,10 +966,10 @@
           (feito ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
           "' aria-label='Marcar hábito'>" + (feito ? ICONE_CHECK : "") + "</button>" +
           "<span class='" + (feito ? "riscado" : "") + "'>" + esc(hb.nome) + "</span>" +
-          (H.adicionando ? "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button>" : "") +
+
         "</div>";
       }).join("") : "<p class='vazio'>Nenhum hábito cadastrado ainda.</p>") +
-      (H.adicionando ? htmlNovoHabito() : "") +
+
     "</div>";
 
     const caixa = "<div class='bloco faixa faixa-caixa'><h3>Caixa do dia</h3><div id='caixa'></div></div>";
@@ -1121,8 +1149,8 @@
       else if (a === "tarefa-marcar") await marcarTarefa(el.dataset.cid, i);
       else if (a === "habito-marcar") await marcarHabito(el.dataset.id);
       else if (a === "habito-add") await adicionarHabito();
-      else if (a === "habito-editar") { H.adicionando = !H.adicionando; renderMeuDia(); }
-      else if (a === "habito-cor") { H.novaCor = el.dataset.cor; renderMeuDia(); }
+      else if (a === "habito-editar") { H.adicionando = !H.adicionando; renderAtual(); }
+      else if (a === "habito-cor") { H.novaCor = el.dataset.cor; renderAtual(); }
       else if (a === "ne-editar") { NE.adicionando = !NE.adicionando; renderNaoEsquecer(); }
       else if (a === "ne-add") await neAdicionar();
       else if (a === "ne-feito") await neAlternar(el.dataset.id);
@@ -1215,7 +1243,7 @@
       H.lista.push({ id: ref.id, ...obj });
       H.novoNome = "";
       H.adicionando = false;
-      renderMeuDia();
+      renderAtual();
     } catch (err) {
       mostrarErro(err.message);
     }
@@ -1226,7 +1254,7 @@
     try {
       await colecao("habitos").doc(id).delete();
       H.lista = H.lista.filter(hb => hb.id !== id);
-      renderMeuDia();
+      renderAtual();
     } catch (err) {
       mostrarErro(err.message);
     }
@@ -1406,8 +1434,6 @@
     const fmt = v => "R$ " + v.toFixed(2).replace(".", ",");
 
     el.innerHTML = "<p class='sub'>" + tituloDia(CX.dia) + "</p>" +
-      "<strong>" + tituloDia(CX.dia) + "</strong>" +
-      "<button class='icone' data-acao='cx-nav' data-d='1' aria-label='Próximo dia'>›</button></div>" +
       "<div class='cx-resumo'>" +
         "<div class='cx-card ganho'><small>Ganhos</small><strong>" + fmt(ganhos) + "</strong></div>" +
         "<div class='cx-card gasto'><small>Gastos</small><strong>" + fmt(gastos) + "</strong></div>" +
