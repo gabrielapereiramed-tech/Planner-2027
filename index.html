@@ -363,6 +363,14 @@
   .cx-item.gasto strong { color: #D81A67; }
   .cx-item.ganho strong { color: #2F5A0C; }
   .cx-item .excluir { width: auto; padding: 0.2rem 0.55rem; }
+
+  .md-col { display: flex; flex-direction: column; gap: 1rem; }
+  .md-tarefas { display: grid; grid-template-columns: 1fr; gap: 2px 12px; }
+  .md-tarefas.duas { grid-template-columns: 1fr 1fr; }
+  .md-evento .tarefa-linha { font-size: 0.78rem; padding: 2px 0; }
+  .md-evento .bolinha { width: 22px !important; height: 22px; }
+  .md-evento .bolinha svg { width: 12px; height: 12px; }
+  .md-evento-topo strong { font-size: 0.95rem; }
 </style>
 </head>
 <body>
@@ -426,9 +434,7 @@
   const SECOES = [
     { id: "geral", nome: "Geral", icone: ICONES.grade },
     { id: "bora", nome: "Meu Dia", icone: ICONES.estrela },
-    { id: "nao", nome: "Não esquecer", icone: ICONES.sino },
     { id: "pessoal", nome: "Habit Tracker", icone: ICONES.coracao },
-    { id: "caixa", nome: "Caixa do dia", icone: ICONES.dinheiro },
     { id: "estudos", nome: "Estudos", icone: ICONES.livro },
     { id: "treinos", nome: "Treinos", icone: ICONES.halter },
     { id: "financeiro", nome: "Financeiro", icone: ICONES.dinheiro },
@@ -526,6 +532,7 @@
 
   // ---------- login ----------
   function mostrarFormulario() {
+    document.body.style.background = "#FBF8EC";
     if (pararEscuta) { pararEscuta(); pararEscuta = null; }
     usuario = null;
     conteudo.innerHTML =
@@ -555,6 +562,7 @@
 
   async function mostrarApp(user) {
     usuario = user;
+    document.body.style.background = "#FFFFFF";
     conteudo.innerHTML = "<div class='app' id='app'><nav class='menu' id='menu'></nav><main class='conteudo' id='main'></main></div>";
     secaoAtual = "geral";
     T.selecionado = hojeISO();
@@ -615,6 +623,7 @@
       md.oninput = tratarEntradaGeral;
       md.onchange = tratarEntradaGeral;
       renderMeuDia();
+      Promise.all([carregarNaoEsquecer(), carregarCaixa()]).then(() => renderMeuDia());
     } else if (secao.id === "nao") {
       main.innerHTML = voltar + "<h2>Não esquecer</h2><div id='nao'></div>";
       const el = document.getElementById("nao");
@@ -829,7 +838,9 @@
     let px = base;
     evs.forEach(c => {
       const dur = minutosFim(c.fim) - minutos(c.inicio);
-      const precisa = 72 + (c.tarefas || []).length * 48;
+      const n = (c.tarefas || []).length;
+      const linhas = n > 4 ? Math.ceil(n / 2) : n;
+      const precisa = 72 + linhas * 44;
       px = Math.max(px, Math.ceil(precisa * 60 / dur));
     });
     return px;
@@ -852,6 +863,8 @@
     agenda += "<div class='md-grade'>" + gradeHoras(PX) +
       "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosMeuDia(evs, PX) + "</div></div>";
 
+    const naoEsqueco = "<div class='bloco'><h3>Não esquecer</h3><div id='nao'></div></div>";
+
     const habitos = "<div class='bloco md-habitos'>" +
       "<div class='habitos-topo'><h3>Hábitos de hoje</h3>" +
         "<button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
@@ -868,7 +881,12 @@
       (H.adicionando ? htmlNovoHabito() : "") +
     "</div>";
 
-    el.innerHTML = "<div class='md-layout'><div class='md-agenda'>" + agenda + "</div>" + habitos + "</div>";
+    const caixa = "<div class='bloco'><h3>Caixa do dia</h3><div id='caixa'></div></div>";
+
+    el.innerHTML = "<div class='md-layout'><div class='md-agenda'>" + agenda + "</div>" +
+      "<div class='md-col'>" + naoEsqueco + habitos + caixa + "</div></div>";
+    renderNaoEsquecer();
+    renderCaixa();
   }
 
   function eventosMeuDia(evs, PX) {
@@ -876,16 +894,16 @@
       const top = (minutos(c.inicio) - INICIO_MIN) * PX / 60;
       const alt = (minutosFim(c.fim) - minutos(c.inicio)) * PX / 60;
       const cor = corDoCompromisso(c);
-      const tarefas = (c.tarefas || []).map((t, i) => {
-        const corT = t.cor || cor;
-        return "<div class='tarefa-linha'><button class='bolinha" + (t.feita ? " feita" : "") + "' data-acao='tarefa-marcar' data-cid='" + c.id + "' data-i='" + i + "' style='" +
-          (t.feita ? "background:" + corT + ";border-color:" + corT + ";color:" + textoSobre(corT) : "border-color:" + corT) +
+      const n = (c.tarefas || []).length;
+      const tarefas = (c.tarefas || []).map((t, i) =>
+        "<div class='tarefa-linha'><button class='bolinha" + (t.feita ? " feita" : "") + "' data-acao='tarefa-marcar' data-cid='" + c.id + "' data-i='" + i + "' style='" +
+          (t.feita ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
           "' aria-label='Marcar tarefa'>" + (t.feita ? ICONE_CHECK : "") + "</button>" +
-          "<span class='" + (t.feita ? "riscado" : "") + "'>" + esc(t.texto) + "</span></div>";
-      }).join("");
+          "<span class='" + (t.feita ? "riscado" : "") + "'>" + esc(t.texto) + "</span></div>"
+      ).join("");
       return "<div class='md-evento' data-acao='agenda-evento' data-id='" + c.id + "' style='top:" + top + "px;height:" + alt + "px;border-color:" + cor + "'>" +
         "<div class='md-evento-topo'><strong>" + esc(c.titulo) + "</strong><small>" + c.inicio + "–" + c.fim + "</small></div>" +
-        tarefas + "</div>";
+        "<div class='md-tarefas" + (n > 4 ? " duas" : "") + "'>" + tarefas + "</div></div>";
     }).join("");
   }
 
@@ -933,8 +951,7 @@
     const tarefas = r.tarefas.map((t, i) =>
       "<div class='tarefa'><button class='bolinha' data-acao='tarefa-feita' data-i='" + i + "'>" + (t.feita ? ICONE_CHECK : "") + "</button>" +
       "<input data-campo='tarefa-texto' data-i='" + i + "' value='" + esc(t.texto) + "' placeholder='Tarefa'>" +
-      "<button class='excluir' data-acao='tarefa-del' data-i='" + i + "' aria-label='Remover tarefa'>×</button></div>" +
-      htmlSeletorCor("tarefa", t.cor || r.cor, i)
+      "<button class='excluir' data-acao='tarefa-del' data-i='" + i + "' aria-label='Remover tarefa'>×</button></div>"
     ).join("");
 
     return "<div class='ag-form'>" +
@@ -1008,6 +1025,13 @@
       else if (a === "habito-add") await adicionarHabito();
       else if (a === "habito-editar") { H.adicionando = !H.adicionando; renderMeuDia(); }
       else if (a === "habito-cor") { H.novaCor = el.dataset.cor; renderMeuDia(); }
+      else if (a === "ne-add") await neAdicionar();
+      else if (a === "ne-feito") await neAlternar(el.dataset.id);
+      else if (a === "ne-del") await neExcluir(el.dataset.id);
+      else if (a === "cx-nav") { CX.dia = somar(CX.dia || hojeISO(), Number(el.dataset.d)); renderCaixa(); }
+      else if (a === "cx-tipo") { CX.tipo = el.dataset.tipo; renderCaixa(); }
+      else if (a === "cx-add") await cxAdicionar();
+      else if (a === "cx-del") await cxExcluir(el.dataset.id);
       else if (a === "habito-del") await excluirHabito(el.dataset.id);
     } catch (err) {
       mostrarErro(err.message);
@@ -1017,6 +1041,9 @@
   function tratarEntradaGeral(e) {
     const d = e.target.dataset;
     if (d.campo === "habito-nome") { H.novoNome = e.target.value; return; }
+    if (d.campo === "ne-texto") { NE.novoTexto = e.target.value; return; }
+    if (d.campo === "cx-valor") { CX.valor = e.target.value; return; }
+    if (d.campo === "cx-desc") { CX.descricao = e.target.value; return; }
     if (d.campo === "leg-nome") { G.novaLegenda.nome = e.target.value; return; }
     const cor = d.campo ? d.campo.match(/^(nova|habito|ag|tarefa)-(cor|hex)$/) : null;
     if (cor) {
