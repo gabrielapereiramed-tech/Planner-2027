@@ -539,6 +539,12 @@
   .lb-linha .lb-texto + .excluir { margin-left: auto; }
   #lb-lista .lb-linha { align-items: flex-start; }
   #lb-lista .lb-linha .lb-data { padding-top: 2px; }
+
+  .cat-linha .excluir { width: 26px !important; height: 26px; padding: 0; font-size: 0.8rem; min-width: 0; }
+  .fin-cols-conta .bolinha { width: 22px !important; height: 22px !important; }
+  .cardio-icone svg { width: 18px; height: 18px; vertical-align: middle; margin-right: 6px; }
+  .cardio-form .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+  .cardio-form .icone-opcao { width: 36px !important; height: 36px; }
 </style>
 </head>
 <body>
@@ -924,7 +930,15 @@
 
   const H = { lista: [], dias: {}, novoNome: "", adicionando: false, novaCor: "#770523", novoIcone: null, novaMeta: 7, novaDesc: "" };
   const HT = { ano: null, mes: null };
-  const CARDIO = { lista: [], novoMin: "" };
+  const CARDIO = { lista: [], novoMin: "", novoTipo: "corrida" };
+  const ICONES_CARDIO = {
+    corrida: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='14' cy='4' r='2'/><path d='M8 22 L11 15 L9 12 L13 9 L16 13 L19 13 M11 15 L14 18 L13 22'/></svg>",
+    bicicleta: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='6' cy='16' r='4'/><circle cx='18' cy='16' r='4'/><path d='M6 16 L10 8 L15 8 L18 16 M10 8 L12 16 L6 16 M15 8 L14 5 L17 5'/></svg>",
+    natacao: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 14 Q5 12 8 14 T14 14 T20 14 T24 14'/><path d='M2 19 Q5 17 8 19 T14 19 T20 19 T24 19'/><circle cx='15' cy='6' r='2'/><path d='M12 9 L16 11 L19 9'/></svg>",
+    eliptico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><ellipse cx='12' cy='12' rx='9' ry='5'/><path d='M8 12 L10 10 M14 12 L16 14'/></svg>",
+    pular: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 12 Q12 2 20 12'/><circle cx='6' cy='18' r='1.5'/><circle cx='18' cy='18' r='1.5'/><path d='M4 12 Q12 22 20 12'/></svg>"
+  };
+  const NOMES_CARDIO = { corrida: "Corrida", bicicleta: "Bicicleta", natacao: "Natação", eliptico: "Elíptico", pular: "Pular corda" };
   T.histTotal = "anual";
   const ICONES_HABITO = {
     sono: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/></svg>",
@@ -1927,19 +1941,25 @@
 
   function htmlCardioDia() {
     const iso = T.selecionado;
-    const lista = CARDIO.lista.filter(x => x.dataISO === iso);
-    const total = lista.reduce((a, x) => a + Number(x.minutos || 0), 0);
-    return "<div class='bloco faixa faixa-metas'><div class='habitos-topo'><h3>Cardio do dia</h3><span class='resumo'>" + total + " min</span></div>" +
-      lista.map(x => "<div class='lb-linha'><span>" + x.minutos + " min</span><span style='flex:1'></span>" +
-        "<button class='excluir' data-acao='cardio-del' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>").join("") +
-      "<div class='ag-linha'><input type='number' inputmode='numeric' placeholder='Minutos de cardio' data-campo='cardio-min' value='" + CARDIO.novoMin + "'>" +
+    const total = CARDIO.lista.filter(x => x.dataISO === iso).reduce((a, x) => a + Number(x.minutos || 0), 0);
+    return "<div class='bloco cardio-form'><div class='habitos-topo'><h3>Registrar cardio</h3><span class='resumo'>" + total + " min no dia</span></div>" +
+      "<div class='chips'>" + Object.keys(ICONES_CARDIO).map(k =>
+        "<button class='icone-opcao" + (CARDIO.novoTipo === k ? " ativo" : "") + "' data-acao='cardio-tipo' data-tipo='" + k + "' aria-label='" + NOMES_CARDIO[k] + "'>" + ICONES_CARDIO[k] + "</button>").join("") + "</div>" +
+      "<div class='ag-linha'><input type='number' inputmode='numeric' placeholder='Minutos' data-campo='cardio-min' value='" + CARDIO.novoMin + "'>" +
       "<button class='secundario' data-acao='cardio-add'>Adicionar</button></div></div>";
+  }
+
+  function htmlCardioFeito(c) {
+    const nome = NOMES_CARDIO[c.tipo] || "Cardio";
+    return "<div class='feito-card'><div class='ex-topo'><span class='etiqueta'>" + ICONE_CHECK + " Cardio concluído</span><span>" + c.minutos + " min</span></div>" +
+      "<p class='nome-feito cardio-nome'><span class='cardio-icone'>" + (ICONES_CARDIO[c.tipo] || "") + "</span>" + nome + "</p>" +
+      "<button class='excluir-sessao' data-acao='cardio-del' data-id='" + c.id + "'>Excluir</button></div>";
   }
 
   async function cardioAdicionar() {
     const m = Number(CARDIO.novoMin);
     if (!m || m <= 0) return;
-    const obj = { dataISO: T.selecionado, minutos: m };
+    const obj = { dataISO: T.selecionado, minutos: m, tipo: CARDIO.novoTipo || "corrida" };
     try {
       const ref = await colecao("cardio").add(obj);
       CARDIO.lista.push({ id: ref.id, ...obj });
@@ -2501,6 +2521,7 @@
 
     const sess = sessoesDoDia(iso);
     sess.forEach(s => { html += htmlSessaoFeita(s); });
+    CARDIO.lista.filter(c => c.dataISO === iso).forEach(c => { html += htmlCardioFeito(c); });
 
     if (iso < h) {
       if (sess.length === 0) {
@@ -2571,7 +2592,7 @@
   }
 
   function htmlSessaoFeita(s) {
-    let h = "<div class='feito-card'><div class='ex-topo'><span>" + (s.manual ? "Registro manual" : "<span class='etiqueta'>" + ICONE_CHECK + " Concluído</span>") + "</span><span>" +
+    let h = "<div class='feito-card'><div class='ex-topo'><span>" + (s.manual ? "Registro manual" : "<span class='etiqueta'>" + ICONE_CHECK + " Treino concluído</span>") + "</span><span>" +
       (s.manual || !s.duracaoSeg ? "" : formatar(s.duracaoSeg)) + "</span></div>";
     if (s.manual) {
       h += "<p class='texto'>" + esc(s.descricao) + "</p>";
@@ -2661,12 +2682,13 @@
     const C = 2 * Math.PI * 50;
     const pct = meta ? Math.min(1, feitos / meta) : 0;
     const centro = meta ? feitos + "/" + meta : String(feitos);
-    return "<svg viewBox='0 0 120 120' width='150' height='150' style='display:block;margin:0 auto' role='img' aria-label='Progresso: " + centro + " " + rotulo + "'>" +
+    const linhas = String(rotulo).split("|");
+    const altura = 124 + linhas.length * 12 + 4;
+    const textos = linhas.map((t, i) => "<text x='60' y='" + (124 + i * 12) + "' text-anchor='middle' font-size='10' fill='#6B6259'>" + t + "</text>").join("");
+    return "<svg viewBox='0 0 120 " + altura + "' width='150' height='" + Math.round(150 * altura / 120) + "' style='display:block;margin:0 auto' role='img' aria-label='Progresso: " + centro + "'>" +
       "<circle cx='60' cy='60' r='50' fill='none' stroke='#EFECE6' stroke-width='12'/>" +
       "<circle cx='60' cy='60' r='50' fill='none' stroke='#770523' stroke-width='12' stroke-linecap='round' stroke-dasharray='" + (pct * C) + " " + C + "' transform='rotate(-90 60 60)'/>" +
-      "<text x='60' y='62' text-anchor='middle' font-size='20' font-weight='600' fill='#2B2420'>" + centro + "</text>" +
-      "<text x='60' y='80' text-anchor='middle' font-size='10' fill='#6B6259'>" + rotulo + "</text>" +
-    "</svg>";
+      "<text x='60' y='62' text-anchor='middle' font-size='20' font-weight='600' fill='#2B2420'>" + centro + "</text>" + textos + "</svg>";
   }
 
   function anelSemana(feitos, meta) {
@@ -2698,13 +2720,13 @@
     const fim = somar(ini, 6);
     const dias = diasTreinados(ini, fim);
     const meta = T.metas.semanal;
-    const cardioH = Math.round(cardioMinutos(ini, fim) / 6) / 10;
+    const cardioMin = cardioMinutos(ini, fim);
     const metaCardio = T.metas.cardio;
     const mref = new Date(agora.getFullYear(), agora.getMonth() + T.offsetMes, 1);
     const anoAtual = agora.getFullYear();
 
     let h = "<section class='bloco'><h3>Semana</h3>" + navegacao(dataCurta(ini) + " a " + dataCurta(fim), "semana") +
-      "<div class='aneis'>" + anelSemana(dias, meta) + anel(cardioH, metaCardio, "horas") + "</div>" +
+      "<div class='aneis'>" + anelSemana(dias, meta) + anel(cardioMin, metaCardio, "minutos de cardio") + "</div>" +
       (meta || metaCardio ? "" : "<p class='vazio'>Defina suas metas no botão de alvo.</p>") + "</section>";
 
     h += "<section class='bloco'><h3>Mês</h3>" + navegacao(capitalizar(MESES[mref.getMonth()]) + " de " + mref.getFullYear(), "mes") +
@@ -2713,7 +2735,7 @@
     const cardioAno = Math.round(CARDIO.lista.filter(x => x.dataISO.startsWith(String(anoAtual))).reduce((a, x) => a + Number(x.minutos || 0), 0) / 6) / 10;
     const treinosAno = SESSOES_ANO(anoAtual);
     h += "<section class='bloco'><h3>Ano: " + anoAtual + "</h3>" +
-      "<div class='aneis'>" + anel(treinosAno, T.metas.anual, "treinos") + anel(cardioAno, T.metas.cardioAno || null, "horas de cardio") + "</div></section>";
+      "<div class='aneis'>" + anel(treinosAno, T.metas.anual, "treinos") + anel(cardioAno, T.metas.cardioAno || null, "horas de|cardio") + "</div></section>";
     return h;
   }
 
@@ -2773,7 +2795,7 @@
       "<input type='number' inputmode='numeric' placeholder='Ex.: 4' data-campo='meta' data-chave='semanal' value='" + (r.semanal ?? "") + "'>" +
       "<label>Treinos no ano</label>" +
       "<input type='number' inputmode='numeric' placeholder='Ex.: 150' data-campo='meta' data-chave='anual' value='" + (r.anual ?? "") + "'>" +
-      "<label>Cardio por semana (horas)</label>" +
+      "<label>Cardio por semana (minutos)</label>" +
       "<input type='number' inputmode='numeric' placeholder='Ex.: 3' data-campo='meta' data-chave='cardio' value='" + (r.cardio ?? "") + "'>" +
       "<label>Descanso padrão (segundos)</label>" +
       "<input type='number' inputmode='numeric' placeholder='60' data-campo='meta' data-chave='descanso' value='" + (r.descanso ?? "") + "'>" +
@@ -2888,6 +2910,7 @@
       case "treino-excluir": await excluirTreino(); break;
       case "excluir-sessao": await excluirSessao(el.dataset.id); break;
       case "cardio-add": await cardioAdicionar(); break;
+      case "cardio-tipo": CARDIO.novoTipo = el.dataset.tipo; renderTreinos(); break;
       case "cardio-del": await cardioExcluir(el.dataset.id); break;
       case "hist-total": T.histTotal = el.dataset.v; renderTreinos(); break;
       case "excluir-lista": await excluirTreinoPorId(el.dataset.id); break;
