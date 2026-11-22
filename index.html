@@ -598,6 +598,15 @@
   .rev-resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; text-align: center; }
   .rev-resumo strong { display: block; font-size: 1.05rem; }
   .rev-resumo small { color: #6B6259; font-size: 0.7rem; }
+
+  .chip-acao.ruim { border-color: #770523; background: #770523; color: #FFFFFF; }
+  .rev-feito .rev-texto strong { text-decoration: line-through; color: #6B6259; }
+  .rev-feito .rev-item { background: #FAFAF8; }
+  .rev-barra { height: 6px; border-radius: 999px; background: #EFECE6; overflow: hidden; margin: 8px 0; }
+  .rev-barra i { display: block; height: 100%; background: #6E9E63; }
+  .rev-hoje-linha { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-radius: 8px; margin-bottom: 6px; font-size: 0.8rem; }
+  .rev-hoje-linha small { color: #6B6259; }
+  .faixa-revisoes { border-top: 3px solid #770523; }
 </style>
 </head>
 <body>
@@ -852,7 +861,7 @@
       md.oninput = tratarEntradaGeral;
       md.onchange = tratarEntradaGeral;
       renderMeuDia();
-      Promise.all([carregarNaoEsquecer(), carregarCaixa(), carregarLembretes()]).then(() => renderMeuDia());
+      Promise.all([carregarNaoEsquecer(), carregarCaixa(), carregarLembretes(), carregarEstudos()]).then(() => renderMeuDia());
     } else if (secao.id === "estudos") {
       main.innerHTML = voltar + "<h2>Estudos</h2><div id='estudos'></div>";
       const es = document.getElementById("estudos");
@@ -1374,10 +1383,12 @@
 
     "</div>";
 
+    const revisoesHoje = "<div class='bloco faixa faixa-revisoes'><div class='habitos-topo'><h3>Revisões de hoje</h3><button class='chip-acao' data-acao='rev-ir-hoje'>Ir para Revisões</button></div><div id='rev-hoje'></div></div>";
+
     const caixa = "<div class='bloco faixa faixa-caixa'><h3>Caixa do dia</h3><div id='caixa'></div></div>";
 
     el.innerHTML = "<div class='md-layout'><div class='md-agenda'>" + agenda + "</div>" +
-      "<div class='md-col'>" + naoEsqueco + habitos + caixa + "</div></div>";
+      "<div class='md-col'>" + naoEsqueco + habitos + revisoesHoje + caixa + "</div></div>";
 
     const rolagem = el.querySelector(".md-scroll");
     if (rolagem) {
@@ -1388,6 +1399,32 @@
 
     renderNaoEsquecer();
     renderCaixa();
+    renderRevHoje();
+  }
+
+  function renderRevHoje() {
+    const el = document.getElementById("rev-hoje");
+    if (!el) return;
+    const hoje = hojeISO();
+    const doDia = RV.lista.filter(r => r.dataPrevista === hoje || (r.status === "pendente" && r.dataPrevista < hoje));
+    const feitas = doDia.filter(r => r.status === "feito").length;
+    const pend = doDia.filter(r => r.status === "pendente");
+    const minutos = pend.reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
+    const atrasadas = pend.filter(r => r.dataPrevista < hoje).length;
+    const btn = document.querySelector("[data-acao='rev-ir-hoje']");
+    if (btn) btn.onclick = () => { E.tab = "revisoes"; E.view = null; E.form = null; RV.revDia = hoje; irPara("estudos"); };
+    if (!doDia.length) { el.innerHTML = "<p class='vazio'>Nenhuma revisão para hoje.</p>"; return; }
+    const pct = Math.round(feitas / doDia.length * 100);
+    const grupos = [...new Set(pend.map(r => r.materiaId))].map(mid => {
+      const n = pend.filter(r => r.materiaId === mid);
+      const cor = corMateria(mid);
+      const min = n.reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
+      return "<div class='rev-hoje-linha' style='border-left:4px solid " + cor + ";background:" + cor + "26'><span><strong>" + esc(nomeMateria(mid)) + "</strong> · " + n.length + (n.length > 1 ? " revisões" : " revisão") + "</span><small>" + min + " min</small></div>";
+    }).join("");
+    el.innerHTML = "<div class='rev-resumo'><div><strong>" + feitas + " de " + doDia.length + "</strong><small>feitas</small></div>" +
+      "<div><strong>" + minutos + " min</strong><small>restantes</small></div>" +
+      "<div><strong class='" + (atrasadas ? "rev-atrasada" : "") + "'>" + atrasadas + "</strong><small>atrasadas</small></div></div>" +
+      "<div class='rev-barra'><i style='width:" + pct + "%'></i></div>" + (grupos || "<p class='vazio'>Tudo feito por hoje.</p>");
   }
 
   function tintar(hex, p) {
@@ -2471,7 +2508,7 @@
   }
 
   // ---------- Estudos: planejamento acadêmico (fase 1) ----------
-  const E = { tab: "cal", ano: null, mes: null, dia: null, sem: {}, materias: [], aulas: [], provas: [], form: null, novaMat: { nome: "", cor: "#770523" } };
+  const E = { view: null, tab: "cal", ano: null, mes: null, dia: null, sem: {}, materias: [], aulas: [], provas: [], form: null, novaMat: { nome: "", cor: "#770523" } };
   const PERIODOS = [["manha", "Manhã"], ["tarde", "Tarde"], ["noite", "Noite"]];
   const TIPOS_PROVA = ["Prova", "Prática", "Seminário", "Outro"];
 
@@ -2506,7 +2543,7 @@
     const el = document.getElementById("estudos");
     if (!el) return;
     if (E.ano === null) { const h = new Date(); E.ano = h.getFullYear(); E.mes = h.getMonth(); E.dia = hojeISO(); }
-    const abas = [["config", "Semestre"], ["cal", "Calendário"], ["revisoes", "Revisões"], ["materias", "Matérias"]].map(([v, n]) =>
+    const abas = [["cal", "Calendário"], ["revisoes", "Revisões"], ["materias", "Matérias"], ["config", "Semestre"]].map(([v, n]) =>
       "<button class='aba" + (E.tab === v ? " ativo" : "") + "' data-acao='es-tab' data-v='" + v + "'>" + n + "</button>").join("");
     const corpo = E.tab === "config" ? htmlConfigSemestre() : (E.tab === "materias" ? htmlMaterias() : (E.tab === "revisoes" ? htmlRevisoes() : htmlCalEstudos()));
     el.innerHTML = "<div class='abas'>" + abas + "</div>" + corpo;
@@ -2534,6 +2571,50 @@
       "<div class='centro'><button class='secundario' data-acao='es-mat-add'>Adicionar matéria</button></div></div>";
   }
 
+  function formAulaDe(x) {
+    return { kind: "aula", id: x.id, materiaId: x.materiaId, conteudo: x.conteudo, dataISO: x.dataISO, periodo: x.periodo, professor: x.professor || "", obs: x.obs || "" };
+  }
+
+  function formProvaDe(p) {
+    return { kind: "prova", id: p.id, nome: p.nome, materiaId: p.materiaId, dataISO: p.dataISO, horario: p.horario || "", tipo: p.tipo || "Prova", abrangencia: p.abrangencia || "especifica", ateData: p.ateData || "", deData: p.deData || "", aulaIds: (p.aulaIds || []).slice(), excluidos: (p.excluidos || []).slice(), textos: (p.textos || []).slice(), textoNovo: "", obs: p.obs || "" };
+  }
+
+  function htmlEstudoInicialChips(a) {
+    const st = a.estudoInicial;
+    return "<button class='chip-acao" + (st === "feito" ? " ok" : "") + "' data-acao='ei-feito' data-id='" + a.id + "'>Estudo inicial feito</button>" +
+      "<button class='chip-acao" + (st === "nao" ? " ruim" : "") + "' data-acao='ei-nao' data-id='" + a.id + "'>Não foi satisfatório</button>" +
+      (st ? "<button class='chip-acao' data-acao='ei-desfazer' data-id='" + a.id + "'>Desfazer</button>" : "");
+  }
+
+  function htmlInfoAula(a) {
+    return "<div class='bloco'><div class='habitos-topo'><h3>Conteúdo</h3><button class='secundario' data-acao='es-voltar'>Voltar ao dia</button></div>" +
+      "<div class='es-linha es-info'><i class='es-marca' style='background:" + corMateria(a.materiaId) + "'></i><span class='es-texto'>" +
+      "<strong>" + esc(a.conteudo) + "</strong>" +
+      "<small>Matéria: " + esc(nomeMateria(a.materiaId)) + "</small>" +
+      "<small>Data: " + dataCurta(a.dataISO) + " · " + nomePeriodo(a.periodo) + "</small>" +
+      (a.professor ? "<small>Professor: " + esc(a.professor) + "</small>" : "") +
+      (a.obs ? "<small>Observações: " + esc(a.obs) + "</small>" : "") +
+      "<div class='es-chips'>" + htmlEstudoInicialChips(a) + "</div></span></div>" +
+      "<div class='es-acoes'><button class='grande' data-acao='es-alterar' data-id='" + a.id + "'>Alterar conteúdo</button>" +
+      "<button class='secundario' data-acao='es-aula-del' data-id='" + a.id + "'>Excluir</button></div></div>";
+  }
+
+  function htmlInfoProva(p) {
+    const nomes = conteudosDaProva(p).map(id => { const x = E.aulas.find(y => y.id === id); return x ? x.conteudo : null; }).filter(Boolean);
+    const abrangencia = p.abrangencia === "cumulativa" ? "Cumulativa" + (p.deData ? " de " + dataCurta(p.deData) : "") + " até " + dataCurta(p.ateData || p.dataISO) : "Conteúdo específico";
+    return "<div class='bloco'><div class='habitos-topo'><h3>Prova</h3><button class='secundario' data-acao='es-voltar'>Voltar ao dia</button></div>" +
+      "<div class='es-linha es-info es-info-prova'><b class='es-prova-marca'>⚑</b><span class='es-texto'>" +
+      "<strong>" + esc(p.nome) + "</strong>" +
+      "<small>Matéria: " + esc(nomeMateria(p.materiaId)) + "</small>" +
+      "<small>Data: " + dataCurta(p.dataISO) + (p.horario ? " · " + esc(p.horario) : "") + " · " + esc(p.tipo || "Prova") + "</small>" +
+      "<small>" + abrangencia + "</small>" +
+      "<small>" + (nomes.length ? "Conteúdos: " + nomes.map(esc).join(" · ") : "Sem conteúdos selecionados") + "</small>" +
+      ((p.textos && p.textos.length) ? "<small>Outros: " + p.textos.map(esc).join(" · ") + "</small>" : "") +
+      (p.obs ? "<small>Observações: " + esc(p.obs) + "</small>" : "") + "</span></div>" +
+      "<div class='es-acoes'><button class='grande' data-acao='es-alterar-prova' data-id='" + p.id + "'>Alterar prova</button>" +
+      "<button class='secundario' data-acao='es-prova-del' data-id='" + p.id + "'>Excluir</button></div></div>";
+  }
+
   function htmlCalEstudos() {
     const primeiro = new Date(E.ano, E.mes, 1).getDay();
     const dias = new Date(E.ano, E.mes + 1, 0).getDate();
@@ -2556,8 +2637,22 @@
         return lista.length ? "<div class='es-periodo'><small>" + nome + "</small>" + lista.map(blocoAula).join("") + "</div>" : "";
       };
       const conteudo = provasDia.map(blocoProva).join("") + periodo("manha", "Manhã") + periodo("tarde", "Tarde") + periodo("noite", "Noite");
-      grade += "<div class='es-dia" + (iso === hoje ? " hoje" : "") + (iso === E.dia ? " sel" : "") + (provasDia.length ? " com-prova" : "") + "' data-acao='es-dia-cal' data-iso='" + iso + "'>" +
+      grade += "<div class='es-dia" + (iso === hoje ? " hoje" : "") + (iso === E.dia ? " sel" : "") + "' data-acao='es-dia-cal' data-iso='" + iso + "'>" +
         "<span class='es-numero'>" + d + "</span>" + conteudo + "</div>";
+    }
+    const calendario = "<div class='bloco'><div class='nav'>" +
+      "<button class='icone' data-acao='es-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
+      "<strong>" + capitalizar(MESES[E.mes]) + " de " + E.ano + "</strong>" +
+      "<button class='icone' data-acao='es-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
+      "<div class='calendario'>" + grade + "</div></div>";
+
+    if (E.view && E.view.tipo === "aula") {
+      const a = E.aulas.find(x => x.id === E.view.id);
+      if (a) return calendario + htmlInfoAula(a) + (E.form && E.form.kind === "aula" ? htmlFormEstudos() : "");
+    }
+    if (E.view && E.view.tipo === "prova") {
+      const p = E.provas.find(x => x.id === E.view.id);
+      if (p) return calendario + htmlInfoProva(p) + (E.form && E.form.kind === "prova" ? htmlFormEstudos() : "");
     }
 
     const aulas = E.aulas.filter(a => a.dataISO === E.dia).sort((a, b) => PERIODOS.findIndex(p => p[0] === a.periodo) - PERIODOS.findIndex(p => p[0] === b.periodo));
@@ -2566,24 +2661,18 @@
       "<span class='es-texto'><strong>" + esc(a.conteudo) + "</strong>" +
       "<small>" + esc(nomeMateria(a.materiaId)) + " · " + nomePeriodo(a.periodo) + (a.professor ? " · Prof. " + esc(a.professor) : "") + "</small>" +
       (a.obs ? "<small>" + esc(a.obs) + "</small>" : "") +
-      (a.estudoInicial === "feito" ? "<small class='ei-status ok'>Estudo inicial feito</small>" : (a.estudoInicial === "nao" ? "<small class='ei-status'>Estudo inicial não satisfatório</small>" : "<div class='es-chips'><button class='chip-acao' data-acao='ei-feito' data-id='" + a.id + "'>Estudo inicial feito</button><button class='chip-acao' data-acao='ei-nao' data-id='" + a.id + "'>Não foi satisfatório</button></div>")) + "</span>" +
-      "<button class='excluir' data-acao='es-edit-aula' data-id='" + a.id + "' aria-label='Editar aula'>✎</button></div>";
+      "<div class='es-chips'>" + htmlEstudoInicialChips(a) + "</div></span>" +
+      "<button class='excluir' data-acao='es-edit-aula' data-id='" + a.id + "' aria-label='Ver e editar'>✎</button>" +
+      "<button class='excluir' data-acao='es-aula-del' data-id='" + a.id + "' aria-label='Excluir'>×</button></div>";
     const linhaProva = p => {
       const nomes = conteudosDaProva(p).map(id => { const x = E.aulas.find(y => y.id === id); return x ? x.conteudo : null; }).filter(Boolean);
-      const abrangencia = p.abrangencia === "cumulativa" ? "Cumulativa" + (p.deData ? " de " + dataCurta(p.deData) : "") + " até " + dataCurta(p.ateData || p.dataISO) : "Conteúdo específico";
       return "<div class='es-linha es-info es-info-prova'><b class='es-prova-marca'>⚑</b><span class='es-texto'><strong>" + esc(p.nome) + "</strong>" +
         "<small>" + esc(nomeMateria(p.materiaId)) + " · " + esc(p.tipo || "Prova") + (p.horario ? " · " + esc(p.horario) : "") + "</small>" +
-        "<small>" + abrangencia + "</small>" +
-        "<small>" + (nomes.length ? "Conteúdos: " + nomes.map(esc).join(" · ") : "Sem conteúdos selecionados") + "</small>" +
-        ((p.textos && p.textos.length) ? "<small>Outros: " + p.textos.map(esc).join(" · ") + "</small>" : "") +
-        (p.obs ? "<small>" + esc(p.obs) + "</small>" : "") + "</span>" +
-        "<button class='excluir' data-acao='es-edit-prova' data-id='" + p.id + "' aria-label='Editar prova'>✎</button></div>";
+        "<small>" + (nomes.length ? nomes.length + " conteúdos cobrados" : "Sem conteúdos selecionados") + "</small></span>" +
+        "<button class='excluir' data-acao='es-edit-prova' data-id='" + p.id + "' aria-label='Ver e editar'>✎</button>" +
+        "<button class='excluir' data-acao='es-prova-del' data-id='" + p.id + "' aria-label='Excluir'>×</button></div>";
     };
-    return "<div class='bloco'><div class='nav'>" +
-      "<button class='icone' data-acao='es-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
-      "<strong>" + capitalizar(MESES[E.mes]) + " de " + E.ano + "</strong>" +
-      "<button class='icone' data-acao='es-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
-      "<div class='calendario'>" + grade + "</div></div>" +
+    return calendario +
       "<div class='bloco'><h3>" + tituloDia(E.dia) + "</h3>" +
       (aulas.map(linhaAula).join("") + provas.map(linhaProva).join("") || "<p class='vazio'>Nada previsto para este dia.</p>") +
       "<div class='es-acoes'><button class='secundario' data-acao='es-add-aula'>+ Conteúdo</button><button class='secundario' data-acao='es-add-prova'>+ Prova</button></div></div>" +
@@ -2660,7 +2749,10 @@
       const f = E.form;
       if (a === "es-tab") { E.tab = el.dataset.v; renderEstudos(); }
       else if (a === "es-nav") { const m = E.mes + Number(el.dataset.d); E.ano += Math.floor(m / 12); E.mes = ((m % 12) + 12) % 12; renderEstudos(); }
-      else if (a === "es-dia-cal") { E.dia = el.dataset.iso; renderEstudos(); }
+      else if (a === "es-dia-cal") { E.dia = el.dataset.iso; E.view = null; E.form = null; renderEstudos(); }
+      else if (a === "es-voltar") { E.view = null; E.form = null; renderEstudos(); }
+      else if (a === "es-alterar") { const x = E.aulas.find(y => y.id === el.dataset.id); if (x) { E.form = formAulaDe(x); renderEstudos(); } }
+      else if (a === "es-alterar-prova") { const p = E.provas.find(y => y.id === el.dataset.id); if (p) { E.form = formProvaDe(p); renderEstudos(); } }
       else if (a === "es-dia") { const c = el.dataset.campo, i = Number(el.dataset.i); E.sem[c] = (E.sem[c] || []).includes(i) ? E.sem[c].filter(x => x !== i) : (E.sem[c] || []).concat([i]); renderEstudos(); }
       else if (a === "es-periodo") { const v = el.dataset.v; const l = E.sem.periodos || []; E.sem.periodos = l.includes(v) ? l.filter(x => x !== v) : l.concat([v]); renderEstudos(); }
       else if (a === "es-salvar-sem") { await colecao("estudosConfig").doc("semestre").set(E.sem); mostrarAviso("Semestre salvo."); }
@@ -2680,25 +2772,21 @@
         renderEstudos();
       }
       else if (a === "es-add-aula") { E.form = { kind: "aula", id: null, materiaId: "", conteudo: "", dataISO: E.dia, periodo: "manha", professor: "", obs: "" }; renderEstudos(); }
-      else if (a === "es-edit-aula") {
-        const x = E.aulas.find(y => y.id === el.dataset.id);
-        if (x) { E.form = { kind: "aula", id: x.id, materiaId: x.materiaId, conteudo: x.conteudo, dataISO: x.dataISO, periodo: x.periodo, professor: x.professor || "", obs: x.obs || "" }; renderEstudos(); }
-      }
+      else if (a === "es-edit-aula") { E.view = { tipo: "aula", id: el.dataset.id }; E.form = null; renderEstudos(); }
       else if (a === "es-aula-del") {
         if (!(await confirmar("Excluir esta aula?"))) return;
         await colecao("aulas").doc(el.dataset.id).delete();
         E.aulas = E.aulas.filter(x => x.id !== el.dataset.id);
+        E.view = null; E.form = null;
         renderEstudos();
       }
       else if (a === "es-add-prova") { E.form = { kind: "prova", id: null, nome: "", materiaId: "", dataISO: E.dia, horario: "", tipo: "Prova", abrangencia: "especifica", ateData: "", aulaIds: [], excluidos: [], textos: [], textoNovo: "", obs: "" }; renderEstudos(); }
-      else if (a === "es-edit-prova") {
-        const p = E.provas.find(y => y.id === el.dataset.id);
-        if (p) { E.form = { kind: "prova", id: p.id, nome: p.nome, materiaId: p.materiaId, dataISO: p.dataISO, horario: p.horario || "", tipo: p.tipo || "Prova", abrangencia: p.abrangencia || "especifica", ateData: p.ateData || "", deData: p.deData || "", aulaIds: (p.aulaIds || []).slice(), excluidos: (p.excluidos || []).slice(), textos: (p.textos || []).slice(), textoNovo: "", obs: p.obs || "" }; renderEstudos(); }
-      }
+      else if (a === "es-edit-prova") { E.view = { tipo: "prova", id: el.dataset.id }; E.form = null; renderEstudos(); }
       else if (a === "es-prova-del") {
         if (!(await confirmar("Excluir esta prova?"))) return;
         await colecao("provas").doc(el.dataset.id).delete();
         E.provas = E.provas.filter(x => x.id !== el.dataset.id);
+        E.view = null; E.form = null;
         renderEstudos();
       }
       else if (a === "es-prova-aula" && f) { const id = el.dataset.id; f.aulaIds = f.aulaIds.includes(id) ? f.aulaIds.filter(x => x !== id) : f.aulaIds.concat([id]); }
@@ -2711,6 +2799,7 @@
       else if (a === "rev-nao") await revNao(el.dataset.id);
       else if (a === "ei-feito") await marcarEstudoInicial(el.dataset.id, "feito");
       else if (a === "ei-nao") await marcarEstudoInicial(el.dataset.id, "nao");
+      else if (a === "ei-desfazer") await marcarEstudoInicial(el.dataset.id, null);
       else if (a === "es-salvar-form") await salvarFormEstudos();
     } catch (err) { mostrarErro(err.message); }
   }
@@ -2813,30 +2902,34 @@
     if (!RV.revDia) RV.revDia = hojeISO();
     const dia = RV.revDia;
     const hoje = hojeISO();
-    const pend = RV.lista.filter(r => r.status === "pendente" && (r.dataPrevista === dia || (dia === hoje && r.dataPrevista < hoje)));
-    const feitas = RV.lista.filter(r => r.status === "feito" && r.dataFeito === dia);
+    const doDia = RV.lista.filter(r => r.dataPrevista === dia || (dia === hoje && r.status === "pendente" && r.dataPrevista < hoje));
+    const pend = doDia.filter(r => r.status === "pendente");
+    const feitas = doDia.filter(r => r.status === "feito").length;
     const atrasadas = pend.filter(r => r.dataPrevista < dia).length;
     const minutos = pend.reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
-    const aulaDoDia = E.aulas.filter(a => a.dataISO === dia && (a.estudoInicial === undefined || a.estudoInicial === null));
+    const aulasDia = E.aulas.filter(a => a.dataISO === dia);
     const nomeAula = id => { const a = E.aulas.find(x => x.id === id); return a ? a.conteudo : "Conteúdo removido"; };
 
-    const estudoInicial = aulaDoDia.map(a =>
+    const estudo = aulasDia.map(a =>
       "<div class='es-linha es-info'><i class='es-marca' style='background:" + corMateria(a.materiaId) + "'></i>" +
-      "<span class='es-texto'><strong>" + esc(a.conteudo) + "</strong><small>" + esc(nomeMateria(a.materiaId)) + " · Estudo inicial desta aula</small></span>" +
-      "<div class='es-chips'><button class='chip-acao' data-acao='ei-feito' data-id='" + a.id + "'>Estudo inicial feito</button>" +
-      "<button class='chip-acao' data-acao='ei-nao' data-id='" + a.id + "'>Não foi satisfatório</button></div></div>").join("");
+      "<span class='es-texto'><strong>" + esc(a.conteudo) + "</strong><small>" + esc(nomeMateria(a.materiaId)) + " · Estudo inicial desta aula</small>" +
+      "<div class='es-chips'>" + htmlEstudoInicialChips(a) + "</div></span></div>").join("");
 
-    const grupos = [...new Set(pend.map(r => r.materiaId))].map(mid => {
-      const itens = pend.filter(r => r.materiaId === mid);
+    const grupos = [...new Set(doDia.map(r => r.materiaId))].map(mid => {
+      const itens = doDia.filter(r => r.materiaId === mid);
       const cor = corMateria(mid);
-      const min = itens.reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
+      const feitasM = itens.filter(r => r.status === "feito").length;
+      const minM = itens.filter(r => r.status === "pendente").reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
       return "<div class='rev-bloco'><div class='rev-topo' style='background:" + cor + "26;border-left:4px solid " + cor + "'>" +
-        "<strong>Revisões · " + esc(nomeMateria(mid)) + "</strong><small>" + itens.length + " conteúdos · cerca de " + min + " min</small></div>" +
-        itens.map(r => "<div class='rev-item'><div class='rev-texto'><strong>" + esc(nomeAula(r.aulaId)) + "</strong>" +
-          "<small>" + REV_TIPOS[r.tipo].nome + " · " + REV_TIPOS[r.tipo].min + " min" + (r.dataPrevista < hoje ? " · <b class='rev-atrasada'>atrasada</b>" : "") + "</small>" +
-          "<small class='rev-metodo'>" + REV_TIPOS[r.tipo].metodo + "</small></div>" +
-          "<div class='es-chips'><button class='chip-acao ok' data-acao='rev-feito' data-id='" + r.id + "'>Feito</button>" +
-          "<button class='chip-acao' data-acao='rev-nao' data-id='" + r.id + "'>Não consegui</button></div></div>").join("") +
+        "<strong>Revisões · " + esc(nomeMateria(mid)) + "</strong><small>" + feitasM + " de " + itens.length + " feitas · " + minM + " min restantes</small></div>" +
+        itens.map(r => {
+          const feito = r.status === "feito";
+          return "<div class='rev-item" + (feito ? " rev-feito" : "") + "'><div class='rev-texto'><strong>" + esc(nomeAula(r.aulaId)) + "</strong>" +
+            "<small>" + REV_TIPOS[r.tipo].nome + " · " + REV_TIPOS[r.tipo].min + " min" + (!feito && r.dataPrevista < hoje ? " · <b class='rev-atrasada'>atrasada</b>" : "") + "</small>" +
+            "<small class='rev-metodo'>" + REV_TIPOS[r.tipo].metodo + "</small></div>" +
+            "<div class='es-chips'><button class='chip-acao" + (feito ? " ok" : "") + "' data-acao='rev-feito' data-id='" + r.id + "'>" + (feito ? "Feito ✓" : "Feito") + "</button>" +
+            "<button class='chip-acao" + (!feito && r.reprog ? "" : "") + "' data-acao='rev-nao' data-id='" + r.id + "'>Não consegui</button></div></div>";
+        }).join("") +
         "</div>";
     }).join("");
 
@@ -2844,21 +2937,26 @@
       "<button class='icone' data-acao='rev-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
       "<strong>" + (dia === hoje ? "Hoje · " : "") + tituloDia(dia) + "</strong>" +
       "<button class='icone' data-acao='rev-nav' data-d='1' aria-label='Próximo dia'>›</button></div>" +
-      "<div class='rev-resumo'><div><strong>" + pend.length + "</strong><small>revisões</small></div>" +
-      "<div><strong>" + minutos + " min</strong><small>tempo estimado</small></div>" +
-      "<div><strong>" + atrasadas + "</strong><small>atrasadas</small></div></div></div>" +
-      (aulaDoDia.length ? "<div class='bloco'><h3>Estudo inicial das aulas</h3>" + estudoInicial + "</div>" : "") +
-      (grupos || "<div class='bloco'><p class='vazio'>Nenhuma revisão para este dia.</p></div>") +
-      (feitas.length ? "<div class='bloco'><h3>Feitas neste dia</h3>" + feitas.map(r => "<div class='es-linha'><span class='es-texto'><strong>" + esc(nomeAula(r.aulaId)) + "</strong><small>" + REV_TIPOS[r.tipo].nome + "</small></span></div>").join("") + "</div>" : "");
+      "<div class='rev-resumo'><div><strong>" + feitas + " de " + doDia.length + "</strong><small>feitas</small></div>" +
+      "<div><strong>" + minutos + " min</strong><small>restantes</small></div>" +
+      "<div><strong class='" + (atrasadas ? "rev-atrasada" : "") + "'>" + atrasadas + "</strong><small>atrasadas</small></div></div></div>" +
+      (estudo ? "<div class='bloco'><h3>Estudo inicial das aulas</h3>" + estudo + "</div>" : "") +
+      (grupos || "<div class='bloco'><p class='vazio'>Nenhuma revisão para este dia.</p></div>");
   }
 
   async function revFeito(id) {
     const r = RV.lista.find(x => x.id === id);
     if (!r) return;
-    r.status = "feito";
-    r.dataFeito = hojeISO();
-    await colecao("revisoes").doc(id).update({ status: "feito", dataFeito: r.dataFeito });
+    if (r.status === "feito") {
+      r.status = "pendente";
+      await colecao("revisoes").doc(id).update({ status: "pendente" });
+    } else {
+      r.status = "feito";
+      r.dataFeito = hojeISO();
+      await colecao("revisoes").doc(id).update({ status: "feito", dataFeito: r.dataFeito });
+    }
     renderEstudos();
+    renderRevHoje();
   }
 
   // "Não consegui": não é esquecimento. A revisão vai para o próximo dia, sem acumular no mesmo dia.
@@ -2879,6 +2977,7 @@
     await colecao("aulas").doc(aulaId).update({ estudoInicial: valor });
     await gerarRevisoes();
     renderEstudos();
+    renderRevHoje();
   }
 
   // ---------- lembretes de compromissos ----------
