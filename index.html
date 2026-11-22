@@ -1416,7 +1416,7 @@
     const el = document.getElementById("rev-hoje");
     if (!el) return;
     const hoje = hojeEstudo();
-    const doDia = RV.lista.filter(r => r.dataPrevista === hoje || (r.status === "pendente" && r.dataPrevista < hoje));
+    const doDia = RV.lista.filter(r => (r.dataPrevista === hoje || (r.status === "pendente" && r.dataPrevista < hoje)) && (!r.provaId || revPreAtiva(r, hoje)));
     const feitas = doDia.filter(r => r.status === "feito").length;
     const pend = doDia.filter(r => r.status === "pendente");
     const minutos = pend.reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
@@ -2914,6 +2914,20 @@
   };
   const PRE_DIAS = [14, 7, 3, 1];
 
+  // Pré-prova só faz sentido antes da prova e enquanto o conteúdo não foi marcado como "não preciso mais".
+  function revPreAtiva(r, dia) {
+    const p = E.provas.find(x => x.id === r.provaId);
+    if (!p) return false;
+    return dia < p.dataISO;
+  }
+
+  function preRevisaoValida(r) {
+    const p = E.provas.find(x => x.id === r.provaId);
+    if (!p || r.dataPrevista >= p.dataISO) return false;
+    const dec = (RV.pos.find(x => x.id === r.provaId + "_" + r.aulaId) || {}).decisao;
+    return dec !== "nao";
+  }
+
   function addDiasISO(iso, n) {
     const [y, m, d] = iso.split("-").map(Number);
     return isoDe(new Date(y, m - 1, d + n));
@@ -2961,6 +2975,9 @@
     RV.lista.filter(r => !idsAulas.includes(r.aulaId)).forEach(r => ops.push(colecao("revisoes").doc(r.id).delete()));
     RV.lista = RV.lista.filter(r => idsAulas.includes(r.aulaId));
 
+    RV.lista.filter(r => r.provaId && r.status === "pendente" && !preRevisaoValida(r)).forEach(r => ops.push(colecao("revisoes").doc(r.id).delete()));
+    RV.lista = RV.lista.filter(r => !(r.provaId && r.status === "pendente" && !preRevisaoValida(r)));
+
     // Remove revisões pré-prova de provas que já foram excluídas
     const idsProvas = E.provas.map(p => p.id);
     RV.lista.filter(r => r.provaId && !idsProvas.includes(r.provaId) && r.status === "pendente").forEach(r => ops.push(colecao("revisoes").doc(r.id).delete()));
@@ -2970,6 +2987,8 @@
       conteudosDaProva(p).forEach(aulaId => {
         const aula = E.aulas.find(x => x.id === aulaId);
         if (!aula) return;
+        const decisao = (RV.pos.find(x => x.id === p.id + "_" + aulaId) || {}).decisao;
+        if (decisao === "nao") return;
         PRE_DIAS.forEach(d => {
           const t = "P" + d;
           const id = "pre_" + p.id + "_" + aulaId + "_" + d;
@@ -2996,7 +3015,7 @@
     if (!RV.revDia) RV.revDia = hojeEstudo();
     const dia = RV.revDia;
     const hoje = hojeEstudo();
-    const doDia = RV.lista.filter(r => r.dataPrevista === dia || (dia === hoje && r.status === "pendente" && r.dataPrevista < hoje));
+    const doDia = RV.lista.filter(r => (r.dataPrevista === dia || (dia === hoje && r.status === "pendente" && r.dataPrevista < hoje)) && (!r.provaId || revPreAtiva(r, dia)));
     const doDiaNormal = doDia.filter(r => !r.provaId);
     const doDiaPre = doDia.filter(r => !!r.provaId);
     const pend = doDia.filter(r => r.status === "pendente");
@@ -3029,12 +3048,14 @@
         "</div>";
     }).join("");
 
-    const posHtml = E.provas.filter(p => addDiasISO(p.dataISO, 1) === dia).map(p =>
+    const posHtml = E.provas.filter(p => dia >= p.dataISO).map(p =>
       "<div class='bloco'><h3>Pós-prova · " + esc(p.nome) + "</h3><p class='vazio' style='text-align:left'>Esse conteúdo ainda precisa de revisão? Responda para cada um.</p>" +
       conteudosDaProva(p).map(id => {
         const a = E.aulas.find(x => x.id === id);
         if (!a) return "";
-        const dec = (RV.pos.find(x => x.id === p.id + "_" + a.id) || {}).decisao;
+        const decObj = RV.pos.find(x => x.id === p.id + "_" + a.id) || {};
+        const dec = decObj.decisao;
+        if (dec && decObj.dataISO !== dia) return "";
         return "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(a.conteudo) + "</strong><small>" + esc(nomeMateria(a.materiaId)) + "</small></span><div class='es-chips'>" +
           "<button class='chip-acao" + (dec === "sim" ? " ok" : "") + "' data-acao='pos-decidir' data-prova='" + p.id + "' data-aula='" + a.id + "' data-v='sim'>Continuar revisando</button>" +
           "<button class='chip-acao" + (dec === "nao" ? " ruim" : "") + "' data-acao='pos-decidir' data-prova='" + p.id + "' data-aula='" + a.id + "' data-v='nao'>Não preciso mais</button></div></div>";
