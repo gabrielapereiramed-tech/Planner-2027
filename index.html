@@ -479,6 +479,17 @@
   .lb-data { color: #6B6259; font-size: 0.8rem; min-width: 70px; }
   .lb-linha .excluir { width: auto; padding: 0.2rem 0.55rem; }
   .bloco h3 { margin: 0 0 0.6rem; }
+
+  .add-bordo { width: 36px !important; height: 36px; border-radius: 50%; padding: 0; margin: 0; background: var(--burgundy); color: #FFFFFF; font-size: 22px; line-height: 1; border: none; display: flex; align-items: center; justify-content: center; }
+  .fab.fab-texto { font-size: 26px; line-height: 1; }
+  .calendario .cal-dia.sel:not(.hoje) { background: #FFFFFF; color: #2B2420; border: 2px solid var(--burgundy); }
+  .hab-desc { font-size: 0.72rem; color: #6B6259; font-weight: 400; margin-left: 4px; }
+  .aneis { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .pontos { display: flex; gap: 18px; justify-content: center; margin-top: 10px; }
+  .ponto { width: auto !important; background: none; border: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #6B6259; font-size: 0.78rem; font-weight: 500; cursor: pointer; }
+  .ponto i { display: block; width: 10px; height: 10px; border-radius: 50%; background: #D6D3CE; }
+  .ponto.ativo { color: #2B2420; font-weight: 700; }
+  .ponto.ativo i { background: var(--burgundy); }
 </style>
 </head>
 <body>
@@ -768,6 +779,7 @@
       T.centralizar = true;
       renderTreinos();
       carregarTudo().then(() => renderTreinos());
+      carregarCardio().then(() => renderTreinos());
     } else {
       if (secao.id === "pessoal") {
         main.innerHTML = voltar + "<div class='ht-titulo'><h2>Habit Tracker</h2><p class='ht-frase'>pequenos hábitos, grandes feitos</p></div><div id='habitos-tracker'></div>";
@@ -853,8 +865,10 @@
     return Math.max(24, Math.min(56, Math.floor(disponivel / ((FIM_MIN - INICIO_MIN) / 60))));
   }
 
-  const H = { lista: [], dias: {}, novoNome: "", adicionando: false, novaCor: "#770523", novoIcone: null, novaMeta: 7 };
+  const H = { lista: [], dias: {}, novoNome: "", adicionando: false, novaCor: "#770523", novoIcone: null, novaMeta: 7, novaDesc: "" };
   const HT = { ano: null, mes: null };
+  const CARDIO = { lista: [], novoMin: "" };
+  T.histTotal = "anual";
   const ICONES_HABITO = {
     sono: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'/></svg>",
     agua: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3 C12 3 6 10 6 14 a6 6 0 0 0 12 0 C18 10 12 3 12 3 Z'/></svg>",
@@ -1083,7 +1097,7 @@
       totalAtual += atual; totalAnt += anterior; totalMeta += meta;
       const pctAtual = Math.min(100, Math.round(atual / meta * 100));
       const pctAnt = Math.min(100, Math.round(anterior / meta * 100));
-      const seta = atual > anterior ? "↑" : (atual < anterior ? "↓" : "=");
+      const seta = atual > anterior ? "↑" : (atual < anterior ? "↓" : "");
       const cor = hb.cor || "#770523";
       const icone = hb.icone && ICONES_HABITO[hb.icone] ? ICONES_HABITO[hb.icone] : "";
       return "<div class='hab-barra'>" +
@@ -1131,10 +1145,10 @@
         "<button class='icone' data-acao='cal-nav' data-d='1' aria-label='Próximo mês'>›</button></div></div>" +
         "<div class='calendario'>" + htmlCalMini(MC.ano, MC.mes) + "</div></div></div>" +
       "<div id='agenda'>" +
-      "<div class='agenda-topo'><h3>Agenda semanal</h3><button class='icone' data-acao='agenda-novo' aria-label='Novo compromisso'>+</button></div>" +
+      "<div class='agenda-topo'><h3>Agenda semanal</h3></div>" +
       "<div class='nav'><button class='icone' data-acao='agenda-nav' data-d='-1' aria-label='Semana anterior'>‹</button>" +
         "<strong class='intervalo" + (atual ? " semana" : "") + "'>" + dataCurta(ini) + " a " + dataCurta(fim) + "</strong>" +
-        "<button class='icone' data-acao='agenda-nav' data-d='1' aria-label='Próxima semana'>›</button></div>";
+        "<div style='display:flex;gap:6px;align-items:center'><button class='icone' data-acao='agenda-nav' data-d='1' aria-label='Próxima semana'>›</button><button class='add-bordo' data-acao='agenda-novo' aria-label='Novo compromisso'>+</button></div></div>";
     if (G.formAberto && G.rascunho) h += htmlFormCompromisso(false);
     h += "<div class='agenda-grade'><div></div>";
     dias.forEach(d => {
@@ -1217,7 +1231,7 @@
           (feito ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
           "' aria-label='Marcar hábito'>" + (feito ? ICONE_CHECK : "") + "</button>" +
           (hb.icone && ICONES_HABITO[hb.icone] ? "<span class='hab-icone' style='color:" + (hb.cor || "#770523") + "'>" + ICONES_HABITO[hb.icone] + "</span>" : "") +
-          "<span class='" + (feito ? "riscado" : "") + "'>" + esc(hb.nome) + "</span>" +
+          "<span class='" + (feito ? "riscado" : "") + "'>" + esc(hb.nome) + "</span>" + (hb.desc ? "<span class='hab-desc'>" + esc(hb.desc) + "</span>" : "") +
 
         "</div>";
       }).join("") : "<p class='vazio'>Nenhum hábito cadastrado ainda.</p>") +
@@ -1300,6 +1314,7 @@
     const cores = G.legenda.length ? G.legenda : LEGENDA_PADRAO;
     return "<div class='novo-habito'>" +
       "<input placeholder='Nome do hábito' data-campo='habito-nome' value='" + esc(H.novoNome) + "'>" +
+      "<input placeholder='Descrição (opcional)' data-campo='habito-desc' value='" + esc(H.novaDesc) + "'>" +
       "<label>Ícone</label><div class='icones'>" + Object.keys(ICONES_HABITO).map(k =>
         "<button class='icone-opcao" + (H.novoIcone === k ? " ativo" : "") + "' data-acao='habito-icone' data-icone='" + k + "' aria-label='" + k + "'>" + ICONES_HABITO[k] + "</button>"
       ).join("") + "</div>" +
@@ -1413,6 +1428,7 @@
       else if (a === "md-novo") { abrirFormNovo(MD.dia || hojeISO()); renderMeuDia(); }
       else if (a === "ag-cancelar") { G.formAberto = false; G.rascunho = null; G.editandoLegenda = false; G.novaCorAberta = false; renderAtual(); }
       else if (a === "ag-cor") { r.cor = el.dataset.cor; renderAtual(); }
+      else if (a === "lb-feito") await marcarLembrete(el.dataset.id);
       else if (a === "ag-salvar") await salvarCompromisso();
       else if (a === "ag-excluir") await excluirCompromisso(el.dataset.id);
       else if (a === "leg-editar") { G.editandoLegenda = !G.editandoLegenda; renderAtual(); }
@@ -1465,6 +1481,7 @@
     const d = e.target.dataset;
     if (d.campo === "habito-nome") { H.novoNome = e.target.value; return; }
     if (d.campo === "habito-meta") { H.novaMeta = e.target.value; return; }
+    if (d.campo === "habito-desc") { H.novaDesc = e.target.value; return; }
     if (d.campo === "ne-texto") { NE.novoTexto = e.target.value; return; }
     if (d.campo === "cx-valor") { CX.valor = e.target.value; return; }
     if (d.campo === "cx-desc") { CX.descricao = e.target.value; return; }
@@ -1540,13 +1557,14 @@
   async function adicionarHabito() {
     const nome = (H.novoNome || "").trim();
     if (!nome) return;
-    const obj = { nome: nome, cor: H.novaCor, icone: H.novoIcone || null, meta: Math.min(7, Math.max(1, Number(H.novaMeta) || 7)) };
+    const obj = { nome: nome, cor: H.novaCor, icone: H.novoIcone || null, meta: Math.min(7, Math.max(1, Number(H.novaMeta) || 7)), desc: (H.novaDesc || "").trim() || null };
     try {
       const ref = await colecao("habitos").add(obj);
       H.lista.push({ id: ref.id, ...obj });
       H.novoNome = "";
       H.novoIcone = null;
       H.novaMeta = 7;
+      H.novaDesc = "";
       H.adicionando = false;
       renderAtual();
     } catch (err) {
@@ -1822,6 +1840,49 @@
   // ---------- Lembretes ----------
   const LB = { ano: null, mes: null, dia: null, lista: [], formAberto: false, r: null };
 
+  async function carregarCardio() {
+    try {
+      const snap = await colecao("cardio").get();
+      CARDIO.lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { mostrarErro(e.message); }
+  }
+
+  function cardioMinutos(ini, fim) {
+    return CARDIO.lista.filter(x => x.dataISO >= ini && x.dataISO <= fim).reduce((a, x) => a + Number(x.minutos || 0), 0);
+  }
+
+  function htmlCardioDia() {
+    const iso = T.selecionado;
+    const lista = CARDIO.lista.filter(x => x.dataISO === iso);
+    const total = lista.reduce((a, x) => a + Number(x.minutos || 0), 0);
+    return "<div class='bloco faixa faixa-metas'><div class='habitos-topo'><h3>Cardio do dia</h3><span class='resumo'>" + total + " min</span></div>" +
+      lista.map(x => "<div class='lb-linha'><span>" + x.minutos + " min</span><span style='flex:1'></span>" +
+        "<button class='excluir' data-acao='cardio-del' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>").join("") +
+      "<div class='ag-linha'><input type='number' inputmode='numeric' placeholder='Minutos de cardio' data-campo='cardio-min' value='" + CARDIO.novoMin + "'>" +
+      "<button class='secundario' data-acao='cardio-add'>Adicionar</button></div></div>";
+  }
+
+  async function cardioAdicionar() {
+    const m = Number(CARDIO.novoMin);
+    if (!m || m <= 0) return;
+    const obj = { dataISO: T.selecionado, minutos: m };
+    try {
+      const ref = await colecao("cardio").add(obj);
+      CARDIO.lista.push({ id: ref.id, ...obj });
+      CARDIO.novoMin = "";
+      renderTreinos();
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  async function cardioExcluir(id) {
+    if (!(await confirmar("Excluir este registro de cardio?"))) return;
+    try {
+      await colecao("cardio").doc(id).delete();
+      CARDIO.lista = CARDIO.lista.filter(x => x.id !== id);
+      renderTreinos();
+    } catch (err) { mostrarErro(err.message); }
+  }
+
   async function carregarLembretes() {
     try {
       const snap = await colecao("lembretes").get();
@@ -1837,9 +1898,10 @@
     const ini = inicioSemana(hojeISO());
     const fim = somar(ini, 6);
     const semana = lembretesOrdenados(LB.lista.filter(x => x.dataISO >= ini && x.dataISO <= fim));
-    return "<div class='bloco faixa faixa-metas'><div class='habitos-topo'><h3>Lembretes e prazos da semana</h3></div>" +
+    return "<div class='bloco faixa faixa-metas'><div class='habitos-topo'><h3>Lembretes da semana</h3></div>" +
       (semana.length
-        ? semana.map(x => "<div class='lb-linha'><span class='lb-data'>" + dataCurta(x.dataISO) + " " + NOMES[diaSemana(x.dataISO)] + (x.hora ? " · " + x.hora : "") + "</span><span>" + esc(x.titulo) + "</span></div>").join("")
+        ? semana.map(x => "<div class='lb-linha'><button class='bolinha" + (x.feito ? " feita" : "") + "' data-acao='lb-feito' data-id='" + x.id + "' aria-label='Marcar como feito'>" + (x.feito ? ICONE_CHECK : "") + "</button>" +
+            "<span class='" + (x.feito ? "riscado" : "") + "'>" + esc(x.titulo) + "</span><span class='lb-data'>" + dataCurta(x.dataISO) + (x.hora ? " · " + x.hora : "") + "</span></div>").join("")
         : "<p class='vazio'>Nenhum lembrete nesta semana.</p>") +
     "</div>";
   }
@@ -1849,6 +1911,7 @@
     const el = document.getElementById("lembretes");
     if (!el) return;
     if (LB.ano === null) { const h = new Date(); LB.ano = h.getFullYear(); LB.mes = h.getMonth(); LB.dia = hojeISO(); }
+    if (!LB.modo) LB.modo = "dia";
     const primeiro = new Date(LB.ano, LB.mes, 1).getDay();
     const dias = new Date(LB.ano, LB.mes + 1, 0).getDate();
     const hoje = hojeISO();
@@ -1856,10 +1919,8 @@
     for (let k = 0; k < primeiro; k++) grade += "<div></div>";
     for (let d = 1; d <= dias; d++) {
       const iso = isoDe(new Date(LB.ano, LB.mes, d));
-      const tem = LB.lista.some(x => x.dataISO === iso);
-      grade += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + (iso === LB.dia ? " sel" : "") + "' data-acao='lb-dia' data-iso='" + iso + "'><span>" + d + "</span></button>";
+      grade += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + (iso === LB.dia && LB.modo === "dia" ? " sel" : "") + "' data-acao='lb-dia' data-iso='" + iso + "'><span>" + d + "</span></button>";
     }
-    const doDia = lembretesOrdenados(LB.lista.filter(x => x.dataISO === LB.dia));
     let form = "";
     if (LB.formAberto && LB.r) {
       const r = LB.r;
@@ -1877,19 +1938,32 @@
         "<div id='lb-status' class='status'></div>" +
         "<div class='centro'><button class='secundario' data-acao='lb-cancelar'>Cancelar</button><button class='grande' data-acao='lb-salvar'>Salvar</button></div></div>";
     }
+    const lista = LB.modo === "mes"
+      ? lembretesOrdenados(LB.lista.filter(x => x.dataISO.slice(0, 7) === isoDe(new Date(LB.ano, LB.mes, 1)).slice(0, 7)))
+      : lembretesOrdenados(LB.lista.filter(x => x.dataISO === LB.dia));
+    const titulo = LB.modo === "mes" ? "Lembretes de " + capitalizar(MESES[LB.mes]) : tituloDia(LB.dia);
     el.innerHTML = "<div class='bloco'>" +
-      "<div class='habitos-topo'><div class='nav' style='margin:0;flex:1'>" +
+      "<div class='nav'>" +
         "<button class='icone' data-acao='lb-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
-        "<strong>" + capitalizar(MESES[LB.mes]) + " de " + LB.ano + "</strong>" +
+        "<strong class='lb-mes' data-acao='lb-modo-mes' style='cursor:pointer'>" + capitalizar(MESES[LB.mes]) + " de " + LB.ano + "</strong>" +
         "<button class='icone' data-acao='lb-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
-        "<button class='btn-lapis' data-acao='lb-novo' aria-label='Novo lembrete'>+</button></div>" +
       "<div class='calendario'>" + grade + "</div>" +
     "</div>" + form +
-    "<div class='bloco'><h3>" + tituloDia(LB.dia) + "</h3>" +
-      (doDia.length ? doDia.map(x => "<div class='lb-linha'><span class='lb-data'>" + (x.hora || "sem horário") + "</span><span>" + esc(x.titulo) + (x.grupo ? " <small>(repete)</small>" : "") + "</span>" +
+    "<div class='bloco'><h3>" + titulo + "</h3>" +
+      (lista.length ? lista.map(x => "<div class='lb-linha'><span class='lb-data'>" + dataCurta(x.dataISO) + (x.hora ? " · " + x.hora : "") + "</span><span>" + esc(x.titulo) + "</span>" +
         "<button class='excluir' data-acao='lb-excluir' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>").join("")
-        : "<p class='vazio'>Nenhum lembrete neste dia.</p>") +
-    "</div>";
+        : "<p class='vazio'>Nenhum lembrete.</p>") +
+    "</div>" +
+    "<div class='fabs'><button class='fab fab-texto' data-acao='lb-novo' aria-label='Novo lembrete'>+</button></div>";
+  }
+
+  async function marcarLembrete(id) {
+    const x = LB.lista.find(y => y.id === id);
+    if (!x) return;
+    x.feito = !x.feito;
+    renderAtual();
+    try { await colecao("lembretes").doc(id).update({ feito: x.feito }); }
+    catch (err) { mostrarErro(err.message); }
   }
 
   async function tratarCliqueLembretes(e) {
@@ -1899,7 +1973,8 @@
       const a = el.dataset.acao;
       const r = LB.r;
       if (a === "lb-nav") { const m = LB.mes + Number(el.dataset.d); LB.ano += Math.floor(m / 12); LB.mes = ((m % 12) + 12) % 12; renderLembretes(); }
-      else if (a === "lb-dia") { LB.dia = el.dataset.iso; renderLembretes(); }
+      else if (a === "lb-modo-mes") { LB.modo = "mes"; renderLembretes(); }
+      else if (a === "lb-dia") { LB.dia = el.dataset.iso; LB.modo = "dia"; renderLembretes(); }
       else if (a === "lb-novo") { LB.formAberto = true; LB.r = { titulo: "", dataISO: LB.dia || hojeISO(), hora: "", repete: "nao", diasSemana: [], diaMes: "", vezes: "" }; renderLembretes(); }
       else if (a === "lb-cancelar") { LB.formAberto = false; LB.r = null; renderLembretes(); }
       else if (a === "lb-rep-dia") { const i = Number(el.dataset.i); const l = r.diasSemana || []; r.diasSemana = l.includes(i) ? l.filter(x => x !== i) : l.concat([i]); renderLembretes(); }
@@ -2048,7 +2123,7 @@
     return "<div class='roleta'>" + roleta + "</div>" +
       "<p class='resumo'>Esta semana: <strong>" + n + "</strong> dia" + (n === 1 ? "" : "s") + " treinado" + (n === 1 ? "" : "s") + meta + "</p>" +
       "<div id='treino-status' class='status'></div>" +
-      "<div class='painel-dia'>" + htmlPainelDia() + "</div>";
+      "<div class='painel-dia'>" + htmlPainelDia() + "</div>" + htmlCardioDia();
   }
 
   function htmlPainelDia() {
@@ -2253,26 +2328,28 @@
     const fim = somar(ini, 6);
     const dias = diasTreinados(ini, fim);
     const meta = T.metas.semanal;
+    const cardioH = Math.round(cardioMinutos(ini, fim) / 6) / 10;
+    const metaCardio = T.metas.cardio;
     const mref = new Date(agora.getFullYear(), agora.getMonth() + T.offsetMes, 1);
     const anoAtual = agora.getFullYear();
 
-    let h = "<section class='bloco'><h3>Semana</h3>" +
-      navegacao(dataCurta(ini) + " a " + dataCurta(fim), "semana") +
-      anelSemana(dias, meta) +
-      (meta ? "" : "<p class='vazio'>Defina sua meta semanal no botão de alvo.</p>") +
-    "</section>";
+    let h = "<section class='bloco'><h3>Semana</h3>" + navegacao(dataCurta(ini) + " a " + dataCurta(fim), "semana") +
+      "<div class='aneis'>" + anelSemana(dias, meta) + anel(cardioH, metaCardio, "horas") + "</div>" +
+      (meta || metaCardio ? "" : "<p class='vazio'>Defina suas metas no botão de alvo.</p>") + "</section>";
 
-    h += "<section class='bloco'><h3>Mês</h3>" +
-      navegacao(capitalizar(MESES[mref.getMonth()]) + " de " + mref.getFullYear(), "mes") +
-      htmlCalendario(mref.getFullYear(), mref.getMonth()) +
-    "</section>";
+    h += "<section class='bloco'><h3>Mês</h3>" + navegacao(capitalizar(MESES[mref.getMonth()]) + " de " + mref.getFullYear(), "mes") +
+      htmlCalendario(mref.getFullYear(), mref.getMonth()) + "</section>";
 
+    const tot = T.histTotal || "anual";
     const diasAno = diasTreinados(anoAtual + "-01-01", anoAtual + "-12-31");
-    h += "<section class='bloco'><h3>Total de " + anoAtual + "</h3>" +
-      anel(diasAno, T.metas.anual, "dias") +
-      (T.metas.anual ? "" : "<p class='vazio'>Defina sua meta anual no botão de alvo.</p>") +
-      "<p class='resumo'>Total desde o início: <strong>" + diasTreinados("0000-01-01", "9999-12-31") + "</strong> dias</p>" +
-    "</section>";
+    const diasMes = diasTreinados(isoDe(new Date(anoAtual, agora.getMonth(), 1)), isoDe(new Date(anoAtual, agora.getMonth() + 1, 0)));
+    let corpo;
+    if (tot === "semanal") corpo = anelSemana(dias, meta) + "<p class='resumo'>Semana atual</p>";
+    else if (tot === "mensal") corpo = "<p class='resumo'><strong>" + diasMes + "</strong> dias treinados neste mês</p>";
+    else corpo = anel(diasAno, T.metas.anual, "dias") + "<p class='resumo'>Total desde o início: <strong>" + diasTreinados("0000-01-01", "9999-12-31") + "</strong> dias</p>";
+    const pontos = [["semanal", "Semanal"], ["mensal", "Mensal"], ["anual", "Anual"]].map(([v, n]) =>
+      "<button class='ponto" + (tot === v ? " ativo" : "") + "' data-acao='hist-total' data-v='" + v + "'><i></i><span>" + n + "</span></button>").join("");
+    h += "<section class='bloco'><h3>Total de " + anoAtual + "</h3>" + corpo + "<div class='pontos'>" + pontos + "</div></section>";
     return h;
   }
 
@@ -2332,6 +2409,8 @@
       "<input type='number' inputmode='numeric' placeholder='Ex.: 4' data-campo='meta' data-chave='semanal' value='" + (r.semanal ?? "") + "'>" +
       "<label>Treinos no ano</label>" +
       "<input type='number' inputmode='numeric' placeholder='Ex.: 150' data-campo='meta' data-chave='anual' value='" + (r.anual ?? "") + "'>" +
+      "<label>Cardio por semana (horas)</label>" +
+      "<input type='number' inputmode='numeric' placeholder='Ex.: 3' data-campo='meta' data-chave='cardio' value='" + (r.cardio ?? "") + "'>" +
       "<label>Descanso padrão (segundos)</label>" +
       "<input type='number' inputmode='numeric' placeholder='60' data-campo='meta' data-chave='descanso' value='" + (r.descanso ?? "") + "'>" +
       "<div id='treino-status' class='status'></div>" +
@@ -2444,6 +2523,9 @@
       case "treino-salvar": await salvarTreino(); break;
       case "treino-excluir": await excluirTreino(); break;
       case "excluir-sessao": await excluirSessao(el.dataset.id); break;
+      case "cardio-add": await cardioAdicionar(); break;
+      case "cardio-del": await cardioExcluir(el.dataset.id); break;
+      case "hist-total": T.histTotal = el.dataset.v; renderTreinos(); break;
       case "excluir-lista": await excluirTreinoPorId(el.dataset.id); break;
       case "metas-salvar": await salvarMetas(); break;
     }
@@ -2471,6 +2553,7 @@
 
   function tratarEntrada(e) {
     const d = e.target.dataset;
+    if (d.campo === "cardio-min") { CARDIO.novoMin = e.target.value; return; }
     if (d.carga !== undefined) {
       const i = Number(d.carga);
       T.cargas[i] = e.target.value;
@@ -2623,7 +2706,7 @@
     const r = T.metaRascunho;
     const st = document.getElementById("treino-status");
     const num = v => (v === "" || v === null || v === undefined) ? null : Number(v);
-    const obj = { semanal: num(r.semanal), anual: num(r.anual), ano: new Date().getFullYear(), descanso: num(r.descanso) || 60 };
+    const obj = { semanal: num(r.semanal), anual: num(r.anual), ano: new Date().getFullYear(), descanso: num(r.descanso) || 60, cardio: num(r.cardio) };
     try {
       await colecao("config").doc("metas").set(obj);
       T.metas = obj;
