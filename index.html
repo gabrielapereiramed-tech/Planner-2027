@@ -558,6 +558,21 @@
   .es-lista-checks { max-height: 220px; overflow-y: auto; border: 1px solid #E7E5E4; border-radius: 12px; padding: 8px; margin-bottom: 10px; }
   .es-check { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; padding: 4px 0; font-weight: 400; }
   .es-check input { width: auto; margin: 0; }
+
+  .es-dia { border: 1px solid #E7E5E4; border-radius: 10px; padding: 4px; background: #FFFFFF; min-height: 110px; cursor: pointer; overflow: hidden; font-size: 10px; text-align: left; }
+  .es-dia.hoje { border: 2px solid #770523; }
+  .es-dia.com-prova { border: 2px solid #770523; }
+  .es-dia.sel { box-shadow: 0 0 0 2px #FAD2E1; }
+  .es-numero { display: block; font-size: 12px; font-weight: 600; text-align: center; margin-bottom: 4px; }
+  .es-dia.hoje .es-numero { color: #770523; font-weight: 700; }
+  .es-periodo { margin-bottom: 4px; }
+  .es-periodo small { display: block; font-size: 8px; color: #6B6259; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .es-bloco-aula { border-radius: 6px; padding: 3px 4px; margin-bottom: 3px; line-height: 1.25; cursor: pointer; }
+  .es-bloco-aula strong { display: block; font-size: 9px; }
+  .es-bloco-aula span { font-size: 9px; color: #2B2420; }
+  .es-bloco-prova-cal { background: #FAD2E1; border: 2px solid #D81A67; border-radius: 8px; padding: 4px; margin-bottom: 4px; text-align: center; cursor: pointer; line-height: 1.25; }
+  .es-bloco-prova-cal strong { display: block; font-size: 9px; color: #770523; }
+  .es-bloco-prova-cal span { font-size: 8px; color: #6B6259; }
 </style>
 </head>
 <body>
@@ -2498,13 +2513,26 @@
     const hoje = hojeISO();
     let grade = NOMES.map(n => "<div class='cal-cab'>" + n.charAt(0) + "</div>").join("");
     for (let k = 0; k < primeiro; k++) grade += "<div></div>";
+    const blocoAula = a => {
+      const cor = corMateria(a.materiaId);
+      return "<div class='es-bloco-aula' data-acao='es-edit-aula' data-id='" + a.id + "' style='background:" + cor + "26;border-left:3px solid " + cor + "'>" +
+        "<strong>" + esc(nomeMateria(a.materiaId)) + "</strong><span>" + esc(a.conteudo) + "</span></div>";
+    };
+    const blocoProva = p => "<div class='es-bloco-prova-cal' data-acao='es-edit-prova' data-id='" + p.id + "'>" +
+      "<strong>⚑ " + esc(p.nome) + "</strong><span>" + esc(nomeMateria(p.materiaId)) + " · " + esc(p.tipo || "Prova") + "</span></div>";
     for (let d = 1; d <= dias; d++) {
       const iso = isoDe(new Date(E.ano, E.mes, d));
-      const marcas = E.aulas.filter(a => a.dataISO === iso).slice(0, 3).map(a => "<i class='es-marca' style='background:" + corMateria(a.materiaId) + "'></i>").join("");
-      const temProva = E.provas.some(p => p.dataISO === iso);
-      grade += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + (iso === E.dia ? " sel" : "") + "' data-acao='es-dia-cal' data-iso='" + iso + "'><span>" + d + "</span>" +
-        (temProva ? "<b class='es-prova-marca'>⚑</b>" : "") + "<div class='es-marcas'>" + marcas + "</div></button>";
+      const aulasDia = E.aulas.filter(a => a.dataISO === iso);
+      const provasDia = E.provas.filter(p => p.dataISO === iso);
+      const periodo = (v, nome) => {
+        const lista = aulasDia.filter(a => a.periodo === v);
+        return lista.length ? "<div class='es-periodo'><small>" + nome + "</small>" + lista.map(blocoAula).join("") + "</div>" : "";
+      };
+      const conteudo = provasDia.map(blocoProva).join("") + periodo("manha", "Manhã") + periodo("tarde", "Tarde") + periodo("noite", "Noite");
+      grade += "<div class='es-dia" + (iso === hoje ? " hoje" : "") + (iso === E.dia ? " sel" : "") + (provasDia.length ? " com-prova" : "") + "' data-acao='es-dia-cal' data-iso='" + iso + "'>" +
+        "<span class='es-numero'>" + d + "</span>" + conteudo + "</div>";
     }
+
     const aulas = E.aulas.filter(a => a.dataISO === E.dia).sort((a, b) => PERIODOS.findIndex(p => p[0] === a.periodo) - PERIODOS.findIndex(p => p[0] === b.periodo));
     const provas = E.provas.filter(p => p.dataISO === E.dia);
     const linhaAula = a => "<div class='es-linha'><i class='es-marca' style='background:" + corMateria(a.materiaId) + "'></i>" +
