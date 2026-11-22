@@ -532,6 +532,13 @@
   .fin-linha > .fin-desc { text-align: left; }
   .fin-linha > .bolinha { justify-self: center; }
   .fin-linha > .excluir { width: 28px !important; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; }
+
+  .com-lembrete span { font-weight: 800; }
+  .lb-texto { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .lb-desc { color: #6B6259; font-size: 0.75rem; }
+  .lb-linha .lb-texto + .excluir { margin-left: auto; }
+  #lb-lista .lb-linha { align-items: flex-start; }
+  #lb-lista .lb-linha .lb-data { padding-top: 2px; }
 </style>
 </head>
 <body>
@@ -786,7 +793,7 @@
       md.oninput = tratarEntradaGeral;
       md.onchange = tratarEntradaGeral;
       renderMeuDia();
-      Promise.all([carregarNaoEsquecer(), carregarCaixa()]).then(() => renderMeuDia());
+      Promise.all([carregarNaoEsquecer(), carregarCaixa(), carregarLembretes()]).then(() => renderMeuDia());
     } else if (secao.id === "financeiro") {
       main.innerHTML = voltar + "<div id='financeiro'></div>";
       const fi = document.getElementById("financeiro");
@@ -1480,6 +1487,7 @@
       else if (a === "ag-cancelar") { G.formAberto = false; G.rascunho = null; G.editandoLegenda = false; G.novaCorAberta = false; renderAtual(); }
       else if (a === "ag-cor") { r.cor = el.dataset.cor; renderAtual(); }
       else if (a === "lb-feito") await marcarLembrete(el.dataset.id);
+      else if (a === "lb-feito") await marcarLembrete(el.dataset.id);
       else if (a === "ag-salvar") await salvarCompromisso();
       else if (a === "ag-excluir") await excluirCompromisso(el.dataset.id);
       else if (a === "leg-editar") { G.editandoLegenda = !G.editandoLegenda; renderAtual(); }
@@ -1537,6 +1545,10 @@
     if (d.campo === "cx-valor") { CX.valor = e.target.value; return; }
     if (d.campo === "cx-desc") { CX.descricao = e.target.value; return; }
     if (d.campo === "cx-cat") { CX.categoria = e.target.value; return; }
+    if (d.campo === "cx-parc") { CX.parc = e.target.value; return; }
+    if (d.campo === "cx-ate") { CX.ate = e.target.value; return; }
+    if (d.campo === "cx-rep" && e.type === "change") { CX.rep = e.target.value; renderCaixa(); return; }
+    if (d.campo === "cx-sempre" && e.type === "change") { CX.sempre = e.target.checked; renderCaixa(); return; }
     if (d.campo === "leg-nome") { G.novaLegenda.nome = e.target.value; return; }
     if (d.campo === "leg-renomear") {
       const cor = G.legenda.find(l => l.id === d.id);
@@ -1755,11 +1767,14 @@
   function renderNaoEsquecer() {
     const el = document.getElementById("nao");
     if (!el) return;
-    let h = NE.lista.length
-      ? NE.lista.map(it =>
-          "<div class='ne-item'><button class='bolinha" + (it.feito ? " feita" : "") + "' data-acao='ne-feito' data-id='" + it.id + "' aria-label='Marcar'>" +
+    const dia = MD.dia || hojeISO();
+    const doDia = (LB.lista || []).filter(x => x.dataISO === dia).map(x => ({ id: x.id, texto: x.titulo + (x.desc ? " · " + x.desc : ""), feito: !!x.feito, lembrete: true }));
+    const itens = NE.lista.map(it => ({ id: it.id, texto: it.texto, feito: !!it.feito, lembrete: false })).concat(doDia);
+    let h = itens.length
+      ? itens.map(it =>
+          "<div class='ne-item'><button class='bolinha" + (it.feito ? " feita" : "") + "' data-acao='" + (it.lembrete ? "lb-feito" : "ne-feito") + "' data-id='" + it.id + "' aria-label='Marcar'>" +
           (it.feito ? ICONE_CHECK : "") + "</button><span class='" + (it.feito ? "riscado" : "") + "'>" + esc(it.texto) + "</span>" +
-          (NE.adicionando ? "<button class='excluir' data-acao='ne-del' data-id='" + it.id + "' aria-label='Excluir'>×</button>" : "") +
+          (it.lembrete ? "<small class='ne-tag'>lembrete</small>" : (NE.adicionando ? "<button class='excluir' data-acao='ne-del' data-id='" + it.id + "' aria-label='Excluir'>×</button>" : "")) +
           "</div>"
         ).join("")
       : "<p class='vazio'>Nada anotado ainda.</p>";
@@ -1801,7 +1816,7 @@
   }
 
   // ---------- Caixa do dia ----------
-  const CX = { dia: null, tipo: "variavel", valor: "", descricao: "", categoria: "" };
+  const CX = { dia: null, tipo: "variavel", valor: "", descricao: "", categoria: "", rep: "nao", sempre: false, ate: "", parc: "" };
 
   function renderCaixa() {
     const el = document.getElementById("caixa");
@@ -1823,11 +1838,19 @@
       "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='cx-valor' value='" + esc(CX.valor) + "'>" +
       "<input placeholder='Descrição' data-campo='cx-desc' value='" + esc(CX.descricao) + "'></div>" +
       "<label>Categoria</label><select data-campo='cx-cat'><option value=''>Sem categoria</option>" + cats.map(c => "<option value='" + c.id + "'" + (CX.categoria === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>" +
+      (CX.tipo === "entrada" ? "" :
+        "<label>Repetir</label><select data-campo='cx-rep'>" +
+          "<option value='nao'" + (CX.rep === "nao" ? " selected" : "") + ">Não repete</option>" +
+          "<option value='fixo'" + (CX.rep === "fixo" ? " selected" : "") + ">Fixo (todo mês)</option>" +
+          "<option value='parcelas'" + (CX.rep === "parcelas" ? " selected" : "") + ">Parcelado</option></select>" +
+          (CX.rep === "fixo" ? "<label style='display:flex;gap:6px;align-items:center'><input type='checkbox' data-campo='cx-sempre' style='width:auto;margin:0' " + (CX.sempre ? "checked" : "") + ">Repetir para sempre</label>" +
+            (CX.sempre ? "" : "<label>Repetir até</label><input type='month' data-campo='cx-ate' value='" + CX.ate + "'>") : "") +
+          (CX.rep === "parcelas" ? "<input type='number' inputmode='numeric' placeholder='Número de parcelas' data-campo='cx-parc' value='" + CX.parc + "'>" : "")) +
       "<div class='centro'><button class='grande' data-acao='cx-add'>Adicionar</button></div></div>" +
       (lista.length ? lista.map(x => {
         const cat = FN.categorias.find(c => c.id === x.categoria);
         return "<div class='fin-linha fin-cols-variavel'><span>" + (x.tipo === "entrada" ? "Entrada" : "Gasto") + "</span>" +
-          "<span class='fin-desc'>" + esc(x.descricao) + "</span>" +
+          "<span class='fin-desc'>" + esc(x.descricao) + " <small>" + parcelaTexto(x, x.ym || (d.slice(0, 7))) + "</small></span>" +
           "<span class='fin-cat' style='color:" + (cat ? cat.cor : "#6B6259") + "'>" + (cat ? esc(cat.nome) : "—") + "</span>" +
           "<span>" + fmt(valorExibido(x)) + "</span>" +
           "<button class='excluir' data-acao='cx-del' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>";
@@ -1838,11 +1861,16 @@
     const valor = Number(String(CX.valor).replace(",", "."));
     if (!valor || valor <= 0) { mostrarErro("Digite um valor maior que zero."); return; }
     const obj = { tipo: CX.tipo, descricao: (CX.descricao || "").trim(), valor: valor, dataISO: CX.dia, categoria: CX.categoria || null, tipoId: null, pagos: {} };
+    if (CX.tipo !== "entrada") {
+      if (CX.rep === "fixo") obj.recorr = { tipo: "fixo", inicio: CX.dia, ate: CX.sempre ? "sempre" : (CX.ate || "sempre") };
+      if (CX.rep === "parcelas") obj.recorr = { tipo: "parcelas", inicio: CX.dia, total: Math.max(1, Number(CX.parc) || 1) };
+    }
     try {
       const ref = await colecao("financas").add(obj);
       FN.lista.push({ id: ref.id, ...obj });
       CX.valor = "";
       CX.descricao = "";
+      CX.rep = "nao";
       renderCaixa();
     } catch (err) { mostrarErro(err.message); }
   }
@@ -1958,6 +1986,7 @@
     if (!el) return;
     if (LB.ano === null) { const h = new Date(); LB.ano = h.getFullYear(); LB.mes = h.getMonth(); LB.dia = hojeISO(); }
     if (!LB.modo) LB.modo = "dia";
+    if (LB.busca === undefined) LB.busca = "";
     const primeiro = new Date(LB.ano, LB.mes, 1).getDay();
     const dias = new Date(LB.ano, LB.mes + 1, 0).getDate();
     const hoje = hojeISO();
@@ -1965,13 +1994,15 @@
     for (let k = 0; k < primeiro; k++) grade += "<div></div>";
     for (let d = 1; d <= dias; d++) {
       const iso = isoDe(new Date(LB.ano, LB.mes, d));
-      grade += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + (iso === LB.dia && LB.modo === "dia" ? " sel" : "") + "' data-acao='lb-dia' data-iso='" + iso + "'><span>" + d + "</span></button>";
+      const tem = LB.lista.some(x => x.dataISO === iso);
+      grade += "<button class='cal-dia" + (iso === hoje ? " hoje" : "") + (iso === LB.dia && LB.modo === "dia" ? " sel" : "") + (tem ? " com-lembrete" : "") + "' data-acao='lb-dia' data-iso='" + iso + "'><span>" + d + "</span></button>";
     }
     let form = "";
     if (LB.formAberto && LB.r) {
       const r = LB.r;
       form = "<div class='ag-form'><h3>Novo lembrete</h3>" +
         "<input placeholder='O que você não pode esquecer?' data-campo='lb-titulo' value='" + esc(r.titulo) + "'>" +
+        "<textarea placeholder='Descrição (opcional)' data-campo='lb-desc'>" + esc(r.desc || "") + "</textarea>" +
         "<div class='ag-linha'><input type='date' data-campo='lb-data' value='" + r.dataISO + "'>" +
         "<input type='time' data-campo='lb-hora' value='" + (r.hora || "") + "' aria-label='Horário (opcional)'></div>" +
         "<label>Repetir</label><select data-campo='lb-rep-tipo'>" +
@@ -1984,23 +2015,36 @@
         "<div id='lb-status' class='status'></div>" +
         "<div class='centro'><button class='secundario' data-acao='lb-cancelar'>Cancelar</button><button class='grande' data-acao='lb-salvar'>Salvar</button></div></div>";
     }
-    const lista = LB.modo === "mes"
-      ? lembretesOrdenados(LB.lista.filter(x => x.dataISO.slice(0, 7) === isoDe(new Date(LB.ano, LB.mes, 1)).slice(0, 7)))
-      : lembretesOrdenados(LB.lista.filter(x => x.dataISO === LB.dia));
-    const titulo = LB.modo === "mes" ? "Lembretes de " + capitalizar(MESES[LB.mes]) : tituloDia(LB.dia);
     el.innerHTML = "<div class='bloco'>" +
+      "<input placeholder='Pesquisar lembretes' data-campo='lb-busca' value='" + esc(LB.busca) + "' style='margin-bottom:10px'>" +
       "<div class='nav'>" +
         "<button class='icone' data-acao='lb-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
         "<strong class='lb-mes' data-acao='lb-modo-mes' style='cursor:pointer'>" + capitalizar(MESES[LB.mes]) + " de " + LB.ano + "</strong>" +
         "<button class='icone' data-acao='lb-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
       "<div class='calendario'>" + grade + "</div>" +
     "</div>" + form +
-    "<div class='bloco'><h3>" + titulo + "</h3>" +
-      (lista.length ? lista.map(x => "<div class='lb-linha'><span class='lb-data'>" + dataCurta(x.dataISO) + (x.hora ? " · " + x.hora : "") + "</span><span>" + esc(x.titulo) + "</span>" +
-        "<button class='excluir' data-acao='lb-excluir' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>").join("")
-        : "<p class='vazio'>Nenhum lembrete.</p>") +
-    "</div>" +
+    "<div class='bloco'><h3 id='lb-titulo-lista'></h3><div id='lb-lista'></div></div>" +
     "<div class='fabs'><button class='fab fab-texto' data-acao='lb-novo' aria-label='Novo lembrete'>+</button></div>";
+    renderListaLembretes();
+  }
+
+  function renderListaLembretes() {
+    const lista = LB.busca && LB.busca.trim()
+      ? LB.lista.filter(x => (x.titulo + " " + (x.desc || "")).toLowerCase().includes(LB.busca.trim().toLowerCase()))
+      : (LB.modo === "mes"
+        ? LB.lista.filter(x => x.dataISO.slice(0, 7) === isoDe(new Date(LB.ano, LB.mes, 1)).slice(0, 7))
+        : LB.lista.filter(x => x.dataISO === LB.dia));
+    const ordenada = lembretesOrdenados(lista);
+    const titulo = LB.busca && LB.busca.trim() ? "Resultados da busca" : (LB.modo === "mes" ? "Lembretes de " + capitalizar(MESES[LB.mes]) : tituloDia(LB.dia));
+    const t = document.getElementById("lb-titulo-lista");
+    if (t) t.textContent = titulo;
+    const el = document.getElementById("lb-lista");
+    if (!el) return;
+    el.innerHTML = ordenada.length
+      ? ordenada.map(x => "<div class='lb-linha'><span class='lb-data'>" + dataCurta(x.dataISO) + (x.hora ? " · " + x.hora : "") + "</span>" +
+          "<span class='lb-texto'><span>" + esc(x.titulo) + "</span>" + (x.desc ? "<small class='lb-desc'>" + esc(x.desc) + "</small>" : "") + "</span>" +
+          "<button class='excluir' data-acao='lb-excluir' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>").join("")
+      : "<p class='vazio'>Nenhum lembrete.</p>";
   }
 
   async function marcarLembrete(id) {
@@ -2036,9 +2080,11 @@
 
   function tratarEntradaLembretes(e) {
     const d = e.target.dataset;
+    if (d.campo === "lb-busca") { LB.busca = e.target.value; renderListaLembretes(); return; }
     const r = LB.r;
     if (!r) return;
     if (d.campo === "lb-titulo") r.titulo = e.target.value;
+    else if (d.campo === "lb-desc") r.desc = e.target.value;
     else if (d.campo === "lb-data") r.dataISO = e.target.value;
     else if (d.campo === "lb-hora") r.hora = e.target.value;
     else if (d.campo === "lb-rep-dia-mes") r.diaMes = e.target.value;
@@ -2055,7 +2101,7 @@
     const grupo = datas.length > 1 ? "g" + Date.now() : null;
     try {
       for (const d of datas) {
-        const o = { titulo: r.titulo.trim(), dataISO: d, hora: r.hora || null };
+        const o = { titulo: r.titulo.trim(), dataISO: d, hora: r.hora || null, desc: (r.desc || "").trim() || null };
         if (grupo) o.grupo = grupo;
         const ref = await colecao("lembretes").add(o);
         LB.lista.push({ id: ref.id, ...o });
@@ -2166,9 +2212,10 @@
     };
 
     const linhaCat = c => {
+      const acoesCat = "<button class='excluir' data-acao='fin-cat-edit' data-id='" + c.id + "' aria-label='Editar categoria'>✎</button> <button class='excluir' data-acao='fin-cat-del' data-id='" + c.id + "' aria-label='Excluir categoria'>×</button>";
       const total = lista.filter(x => c.kind === "ganho" ? (x.tipo === "entrada" && x.categoria === c.id) : (KIND_GASTO.includes(x.tipo) && x.categoria === c.id))
         .reduce((a, x) => a + valorExibido(x), 0);
-      return "<div class='cat-linha'><span class='swatch' style='background:" + c.cor + "'></span><span>" + esc(c.nome) + "</span><strong>" + fmt(total) + "</strong></div>";
+      return "<div class='cat-linha'><span class='swatch' style='background:" + c.cor + "'></span><span>" + esc(c.nome) + "</span><strong>" + fmt(total) + "</strong>" + acoesCat + "</div>";
     };
     const catsEntrada = FN.categorias.filter(c => c.kind === "ganho").map(linhaCat).join("") || "<p class='vazio'>Nenhuma categoria de entrada.</p>";
     const catsGasto = FN.categorias.filter(c => c.kind !== "ganho").map(linhaCat).join("") || "<p class='vazio'>Nenhuma categoria de gasto.</p>";
@@ -2246,6 +2293,13 @@
       else if (a === "fin-add") { FN.form = { kind: "lanc", tipo: el.dataset.tipo, descricao: "", valor: "", dataISO: dataPadraoFN(), categoria: "", tipoId: "", rep: "nao", sempre: false, ate: "", parc: "" }; renderFinanceiro(); }
       else if (a === "fin-add-cat") { FN.form = { kind: "cat", nome: "", kindC: el.dataset.kind || "gasto", cor: "#770523" }; renderFinanceiro(); }
       else if (a === "fin-add-tipo") { FN.form = { kind: "tipo", nome: "", kindT: "gasto" }; renderFinanceiro(); }
+      else if (a === "fin-cat-edit") { const c = FN.categorias.find(x => x.id === el.dataset.id); if (c) { FN.form = { kind: "cat", id: c.id, nome: c.nome, kindC: c.kind, cor: c.cor }; renderFinanceiro(); } }
+      else if (a === "fin-cat-del") {
+        if (!(await confirmar("Excluir esta categoria? Os lançamentos que a usam ficam sem categoria."))) return;
+        await colecao("categoriasFin").doc(el.dataset.id).delete();
+        FN.categorias = FN.categorias.filter(x => x.id !== el.dataset.id);
+        renderFinanceiro();
+      }
       else if (a === "fin-cancelar") { FN.form = null; renderFinanceiro(); }
       else if (a === "fin-salvar") await salvarFinanceiro();
       else if (a === "fin-pago") {
@@ -2300,13 +2354,12 @@
 
   async function salvarFinanceiro() {
     const f = FN.form;
-    const st = document.getElementById("ag-status");
     try {
       if (f.kind === "lanc") {
         const valor = Number(String(f.valor).replace(",", "."));
         if (!valor || valor <= 0) { mostrarErro("Digite um valor maior que zero."); return; }
         if (!f.dataISO) { mostrarErro("Escolha a data."); return; }
-        const obj = { tipo: f.tipo, descricao: (f.descricao || "").trim(), valor: valor, dataISO: f.dataISO, categoria: f.categoria || null, tipoId: f.tipoId || null, pagos: {} };
+        const obj = { tipo: f.tipo, descricao: (f.descricao || "").trim(), valor: valor, dataISO: f.dataISO, categoria: f.categoria || null, tipoId: null, pagos: {} };
         if (f.rep === "fixo") obj.recorr = { tipo: "fixo", inicio: f.dataISO, ate: f.sempre ? "sempre" : (f.ate || "sempre") };
         if (f.rep === "parcelas") obj.recorr = { tipo: "parcelas", inicio: f.dataISO, total: Math.max(1, Number(f.parc) || 1) };
         const ref = await colecao("financas").add(obj);
@@ -2314,8 +2367,14 @@
       } else if (f.kind === "cat") {
         if (!f.nome.trim()) { mostrarErro("Dê um nome à categoria."); return; }
         const obj = { nome: f.nome.trim(), kind: f.kindC, cor: f.cor };
-        const ref = await colecao("categoriasFin").add(obj);
-        FN.categorias.push({ id: ref.id, ...obj });
+        if (f.id) {
+          await colecao("categoriasFin").doc(f.id).update(obj);
+          const c = FN.categorias.find(x => x.id === f.id);
+          if (c) Object.assign(c, obj);
+        } else {
+          const ref = await colecao("categoriasFin").add(obj);
+          FN.categorias.push({ id: ref.id, ...obj });
+        }
       } else if (f.kind === "tipo") {
         if (!f.nome.trim()) { mostrarErro("Dê um nome ao tipo."); return; }
         const obj = { nome: f.nome.trim(), kind: f.kindT };
