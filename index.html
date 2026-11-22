@@ -618,6 +618,11 @@
   .rev-topo-pre strong { color: #770523; }
   .rev-pre { border: 2px solid #D81A67; }
   .fin-cols-conta { grid-template-columns: auto 2fr 1.2fr 1fr 1fr 28px !important; }
+  .ht-duas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; width: 100%; }
+  .ht-duas > div { min-width: 0; }
+  .ht-duas svg { max-width: 100%; height: auto; }
+  @media (max-width: 599px) { .ht-duas { grid-template-columns: 1fr; } }
+  .es-info .es-texto small { display: block; }
 </style>
 </head>
 <body>
@@ -676,6 +681,7 @@
 
   ICONES.lixeira = svg('<path d="M4 7 H20 M9 7 V4 H15 V7 M6 7 L7 20 H17 L18 7"/>');
 
+  ICONES.novelo = svg('<circle cx="12" cy="12" r="8"/><path d="M5.5 8.5 Q12 4 18.5 8.5"/><path d="M4.5 13 Q12 20 19.5 13"/><path d="M8 4.8 Q12 12 16.5 19.2"/>');
   ICONES.sino = svg('<path d="M6 16 V11 a6 6 0 0 1 12 0 V16 L19.5 18 H4.5 Z"/><path d="M10 20.5 a2 2 0 0 0 4 0"/>');
 
   const SECOES = [
@@ -685,7 +691,7 @@
     { id: "estudos", nome: "Estudos", icone: ICONES.livro },
     { id: "treinos", nome: "Treinos", icone: ICONES.halter },
     { id: "financeiro", nome: "Financeiro", icone: ICONES.dinheiro },
-    { id: "trabalho", nome: "Trabalho", icone: ICONES.notebook },
+    { id: "trabalho", nome: "It's Crochê", icone: ICONES.novelo },
     { id: "lembretes", nome: "Lembretes", icone: ICONES.sino }
   ];
 
@@ -933,6 +939,14 @@
         ht.onchange = tratarEntradaGeral;
         renderHabitTracker();
         carregarCompromissos().then(() => renderHabitTracker());
+      } else if (secao.id === "trabalho") {
+        main.innerHTML = voltar + "<div id='crochet'></div>";
+        const cr = document.getElementById("crochet");
+        cr.onclick = tratarCliqueCrochet;
+        cr.oninput = tratarEntradaCrochet;
+        cr.onchange = tratarEntradaCrochet;
+        renderCrochet();
+        carregarCrochet().then(renderCrochet);
       } else {
         main.innerHTML = voltar + "<h2>" + secao.nome + "</h2><p class='sub'>Em breve.</p>";
       }
@@ -1273,9 +1287,9 @@
         "<button class='icone' data-acao='tr-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
         "<strong>" + capitalizar(MESES[HT.mes]) + " de " + HT.ano + "</strong>" +
         "<button class='icone' data-acao='tr-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
-      (k ? "<svg viewBox='0 0 380 380' width='100%' style='max-width:380px;display:block;margin:4px auto'>" + fatias + rotulos + "</svg>" +
-           "<p class='ht-resumo'>Semana atual x anterior</p>" +
-           "<div class='hab-lista'>" + barras + "</div>"
+      (k ? "<div class='ht-duas'><div>" + "<svg viewBox='0 0 380 380' width='100%' style='display:block;margin:4px auto'>" + fatias + rotulos + "</svg></div>" +
+           "<div><p class='ht-resumo'>Semana atual x anterior</p>" +
+           "<div class='hab-lista'>" + barras + "</div></div></div>"
          : "<p class='vazio'>Nenhum hábito cadastrado ainda. Toque no lápis para adicionar.</p>") +
       (H.adicionando ? htmlNovoHabito() : "") +
       "<div class='ht-rodape'><button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
@@ -3209,6 +3223,169 @@
     await gerarRevisoes();
     renderEstudos();
     renderRevHoje();
+  }
+
+  // ---------- It's Crochê (antiga aba Trabalho) ----------
+  const CR = { aba: "encomendas", produtos: [], clientes: [], encomendas: [], form: null };
+
+  async function carregarCrochet() {
+    try {
+      const [p, c, e] = await Promise.all([colecao("crochetProdutos").get(), colecao("crochetClientes").get(), colecao("crochetEncomendas").get()]);
+      CR.produtos = p.docs.map(d => ({ id: d.id, ...d.data() }));
+      CR.clientes = c.docs.map(d => ({ id: d.id, ...d.data() }));
+      CR.encomendas = e.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  const crFmt = v => "R$ " + Number(v || 0).toFixed(2).replace(".", ",");
+  const crNum = v => Number(String(v || "0").replace(",", ".")) || 0;
+  const crProduto = id => CR.produtos.find(x => x.id === id);
+  const crCliente = id => CR.clientes.find(x => x.id === id);
+
+  function renderCrochet() {
+    const el = document.getElementById("crochet");
+    if (!el) return;
+    const abas = [["encomendas", "Encomendas"], ["clientes", "Clientes"]].map(([v, n]) =>
+      "<button class='aba" + (CR.aba === v ? " ativo" : "") + "' data-acao='cr-aba' data-v='" + v + "'>" + n + "</button>").join("");
+    el.innerHTML = "<h2>It's Crochê</h2><div class='abas'>" + abas + "</div>" + (CR.aba === "clientes" ? htmlCrClientes() : htmlCrEncomendas());
+  }
+
+  function htmlCrEncomendas() {
+    const lista = CR.encomendas.slice().sort((a, b) => (a.dataEntrega || "").localeCompare(b.dataEntrega || ""));
+    const lucro = lista.reduce((a, e) => a + (crNum(e.valor) - crNum(e.custo)), 0);
+    const aReceber = lista.filter(e => !e.paga).reduce((a, e) => a + crNum(e.valor), 0);
+    const f = CR.form;
+    const form = f && f.kind === "encomenda" ? formCrEncomenda(f) : (f && f.kind === "produto" ? formCrProduto(f) : "");
+    const produtos = CR.produtos.map(p => "<div class='es-linha'><span class='es-texto'><strong>" + esc(p.nome) + "</strong><small>preço " + crFmt(p.preco) + " · custo " + crFmt(p.custo) + "</small></span>" +
+      "<button class='excluir' data-acao='cr-del-prod' data-id='" + p.id + "' aria-label='Excluir produto'>×</button></div>").join("") || "<p class='vazio'>Nenhum produto cadastrado.</p>";
+    const encs = lista.map(e => "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(crProduto(e.produtoId) ? crProduto(e.produtoId).nome : (e.descricao || "Encomenda")) + "</strong>" +
+      "<small>" + (e.clienteId ? esc(crCliente(e.clienteId) ? crCliente(e.clienteId).nome : "") : "") + (e.dataEntrega ? " · entrega " + dataCurta(e.dataEntrega) : "") + "</small>" +
+      "<small>valor " + crFmt(e.valor) + " · custo " + crFmt(e.custo) + " · lucro " + crFmt(crNum(e.valor) - crNum(e.custo)) + "</small>" +
+      "<div class='es-chips'><button class='chip-acao" + (e.entregue ? " ok" : "") + "' data-acao='cr-entregue' data-id='" + e.id + "'>" + (e.entregue ? "Entregue ✓" : "Entregue") + "</button>" +
+      "<button class='chip-acao" + (e.paga ? " ok" : "") + "' data-acao='cr-paga' data-id='" + e.id + "'>" + (e.paga ? "Paga ✓" : "Paga") + "</button></div></span>" +
+      "<button class='excluir' data-acao='cr-del-enc' data-id='" + e.id + "' aria-label='Excluir encomenda'>×</button></div>").join("") || "<p class='vazio'>Nenhuma encomenda ainda.</p>";
+    return "<div class='fin-cards'>" +
+      "<div class='fin-card'><small>Lucro das encomendas</small><strong>" + crFmt(lucro) + "</strong></div>" +
+      "<div class='fin-card'><small>A receber</small><strong>" + crFmt(aReceber) + "</strong></div></div>" +
+      "<div class='es-acoes'><button class='secundario' data-acao='cr-novo-enc'>+ Encomenda</button><button class='secundario' data-acao='cr-novo-prod'>+ Produto</button></div>" +
+      form +
+      "<div class='bloco'><h3>Encomendas</h3>" + encs + "</div>" +
+      "<div class='bloco'><h3>Produtos</h3>" + produtos + "</div>";
+  }
+
+  function formCrEncomenda(f) {
+    return "<div class='ag-form'><h3>Nova encomenda</h3>" +
+      "<label>Produto</label><select data-campo='cr-produto'><option value=''>Sem produto cadastrado</option>" +
+        CR.produtos.map(p => "<option value='" + p.id + "'" + (f.produtoId === p.id ? " selected" : "") + ">" + esc(p.nome) + "</option>").join("") + "</select>" +
+      "<label>Cliente</label><select data-campo='cr-cliente'><option value=''>Sem cliente</option>" +
+        CR.clientes.map(c => "<option value='" + c.id + "'" + (f.clienteId === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>" +
+      "<input placeholder='O que foi encomendado (ex.: amigurumi)' data-campo='cr-desc' value='" + esc(f.descricao) + "'>" +
+      "<div class='ag-linha'><input type='date' data-campo='cr-data' value='" + f.dataEntrega + "'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor cobrado' data-campo='cr-valor' value='" + f.valor + "'></div>" +
+      "<input type='number' inputmode='decimal' step='0.01' placeholder='Quanto gastei para fazer' data-campo='cr-custo' value='" + f.custo + "'>" +
+      "<input placeholder='Observações (opcional)' data-campo='cr-obs' value='" + esc(f.obs) + "'>" +
+      "<div class='centro'><button class='secundario' data-acao='cr-cancelar'>Cancelar</button><button class='grande' data-acao='cr-salvar'>Salvar</button></div></div>";
+  }
+
+  function formCrProduto(f) {
+    return "<div class='ag-form'><h3>Novo produto</h3>" +
+      "<input placeholder='Nome do produto' data-campo='cr-prod-nome' value='" + esc(f.nome) + "'>" +
+      "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Preço padrão' data-campo='cr-prod-preco' value='" + f.preco + "'>" +
+      "<input type='number' inputmode='decimal' step='0.01' placeholder='Custo de materiais' data-campo='cr-prod-custo' value='" + f.custo + "'></div>" +
+      "<div class='centro'><button class='secundario' data-acao='cr-cancelar'>Cancelar</button><button class='grande' data-acao='cr-salvar'>Salvar</button></div></div>";
+  }
+
+  function htmlCrClientes() {
+    const f = CR.form && CR.form.kind === "cliente" ? CR.form : null;
+    const form = f ? "<div class='ag-form'><h3>Novo cliente</h3>" +
+      "<input placeholder='Nome' data-campo='cr-cli-nome' value='" + esc(f.nome) + "'>" +
+      "<input placeholder='Telefone (opcional)' data-campo='cr-cli-tel' value='" + esc(f.telefone) + "'>" +
+      "<input placeholder='Observações (opcional)' data-campo='cr-cli-obs' value='" + esc(f.obs) + "'>" +
+      "<div class='centro'><button class='secundario' data-acao='cr-cancelar'>Cancelar</button><button class='grande' data-acao='cr-salvar'>Salvar</button></div></div>" : "";
+    const lista = CR.clientes.map(c => "<div class='es-linha'><span class='es-texto'><strong>" + esc(c.nome) + "</strong><small>" + esc(c.telefone || "") + (c.obs ? " · " + esc(c.obs) : "") + "</small></span>" +
+      "<button class='excluir' data-acao='cr-del-cli' data-id='" + c.id + "' aria-label='Excluir cliente'>×</button></div>").join("") || "<p class='vazio'>Nenhum cliente cadastrado.</p>";
+    return "<div class='es-acoes'><button class='secundario' data-acao='cr-novo-cli'>+ Cliente</button></div>" + form + "<div class='bloco'><h3>Clientes</h3>" + lista + "</div>";
+  }
+
+  async function tratarCliqueCrochet(e) {
+    try {
+      const el = e.target.closest("[data-acao]");
+      if (!el) return;
+      const a = el.dataset.acao;
+      if (a === "cr-aba") { CR.aba = el.dataset.v; CR.form = null; renderCrochet(); }
+      else if (a === "cr-novo-enc") { CR.form = { kind: "encomenda", produtoId: "", clienteId: "", descricao: "", dataEntrega: hojeISO(), valor: "", custo: "", obs: "" }; renderCrochet(); }
+      else if (a === "cr-novo-prod") { CR.form = { kind: "produto", nome: "", preco: "", custo: "" }; renderCrochet(); }
+      else if (a === "cr-novo-cli") { CR.form = { kind: "cliente", nome: "", telefone: "", obs: "" }; renderCrochet(); }
+      else if (a === "cr-cancelar") { CR.form = null; renderCrochet(); }
+      else if (a === "cr-salvar") await salvarCrochet();
+      else if (a === "cr-entregue" || a === "cr-paga") {
+        const campo = a === "cr-entregue" ? "entregue" : "paga";
+        const x = CR.encomendas.find(y => y.id === el.dataset.id);
+        if (!x) return;
+        x[campo] = !x[campo];
+        renderCrochet();
+        await colecao("crochetEncomendas").doc(x.id).update({ [campo]: x[campo] });
+      }
+      else if (a === "cr-del-enc" || a === "cr-del-prod" || a === "cr-del-cli") {
+        const colec = a === "cr-del-enc" ? "crochetEncomendas" : (a === "cr-del-prod" ? "crochetProdutos" : "crochetClientes");
+        if (!(await confirmar("Excluir este item?"))) return;
+        await colecao(colec).doc(el.dataset.id).delete();
+        if (a === "cr-del-enc") CR.encomendas = CR.encomendas.filter(x => x.id !== el.dataset.id);
+        if (a === "cr-del-prod") CR.produtos = CR.produtos.filter(x => x.id !== el.dataset.id);
+        if (a === "cr-del-cli") CR.clientes = CR.clientes.filter(x => x.id !== el.dataset.id);
+        renderCrochet();
+      }
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  function tratarEntradaCrochet(e) {
+    const c = e.target.dataset.campo;
+    const f = CR.form;
+    if (!c || !f) return;
+    const muda = e.type === "change";
+    if (c === "cr-produto") {
+      f.produtoId = e.target.value;
+      const p = crProduto(f.produtoId);
+      if (p) { f.valor = p.preco || ""; f.custo = p.custo || ""; }
+      if (muda) renderCrochet();
+    }
+    else if (c === "cr-cliente") { f.clienteId = e.target.value; }
+    else if (c === "cr-desc") f.descricao = e.target.value;
+    else if (c === "cr-data") f.dataEntrega = e.target.value;
+    else if (c === "cr-valor") f.valor = e.target.value;
+    else if (c === "cr-custo") f.custo = e.target.value;
+    else if (c === "cr-obs") f.obs = e.target.value;
+    else if (c === "cr-prod-nome") f.nome = e.target.value;
+    else if (c === "cr-prod-preco") f.preco = e.target.value;
+    else if (c === "cr-prod-custo") f.custo = e.target.value;
+    else if (c === "cr-cli-nome") f.nome = e.target.value;
+    else if (c === "cr-cli-tel") f.telefone = e.target.value;
+    else if (c === "cr-cli-obs") f.obs = e.target.value;
+    if (muda && c === "cr-cliente") renderCrochet();
+  }
+
+  async function salvarCrochet() {
+    const f = CR.form;
+    if (!f) return;
+    try {
+      if (f.kind === "encomenda") {
+        if (!f.produtoId && !f.descricao.trim()) { mostrarErro("Escolha um produto ou descreva a encomenda."); return; }
+        const obj = { produtoId: f.produtoId || null, clienteId: f.clienteId || null, descricao: f.descricao.trim() || null, dataEntrega: f.dataEntrega || null, valor: crNum(f.valor), custo: crNum(f.custo), obs: f.obs.trim() || null, entregue: false, paga: false };
+        const ref = await colecao("crochetEncomendas").add(obj);
+        CR.encomendas.push({ id: ref.id, ...obj });
+      } else if (f.kind === "produto") {
+        if (!f.nome.trim()) { mostrarErro("Dê um nome ao produto."); return; }
+        const obj = { nome: f.nome.trim(), preco: crNum(f.preco), custo: crNum(f.custo) };
+        const ref = await colecao("crochetProdutos").add(obj);
+        CR.produtos.push({ id: ref.id, ...obj });
+      } else if (f.kind === "cliente") {
+        if (!f.nome.trim()) { mostrarErro("Dê um nome ao cliente."); return; }
+        const obj = { nome: f.nome.trim(), telefone: f.telefone.trim() || null, obs: f.obs.trim() || null };
+        const ref = await colecao("crochetClientes").add(obj);
+        CR.clientes.push({ id: ref.id, ...obj });
+      }
+      CR.form = null;
+      renderCrochet();
+    } catch (err) { mostrarErro(err.message); }
   }
 
   // ---------- lembretes de compromissos ----------
