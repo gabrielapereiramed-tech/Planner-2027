@@ -527,6 +527,10 @@
   .fin-cols-variavel { grid-template-columns: 1fr 2fr 1.3fr 1fr auto; }
   .fin-cols-simple { grid-template-columns: 1fr 2fr 1fr auto; }
   .fin-linha .fin-desc { flex: none; min-width: 0; }
+
+  .fin-cab > span, .fin-linha > span { text-align: center; }
+  .fin-linha > .fin-desc { text-align: left; }
+  .fin-linha > .bolinha { justify-self: center; }
 </style>
 </head>
 <body>
@@ -2102,7 +2106,11 @@
   function parcelaTexto(x, ym) {
     if (!x.recorr) return "";
     if (x.recorr.tipo === "fixo") return "(fixo)";
-    return "(" + (mesesEntre(x.recorr.inicio.slice(0, 7), ym) + 1) + "/" + x.recorr.total + ")";
+    return "(parcela " + (mesesEntre(x.recorr.inicio.slice(0, 7), ym) + 1) + " de " + x.recorr.total + ")";
+  }
+
+  function valorExibido(x) {
+    return x.recorr && x.recorr.tipo === "parcelas" ? valorExibido(x) / Math.max(1, x.recorr.total) : valorExibido(x);
   }
 
   function dataPadraoFN() {
@@ -2117,23 +2125,23 @@
     if (FN.ano === null) { const h = new Date(); FN.ano = h.getFullYear(); FN.mes = h.getMonth(); }
     const ym = FN.ano + "-" + pad(FN.mes + 1);
     const lista = lancamentosDoMes(FN.ano, FN.mes);
-    const soma = t => lista.filter(x => x.tipo === t).reduce((a, x) => a + Number(x.valor || 0), 0);
+    const soma = t => lista.filter(x => x.tipo === t).reduce((a, x) => a + valorExibido(x), 0);
     const entradas = soma("entrada"), contas = soma("conta"), variaveis = soma("variavel"), invest = soma("invest"), outros = soma("outro");
-    const gastos = variaveis + outros + invest;
-    const saldo = entradas - contas - gastos;
+    const gastos = variaveis + outros;
+    const saldo = entradas - contas - gastos - invest;
     const fmt = v => "R$ " + Number(v).toFixed(2).replace(".", ",");
     const dc = d => d.slice(8, 10) + "/" + d.slice(5, 7);
     const del = x => "<button class='excluir' data-acao='fin-del' data-id='" + x.id + "' aria-label='Excluir'>×</button>";
     const cabs = {
       conta: ["Paga", "Conta", "Valor", "Vencimento", ""],
       variavel: ["Data", "Descrição", "Categoria", "Valor", ""],
-      entrada: ["Data", "Descrição", "Valor", ""],
+      entrada: ["Data", "Descrição", "Categoria", "Valor", ""],
       invest: ["Data", "Descrição", "Valor", ""],
-      outro: ["Data", "Descrição", "Valor", ""]
+      outro: ["Data", "Descrição", "Categoria", "Valor", ""]
     };
 
     const secao = (titulo, tipo, total) => {
-      const cls = tipo === "conta" ? "fin-cols-conta" : (tipo === "variavel" ? "fin-cols-variavel" : "fin-cols-simple");
+      const cls = tipo === "conta" ? "fin-cols-conta" : (["variavel", "entrada", "outro"].includes(tipo) ? "fin-cols-variavel" : "fin-cols-simple");
       const cab = "<div class='fin-linha fin-cab " + cls + "'>" + cabs[tipo].map(t => "<span>" + t + "</span>").join("") + "</div>";
       const linhas = lista.filter(x => x.tipo === tipo).sort((a, b) => a.dataISO.localeCompare(b.dataISO)).map(x => {
         const cat = FN.categorias.find(c => c.id === x.categoria);
@@ -2142,17 +2150,17 @@
           return "<div class='fin-linha fin-cols-conta'>" +
             "<button class='bolinha" + (pago ? " feita" : "") + "' data-acao='fin-pago' data-id='" + x.id + "' data-ym='" + ym + "' aria-label='Marcar como paga'>" + (pago ? ICONE_CHECK : "") + "</button>" +
             "<span class='fin-desc'>" + esc(x.descricao) + " <small>" + parcelaTexto(x, ym) + "</small></span>" +
-            "<span>" + fmt(x.valor) + "</span><span>" + dc(x.dataISO) + "</span>" + del(x) + "</div>";
+            "<span>" + fmt(valorExibido(x)) + "</span><span>" + dc(x.dataISO) + "</span>" + del(x) + "</div>";
         }
-        if (tipo === "variavel") {
+        if (["variavel", "entrada", "outro"].includes(tipo)) {
           return "<div class='fin-linha fin-cols-variavel'><span>" + dc(x.dataISO) + "</span>" +
             "<span class='fin-desc'>" + esc(x.descricao) + " <small>" + parcelaTexto(x, ym) + "</small></span>" +
             "<span class='fin-cat' style='color:" + (cat ? cat.cor : "#6B6259") + "'>" + (cat ? esc(cat.nome) : "—") + "</span>" +
-            "<span>" + fmt(x.valor) + "</span>" + del(x) + "</div>";
+            "<span>" + fmt(valorExibido(x)) + "</span>" + del(x) + "</div>";
         }
         return "<div class='fin-linha fin-cols-simple'><span>" + dc(x.dataISO) + "</span>" +
           "<span class='fin-desc'>" + esc(x.descricao) + " <small>" + parcelaTexto(x, ym) + "</small></span>" +
-          "<span>" + fmt(x.valor) + "</span>" + del(x) + "</div>";
+          "<span>" + fmt(valorExibido(x)) + "</span>" + del(x) + "</div>";
       }).join("");
       return "<div class='bloco'><div class='habitos-topo'><h3>" + titulo + "</h3>" +
         "<button class='add-bordo-sm' data-acao='fin-add' data-tipo='" + tipo + "' aria-label='Adicionar'>+</button></div>" +
@@ -2162,13 +2170,13 @@
 
     const linhaCat = c => {
       const total = lista.filter(x => c.kind === "ganho" ? (x.tipo === "entrada" && x.categoria === c.id) : (KIND_GASTO.includes(x.tipo) && x.categoria === c.id))
-        .reduce((a, x) => a + Number(x.valor || 0), 0);
+        .reduce((a, x) => a + valorExibido(x), 0);
       return "<div class='cat-linha'><span class='swatch' style='background:" + c.cor + "'></span><span>" + esc(c.nome) + "</span><strong>" + fmt(total) + "</strong></div>";
     };
     const catsEntrada = FN.categorias.filter(c => c.kind === "ganho").map(linhaCat).join("") || "<p class='vazio'>Nenhuma categoria de entrada.</p>";
     const catsGasto = FN.categorias.filter(c => c.kind !== "ganho").map(linhaCat).join("") || "<p class='vazio'>Nenhuma categoria de gasto.</p>";
 
-    const donutDados = FN.categorias.filter(c => c.kind !== "ganho").map(c => ({ c, v: lista.filter(x => KIND_GASTO.includes(x.tipo) && x.categoria === c.id).reduce((a, x) => a + Number(x.valor || 0), 0) })).filter(d => d.v > 0);
+    const donutDados = FN.categorias.filter(c => c.kind !== "ganho").map(c => ({ c, v: lista.filter(x => KIND_GASTO.includes(x.tipo) && x.categoria === c.id).reduce((a, x) => a + valorExibido(x), 0) })).filter(d => d.v > 0);
     const totalDonut = donutDados.reduce((a, d) => a + d.v, 0);
     let donut = "<p class='vazio'>Sem gastos categorizados.</p>";
     if (totalDonut > 0) {
@@ -2192,7 +2200,7 @@
         "<input placeholder='Descrição' data-campo='f-desc' value='" + esc(f.descricao) + "'>" +
         "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='f-valor' value='" + f.valor + "'>" +
         "<input type='date' data-campo='f-data' value='" + f.dataISO + "'></div>" +
-        "<label>Categoria</label><select data-campo='f-cat'><option value=''>Sem categoria</option>" + cats.map(c => "<option value='" + c.id + "'" + (f.categoria === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>" +
+        (f.tipo === "invest" ? "" : "<label>Categoria</label><select data-campo='f-cat'><option value=''>Sem categoria</option>" + cats.map(c => "<option value='" + c.id + "'" + (f.categoria === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>") +
         "<label>Repetir</label><select data-campo='f-rep'>" +
           "<option value='nao'" + (f.rep === "nao" ? " selected" : "") + ">Não repete</option>" +
           "<option value='fixo'" + (f.rep === "fixo" ? " selected" : "") + ">Fixo (todo mês)</option>" +
@@ -2222,7 +2230,9 @@
         secao("Entradas", "entrada", entradas) +
         secao("Contas e vencimentos", "conta", contas) +
         secao("Gastos variáveis", "variavel", variaveis) +
-        secao("Investimentos e reservas", "invest", invest) +
+        "<div class='bloco'><div class='habitos-topo'><h3>Investimentos e reservas</h3>" +
+        "<button class='add-bordo-sm' data-acao='fin-add' data-tipo='invest' aria-label='Adicionar investimento'>+</button></div>" +
+        "<div class='fin-total'><span>Total investido</span><span>" + fmt(invest) + "</span></div></div>" +
         secao("Outros gastos", "outro", outros) +
         "<div class='bloco'><div class='habitos-topo'><h3>Categorias de entrada</h3><button class='add-bordo-sm' data-acao='fin-add-cat' data-kind='ganho' aria-label='Nova categoria de entrada'>+</button></div>" + catsEntrada + "</div>" +
         "<div class='bloco'><div class='habitos-topo'><h3>Categorias de gasto</h3><button class='add-bordo-sm' data-acao='fin-add-cat' data-kind='gasto' aria-label='Nova categoria de gasto'>+</button></div>" + catsGasto + "</div>" +
