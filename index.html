@@ -561,7 +561,7 @@
 
   .es-dia { border: 1px solid #E7E5E4; border-radius: 10px; padding: 4px; background: #FFFFFF; min-height: 110px; cursor: pointer; overflow: hidden; font-size: 10px; text-align: left; }
   .es-dia.hoje { border: 2px solid #770523; }
-  .es-dia.com-prova { border: 2px solid #770523; }
+
   .es-dia.sel { box-shadow: 0 0 0 2px #FAD2E1; }
   .es-numero { display: block; font-size: 12px; font-weight: 600; text-align: center; margin-bottom: 4px; }
   .es-dia.hoje .es-numero { color: #770523; font-weight: 700; }
@@ -573,6 +573,13 @@
   .es-bloco-prova-cal { background: #FAD2E1; border: 2px solid #D81A67; border-radius: 8px; padding: 4px; margin-bottom: 4px; text-align: center; cursor: pointer; line-height: 1.25; }
   .es-bloco-prova-cal strong { display: block; font-size: 9px; color: #770523; }
   .es-bloco-prova-cal span { font-size: 8px; color: #6B6259; }
+
+  .es-sub { font-size: 0.75rem; font-weight: 600; color: #770523; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .es-info { align-items: flex-start; }
+  .es-info .es-texto strong { display: block; }
+  .es-info .es-texto small { display: block; color: #6B6259; }
+  .es-acoes { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+  .es-acoes .secundario { width: auto; }
 </style>
 </head>
 <body>
@@ -2470,7 +2477,7 @@
     let ids = [];
     if (p.abrangencia === "cumulativa") {
       const ate = p.ateData || p.dataISO;
-      ids = E.aulas.filter(a => a.materiaId === p.materiaId && a.dataISO <= ate).map(a => a.id).filter(id => !(p.excluidos || []).includes(id));
+      ids = E.aulas.filter(a => a.materiaId === p.materiaId && a.dataISO <= ate && a.dataISO >= (p.deData || "0000-00-00")).map(a => a.id).filter(id => !(p.excluidos || []).includes(id));
     }
     return ids.concat((p.aulaIds || []).filter(id => !ids.includes(id)));
   }
@@ -2479,9 +2486,9 @@
     const el = document.getElementById("estudos");
     if (!el) return;
     if (E.ano === null) { const h = new Date(); E.ano = h.getFullYear(); E.mes = h.getMonth(); E.dia = hojeISO(); }
-    const abas = [["config", "Semestre"], ["cal", "Calendário"], ["provas", "Provas"]].map(([v, n]) =>
+    const abas = [["config", "Semestre"], ["cal", "Calendário"], ["materias", "Matérias"]].map(([v, n]) =>
       "<button class='aba" + (E.tab === v ? " ativo" : "") + "' data-acao='es-tab' data-v='" + v + "'>" + n + "</button>").join("");
-    const corpo = E.tab === "config" ? htmlConfigSemestre() : (E.tab === "provas" ? htmlListaProvas() : htmlCalEstudos());
+    const corpo = E.tab === "config" ? htmlConfigSemestre() : (E.tab === "materias" ? htmlMaterias() : htmlCalEstudos());
     el.innerHTML = "<div class='abas'>" + abas + "</div>" + corpo;
   }
 
@@ -2535,24 +2542,46 @@
 
     const aulas = E.aulas.filter(a => a.dataISO === E.dia).sort((a, b) => PERIODOS.findIndex(p => p[0] === a.periodo) - PERIODOS.findIndex(p => p[0] === b.periodo));
     const provas = E.provas.filter(p => p.dataISO === E.dia);
-    const linhaAula = a => "<div class='es-linha'><i class='es-marca' style='background:" + corMateria(a.materiaId) + "'></i>" +
-      "<span class='es-texto'><strong>" + esc(nomeMateria(a.materiaId)) + "</strong> · " + esc(a.conteudo) + " <small>" + nomePeriodo(a.periodo) + (a.professor ? " · " + esc(a.professor) : "") + "</small></span>" +
-      "<button class='excluir' data-acao='es-edit-aula' data-id='" + a.id + "' aria-label='Editar'>✎</button>" +
-      "<button class='excluir' data-acao='es-aula-del' data-id='" + a.id + "' aria-label='Excluir'>×</button></div>";
-    const linhaProva = p => "<div class='es-linha'><b class='es-prova-marca'>⚑</b>" +
-      "<span class='es-texto'><strong>" + esc(p.nome) + "</strong> · " + esc(nomeMateria(p.materiaId)) + " <small>" + esc(p.tipo || "") + (p.horario ? " · " + esc(p.horario) : "") + " · " + conteudosDaProva(p).length + " conteúdos</small></span>" +
-      "<button class='excluir' data-acao='es-edit-prova' data-id='" + p.id + "' aria-label='Editar'>✎</button>" +
-      "<button class='excluir' data-acao='es-prova-del' data-id='" + p.id + "' aria-label='Excluir'>×</button></div>";
+    const linhaAula = a => "<div class='es-linha es-info'><i class='es-marca' style='background:" + corMateria(a.materiaId) + "'></i>" +
+      "<span class='es-texto'><strong>" + esc(a.conteudo) + "</strong>" +
+      "<small>" + esc(nomeMateria(a.materiaId)) + " · " + nomePeriodo(a.periodo) + (a.professor ? " · Prof. " + esc(a.professor) : "") + "</small>" +
+      (a.obs ? "<small>" + esc(a.obs) + "</small>" : "") + "</span>" +
+      "<button class='excluir' data-acao='es-edit-aula' data-id='" + a.id + "' aria-label='Editar aula'>✎</button></div>";
+    const linhaProva = p => {
+      const nomes = conteudosDaProva(p).map(id => { const x = E.aulas.find(y => y.id === id); return x ? x.conteudo : null; }).filter(Boolean);
+      const abrangencia = p.abrangencia === "cumulativa" ? "Cumulativa" + (p.deData ? " de " + dataCurta(p.deData) : "") + " até " + dataCurta(p.ateData || p.dataISO) : "Conteúdo específico";
+      return "<div class='es-linha es-info es-info-prova'><b class='es-prova-marca'>⚑</b><span class='es-texto'><strong>" + esc(p.nome) + "</strong>" +
+        "<small>" + esc(nomeMateria(p.materiaId)) + " · " + esc(p.tipo || "Prova") + (p.horario ? " · " + esc(p.horario) : "") + "</small>" +
+        "<small>" + abrangencia + "</small>" +
+        "<small>" + (nomes.length ? "Conteúdos: " + nomes.map(esc).join(" · ") : "Sem conteúdos selecionados") + "</small>" +
+        ((p.textos && p.textos.length) ? "<small>Outros: " + p.textos.map(esc).join(" · ") + "</small>" : "") +
+        (p.obs ? "<small>" + esc(p.obs) + "</small>" : "") + "</span>" +
+        "<button class='excluir' data-acao='es-edit-prova' data-id='" + p.id + "' aria-label='Editar prova'>✎</button></div>";
+    };
     return "<div class='bloco'><div class='nav'>" +
       "<button class='icone' data-acao='es-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
       "<strong>" + capitalizar(MESES[E.mes]) + " de " + E.ano + "</strong>" +
       "<button class='icone' data-acao='es-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
       "<div class='calendario'>" + grade + "</div></div>" +
-      (E.form ? htmlFormEstudos() : "") +
-      "<div class='bloco'><div class='habitos-topo'><h3>" + tituloDia(E.dia) + "</h3>" +
-      "<div class='legenda-acoes'><button class='add-bordo-sm' data-acao='es-add-aula' aria-label='Nova aula'>+</button>" +
-      "<button class='add-bordo-sm' data-acao='es-add-prova' aria-label='Nova prova'>⚑</button></div></div>" +
-      (aulas.map(linhaAula).join("") + provas.map(linhaProva).join("") || "<p class='vazio'>Nenhuma aula ou prova neste dia.</p>") + "</div>";
+      "<div class='bloco'><h3>" + tituloDia(E.dia) + "</h3>" +
+      (aulas.map(linhaAula).join("") + provas.map(linhaProva).join("") || "<p class='vazio'>Nada previsto para este dia.</p>") +
+      "<div class='es-acoes'><button class='secundario' data-acao='es-add-aula'>+ Conteúdo</button><button class='secundario' data-acao='es-add-prova'>+ Prova</button></div></div>" +
+      (E.form ? htmlFormEstudos() : "");
+  }
+
+  function htmlMaterias() {
+    if (!E.materias.length) return "<div class='bloco'><p class='vazio'>Cadastre as matérias na aba Semestre.</p></div>";
+    return E.materias.map(m => {
+      const aulas = E.aulas.filter(a => a.materiaId === m.id).sort((a, b) => a.dataISO.localeCompare(b.dataISO));
+      const provas = E.provas.filter(p => p.materiaId === m.id).sort((a, b) => a.dataISO.localeCompare(b.dataISO));
+      return "<div class='bloco'><div class='habitos-topo'><h3><span class='swatch' style='background:" + m.cor + "'></span> " + esc(m.nome) + "</h3>" +
+        "<small class='vazio'>" + aulas.length + " conteúdos · " + provas.length + " provas</small></div>" +
+        "<p class='es-sub'>Provas</p>" +
+        (provas.map(p => "<div class='es-linha'><b class='es-prova-marca'>⚑</b><span class='es-texto'><strong>" + esc(p.nome) + "</strong> <small>" + dataCurta(p.dataISO) + " · " + esc(p.tipo || "") + (p.horario ? " · " + esc(p.horario) : "") + "</small></span></div>").join("") || "<p class='vazio'>Nenhuma prova.</p>") +
+        "<p class='es-sub'>Conteúdos</p>" +
+        (aulas.map(a => "<div class='es-linha'><span class='es-texto'><strong>" + esc(a.conteudo) + "</strong> <small>" + dataCurta(a.dataISO) + " · " + nomePeriodo(a.periodo) + (a.professor ? " · " + esc(a.professor) : "") + "</small></span></div>").join("") || "<p class='vazio'>Nenhum conteúdo.</p>") +
+        "</div>";
+    }).join("");
   }
 
   function htmlListaProvas() {
@@ -2584,7 +2613,7 @@
     }
     const aulasMat = E.aulas.filter(a => a.materiaId === f.materiaId).sort((a, b) => a.dataISO.localeCompare(b.dataISO));
     const cumul = f.abrangencia === "cumulativa";
-    const autoIds = cumul ? aulasMat.filter(a => a.dataISO <= (f.ateData || f.dataISO)).map(a => a.id) : [];
+    const autoIds = cumul ? aulasMat.filter(a => a.dataISO <= (f.ateData || f.dataISO) && a.dataISO >= (f.deData || "0000-00-00")).map(a => a.id) : [];
     const listaAulas = cumul
       ? aulasMat.filter(a => autoIds.includes(a.id)).map(a => "<label class='es-check'><input type='checkbox' data-acao='es-prova-excl' data-id='" + a.id + "' " + (f.excluidos.includes(a.id) ? "" : "checked") + "> " + dataCurta(a.dataISO) + " · " + esc(a.conteudo) + "</label>").join("")
       : aulasMat.map(a => "<label class='es-check'><input type='checkbox' data-acao='es-prova-aula' data-id='" + a.id + "' " + (f.aulaIds.includes(a.id) ? "checked" : "") + "> " + dataCurta(a.dataISO) + " · " + esc(a.conteudo) + "</label>").join("");
@@ -2594,7 +2623,7 @@
       "<div class='ag-linha'><input type='date' data-campo='ef-data' value='" + f.dataISO + "'><input placeholder='Horário (opcional)' data-campo='ef-horario' value='" + esc(f.horario) + "'></div>" +
       "<div class='ag-linha'><select data-campo='ef-tipo'>" + TIPOS_PROVA.map(t => "<option" + (f.tipo === t ? " selected" : "") + ">" + t + "</option>").join("") + "</select>" +
       "<select data-campo='ef-abr'><option value='especifica'" + (!cumul ? " selected" : "") + ">Conteúdo específico</option><option value='cumulativa'" + (cumul ? " selected" : "") + ">Cumulativa</option></select></div>" +
-      (cumul ? "<label>Cobra até</label><input type='date' data-campo='ef-ate' value='" + (f.ateData || "") + "'><label>Conteúdos (desmarque os que não entram)</label>" : "<label>Conteúdos cobrados</label>") +
+      (cumul ? "<label>Cobra de / até</label><div class='ag-linha'><input type='date' data-campo='ef-de' value='" + (f.deData || "") + "'><input type='date' data-campo='ef-ate' value='" + (f.ateData || "") + "'></div><label>Conteúdos (desmarque os que não entram)</label>" : "<label>Conteúdos cobrados</label>") +
       (f.materiaId ? "<div class='es-lista-checks'>" + (listaAulas || "<p class='vazio'>Nenhuma aula desta matéria cadastrada.</p>") + "</div>" : "<p class='vazio'>Escolha a matéria para ver as aulas.</p>") +
       "<label>Conteúdos fora do cronograma</label>" + (f.textos || []).map((t, i) => "<div class='tipo-chip'>" + esc(t) + "<button data-acao='es-texto-del' data-i='" + i + "'>×</button></div>").join("") +
       "<div class='ag-linha'><input placeholder='Adicionar conteúdo manual' data-campo='ef-texto' value='" + esc(f.textoNovo || "") + "'><button class='secundario' data-acao='es-texto-add'>Adicionar</button></div>" +
@@ -2643,7 +2672,7 @@
       else if (a === "es-add-prova") { E.form = { kind: "prova", id: null, nome: "", materiaId: "", dataISO: E.dia, horario: "", tipo: "Prova", abrangencia: "especifica", ateData: "", aulaIds: [], excluidos: [], textos: [], textoNovo: "", obs: "" }; renderEstudos(); }
       else if (a === "es-edit-prova") {
         const p = E.provas.find(y => y.id === el.dataset.id);
-        if (p) { E.form = { kind: "prova", id: p.id, nome: p.nome, materiaId: p.materiaId, dataISO: p.dataISO, horario: p.horario || "", tipo: p.tipo || "Prova", abrangencia: p.abrangencia || "especifica", ateData: p.ateData || "", aulaIds: (p.aulaIds || []).slice(), excluidos: (p.excluidos || []).slice(), textos: (p.textos || []).slice(), textoNovo: "", obs: p.obs || "" }; renderEstudos(); }
+        if (p) { E.form = { kind: "prova", id: p.id, nome: p.nome, materiaId: p.materiaId, dataISO: p.dataISO, horario: p.horario || "", tipo: p.tipo || "Prova", abrangencia: p.abrangencia || "especifica", ateData: p.ateData || "", deData: p.deData || "", aulaIds: (p.aulaIds || []).slice(), excluidos: (p.excluidos || []).slice(), textos: (p.textos || []).slice(), textoNovo: "", obs: p.obs || "" }; renderEstudos(); }
       }
       else if (a === "es-prova-del") {
         if (!(await confirmar("Excluir esta prova?"))) return;
@@ -2674,6 +2703,7 @@
     if (c === "ef-materia") { f.materiaId = e.target.value; if (mudaForm) renderEstudos(); return; }
     if (c === "ef-abr") { f.abrangencia = e.target.value; if (mudaForm) renderEstudos(); return; }
     if (c === "ef-ate") { f.ateData = e.target.value; if (mudaForm) renderEstudos(); return; }
+    if (c === "ef-de") { f.deData = e.target.value; if (mudaForm) renderEstudos(); return; }
     if (c === "ef-nome") f.nome = e.target.value;
     else if (c === "ef-conteudo") f.conteudo = e.target.value;
     else if (c === "ef-data") f.dataISO = e.target.value;
@@ -2700,7 +2730,7 @@
         if (!f.materiaId) { mostrarErro("Escolha a matéria."); return; }
         if (!f.dataISO) { mostrarErro("Escolha a data."); return; }
         if (f.abrangencia === "cumulativa" && !f.ateData) { f.ateData = f.dataISO; }
-        const obj = { nome: f.nome.trim(), materiaId: f.materiaId, dataISO: f.dataISO, horario: (f.horario || "").trim() || null, tipo: f.tipo, abrangencia: f.abrangencia, ateData: f.abrangencia === "cumulativa" ? f.ateData : null, aulaIds: f.abrangencia === "especifica" ? f.aulaIds : [], excluidos: f.abrangencia === "cumulativa" ? f.excluidos : [], textos: f.textos || [], obs: (f.obs || "").trim() || null };
+        const obj = { nome: f.nome.trim(), materiaId: f.materiaId, dataISO: f.dataISO, horario: (f.horario || "").trim() || null, tipo: f.tipo, abrangencia: f.abrangencia, ateData: f.abrangencia === "cumulativa" ? f.ateData : null, deData: f.abrangencia === "cumulativa" ? (f.deData || null) : null, aulaIds: f.abrangencia === "especifica" ? f.aulaIds : [], excluidos: f.abrangencia === "cumulativa" ? f.excluidos : [], textos: f.textos || [], obs: (f.obs || "").trim() || null };
         if (f.id) { await colecao("provas").doc(f.id).update(obj); const i = E.provas.findIndex(x => x.id === f.id); if (i >= 0) E.provas[i] = { id: f.id, ...obj }; }
         else { const ref = await colecao("provas").add(obj); E.provas.push({ id: ref.id, ...obj }); }
       }
