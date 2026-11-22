@@ -2766,7 +2766,10 @@
         renderEstudos();
       }
       else if (a === "es-mat-del") {
-        if (!(await confirmar("Excluir esta matéria? As aulas dela continuam cadastradas."))) return;
+        if (!(await confirmar("Excluir esta matéria? As revisões dela também serão removidas."))) return;
+        const idsRev = RV.lista.filter(r => r.materiaId === el.dataset.id).map(r => r.id);
+        await Promise.all(idsRev.map(id => colecao("revisoes").doc(id).delete()));
+        RV.lista = RV.lista.filter(r => r.materiaId !== el.dataset.id);
         await colecao("materias").doc(el.dataset.id).delete();
         E.materias = E.materias.filter(m => m.id !== el.dataset.id);
         renderEstudos();
@@ -2870,28 +2873,34 @@
   }
 
   // Cria as revisões de cada estudo inicial válido. Ids únicos (aula + tipo), para não duplicar ao recalcular.
+  function dataEstudoDe(a) { return a.dataEstudo || a.reestudoEm || a.dataISO; }
+
+  // Revisões só existem depois de um estudo inicial feito. D0 é o dia em que o estudo foi feito.
   async function gerarRevisoes() {
     const ops = [];
+    const removerPendentes = aulaId => {
+      RV.lista.filter(r => r.aulaId === aulaId && r.status === "pendente").forEach(r => {
+        ops.push(colecao("revisoes").doc(r.id).delete());
+      });
+      RV.lista = RV.lista.filter(r => !(r.aulaId === aulaId && r.status === "pendente"));
+    };
     E.aulas.forEach(a => {
+      const materiaExiste = E.materias.some(m => m.id === a.materiaId);
+      if (!materiaExiste || a.estudoInicial !== "feito") { removerPendentes(a.id); return; }
+      const base = a.dataEstudo || a.dataISO;
       Object.keys(REV_TIPOS).forEach(t => {
         const id = a.id + "_" + t;
         const existente = RV.lista.find(r => r.id === id);
-        if (a.estudoInicial === "nao") {
-          if (existente && existente.status === "pendente") {
-            ops.push(colecao("revisoes").doc(id).delete().then(() => { RV.lista = RV.lista.filter(r => r.id !== id); }));
-          }
-          return;
-        }
         if (existente) {
-          if (existente.status === "pendente" && existente.dataBase !== a.dataISO) {
-            const novaData = addDiasISO(a.dataISO, REV_TIPOS[t].dias);
-            existente.dataBase = a.dataISO;
+          if (existente.status === "pendente" && existente.dataBase !== base) {
+            const novaData = addDiasISO(base, REV_TIPOS[t].dias);
+            existente.dataBase = base;
             existente.dataPrevista = novaData;
-            ops.push(colecao("revisoes").doc(id).update({ dataBase: a.dataISO, dataPrevista: novaData }));
+            ops.push(colecao("revisoes").doc(id).update({ dataBase: base, dataPrevista: novaData }));
           }
           return;
         }
-        const obj = { aulaId: a.id, materiaId: a.materiaId, tipo: t, dataBase: a.dataISO, dataPrevista: addDiasISO(a.dataISO, REV_TIPOS[t].dias), status: "pendente", reprog: 0 };
+        const obj = { aulaId: a.id, materiaId: a.materiaId, tipo: t, dataBase: base, dataPrevista: addDiasISO(base, REV_TIPOS[t].dias), status: "pendente", reprog: 0 };
         ops.push(colecao("revisoes").doc(id).set(obj).then(() => { RV.lista.push({ id: id, ...obj }); }));
       });
     });
@@ -2907,7 +2916,7 @@
     const feitas = doDia.filter(r => r.status === "feito").length;
     const atrasadas = pend.filter(r => r.dataPrevista < dia).length;
     const minutos = pend.reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
-    const aulasDia = E.aulas.filter(a => a.dataISO === dia);
+    const aulasDia = E.aulas.filter(a => dataEstudoDe(a) === dia);
     const nomeAula = id => { const a = E.aulas.find(x => x.id === id); return a ? a.conteudo : "Conteúdo removido"; };
 
     const estudo = aulasDia.map(a =>
@@ -2973,8 +2982,22 @@
   async function marcarEstudoInicial(aulaId, valor) {
     const a = E.aulas.find(x => x.id === aulaId);
     if (!a) return;
-    a.estudoInicial = valor;
-    await colecao("aulas").doc(aulaId).update({ estudoInicial: valor });
+    const agendado = dataEstudoDe(a);
+    if (valor === "feito") {
+      a.estudoInicial = "feito";
+      a.dataEstudo = agendado;
+      a.reestudoEm = null;
+    } else if (valor === "nao") {
+      const base = agendado < hojeISO() ? hojeISO() : agendado;
+      a.estudoInicial = null;
+      a.dataEstudo = null;
+      a.reestudoEm = addDiasISO(base, 1);
+    } else {
+      a.estudoInicial = null;
+      a.dataEstudo = null;
+      a.reestudoEm = null;
+    }
+    await colecao("aulas").doc(aulaId).update({ estudoInicial: a.estudoInicial, dataEstudo: a.dataEstudo, reestudoEm: a.reestudoEm });
     await gerarRevisoes();
     renderEstudos();
     renderRevHoje();
