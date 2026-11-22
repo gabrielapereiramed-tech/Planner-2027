@@ -607,6 +607,12 @@
   .rev-hoje-linha { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-radius: 8px; margin-bottom: 6px; font-size: 0.8rem; }
   .rev-hoje-linha small { color: #6B6259; }
   .faixa-revisoes { border-top: 3px solid #770523; }
+
+  .banner-teste { background: #770523; color: #FFFFFF; border-radius: 10px; padding: 8px 12px; font-size: 0.8rem; font-weight: 600; margin-bottom: 10px; text-align: center; }
+
+  .ag-linha > input, .ag-linha > select, .ag-form > input, .ag-form > select { min-width: 0; height: 44px; box-sizing: border-box; }
+  .ag-linha > * { flex: 1 1 0; min-width: 0; }
+  .ag-form input[type='date'], .ag-form input[type='month'] { width: 100%; max-width: 100%; }
 </style>
 </head>
 <body>
@@ -1405,7 +1411,7 @@
   function renderRevHoje() {
     const el = document.getElementById("rev-hoje");
     if (!el) return;
-    const hoje = hojeISO();
+    const hoje = hojeEstudo();
     const doDia = RV.lista.filter(r => r.dataPrevista === hoje || (r.status === "pendente" && r.dataPrevista < hoje));
     const feitas = doDia.filter(r => r.status === "feito").length;
     const pend = doDia.filter(r => r.status === "pendente");
@@ -1421,7 +1427,7 @@
       const min = n.reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
       return "<div class='rev-hoje-linha' style='border-left:4px solid " + cor + ";background:" + cor + "26'><span><strong>" + esc(nomeMateria(mid)) + "</strong> · " + n.length + (n.length > 1 ? " revisões" : " revisão") + "</span><small>" + min + " min</small></div>";
     }).join("");
-    el.innerHTML = "<div class='rev-resumo'><div><strong>" + feitas + " de " + doDia.length + "</strong><small>feitas</small></div>" +
+    el.innerHTML = (E.dataTeste ? "<small class='rev-metodo'>Modo de teste: " + dataCurta(hoje) + "</small>" : "") + "<div class='rev-resumo'><div><strong>" + feitas + " de " + doDia.length + "</strong><small>feitas</small></div>" +
       "<div><strong>" + minutos + " min</strong><small>restantes</small></div>" +
       "<div><strong class='" + (atrasadas ? "rev-atrasada" : "") + "'>" + atrasadas + "</strong><small>atrasadas</small></div></div>" +
       "<div class='rev-barra'><i style='width:" + pct + "%'></i></div>" + (grupos || "<p class='vazio'>Tudo feito por hoje.</p>");
@@ -2508,20 +2514,22 @@
   }
 
   // ---------- Estudos: planejamento acadêmico (fase 1) ----------
-  const E = { view: null, tab: "cal", ano: null, mes: null, dia: null, sem: {}, materias: [], aulas: [], provas: [], form: null, novaMat: { nome: "", cor: "#770523" } };
+  const E = { dataTeste: null, testeTmp: "", view: null, tab: "cal", ano: null, mes: null, dia: null, sem: {}, materias: [], aulas: [], provas: [], form: null, novaMat: { nome: "", cor: "#770523" } };
   const PERIODOS = [["manha", "Manhã"], ["tarde", "Tarde"], ["noite", "Noite"]];
   const TIPOS_PROVA = ["Prova", "Prática", "Seminário", "Outro"];
 
   async function carregarEstudos() {
     try {
-      const [cfg, mat, au, pr, rv] = await Promise.all([
-        colecao("estudosConfig").doc("semestre").get(), colecao("materias").get(), colecao("aulas").get(), colecao("provas").get(), colecao("revisoes").get()
+      const [cfg, mat, au, pr, rv, tst, pos] = await Promise.all([
+        colecao("estudosConfig").doc("semestre").get(), colecao("materias").get(), colecao("aulas").get(), colecao("provas").get(), colecao("revisoes").get(), colecao("estudosConfig").doc("teste").get(), colecao("posProva").get()
       ]);
       E.sem = cfg.exists ? cfg.data() : {};
       E.materias = mat.docs.map(d => ({ id: d.id, ...d.data() }));
       E.aulas = au.docs.map(d => ({ id: d.id, ...d.data() }));
       E.provas = pr.docs.map(d => ({ id: d.id, ...d.data() }));
       RV.lista = rv.docs.map(d => ({ id: d.id, ...d.data() }));
+      E.dataTeste = tst.exists ? tst.data().dataISO : null;
+      RV.pos = pos.docs.map(d => ({ id: d.id, ...d.data() }));
       await gerarRevisoes();
     } catch (e) { mostrarErro(e.message); }
   }
@@ -2546,7 +2554,17 @@
     const abas = [["cal", "Calendário"], ["revisoes", "Revisões"], ["materias", "Matérias"], ["config", "Semestre"]].map(([v, n]) =>
       "<button class='aba" + (E.tab === v ? " ativo" : "") + "' data-acao='es-tab' data-v='" + v + "'>" + n + "</button>").join("");
     const corpo = E.tab === "config" ? htmlConfigSemestre() : (E.tab === "materias" ? htmlMaterias() : (E.tab === "revisoes" ? htmlRevisoes() : htmlCalEstudos()));
-    el.innerHTML = "<div class='abas'>" + abas + "</div>" + corpo;
+    el.innerHTML = (E.dataTeste ? "<div class='banner-teste'>Modo de teste · o app age como se hoje fosse " + dataCurta(E.dataTeste) + "</div>" : "") + "<div class='abas'>" + abas + "</div>" + corpo;
+  }
+
+  function htmlModoTeste() {
+    return "<div class='bloco'><h3>Modo de teste</h3>" +
+      (E.dataTeste
+        ? "<p class='vazio' style='text-align:left'>Ligado: o app age como se hoje fosse <strong>" + dataCurta(E.dataTeste) + "</strong>. Só afeta as revisões e o calendário de estudos.</p>"
+        : "<p class='vazio' style='text-align:left'>Desligado: o app usa a data de hoje.</p>") +
+      "<label>Data de teste</label><input type='date' data-campo='es-teste-data' value='" + (E.testeTmp || E.dataTeste || "") + "'>" +
+      "<div class='centro'>" + (E.dataTeste ? "<button class='secundario' data-acao='es-teste-sair'>Sair do teste</button>" : "") +
+      "<button class='grande' data-acao='es-teste-usar'>Usar essa data</button></div></div>";
   }
 
   function htmlConfigSemestre() {
@@ -2557,7 +2575,7 @@
       "<button class='chip" + ((s.periodos || []).includes(v) ? " ativo" : "") + "' data-acao='es-periodo' data-v='" + v + "'>" + n + "</button>").join("");
     const mats = E.materias.map(m =>
       "<div class='tipo-chip'><span class='swatch' style='background:" + m.cor + "'></span>" + esc(m.nome) + "<button data-acao='es-mat-del' data-id='" + m.id + "' aria-label='Excluir'>×</button></div>").join("") || "<p class='vazio'>Nenhuma matéria cadastrada.</p>";
-    return "<div class='bloco'><h3>Semestre</h3>" +
+    return htmlModoTeste() + "<div class='bloco'><h3>Semestre</h3>" +
       "<label>Início</label><input type='date' data-campo='es-inicio' value='" + (s.inicio || "") + "'>" +
       "<label>Término</label><input type='date' data-campo='es-fim' value='" + (s.fim || "") + "'>" +
       "<label>Dias com aula</label><div class='chips'>" + diasChips("diasAula") + "</div>" +
@@ -2618,7 +2636,7 @@
   function htmlCalEstudos() {
     const primeiro = new Date(E.ano, E.mes, 1).getDay();
     const dias = new Date(E.ano, E.mes + 1, 0).getDate();
-    const hoje = hojeISO();
+    const hoje = hojeEstudo();
     let grade = NOMES.map(n => "<div class='cal-cab'>" + n.charAt(0) + "</div>").join("");
     for (let k = 0; k < primeiro; k++) grade += "<div></div>";
     const blocoAula = a => {
@@ -2751,6 +2769,18 @@
       else if (a === "es-nav") { const m = E.mes + Number(el.dataset.d); E.ano += Math.floor(m / 12); E.mes = ((m % 12) + 12) % 12; renderEstudos(); }
       else if (a === "es-dia-cal") { E.dia = el.dataset.iso; E.view = null; E.form = null; renderEstudos(); }
       else if (a === "es-voltar") { E.view = null; E.form = null; renderEstudos(); }
+      else if (a === "es-teste-usar") {
+        const v = E.testeTmp || "";
+        if (!v) { mostrarErro("Escolha uma data de teste."); return; }
+        await colecao("estudosConfig").doc("teste").set({ dataISO: v });
+        E.dataTeste = v; RV.revDia = null;
+        renderEstudos(); renderRevHoje();
+      }
+      else if (a === "es-teste-sair") {
+        await colecao("estudosConfig").doc("teste").delete();
+        E.dataTeste = null; E.testeTmp = ""; RV.revDia = null;
+        renderEstudos(); renderRevHoje();
+      }
       else if (a === "es-alterar") { const x = E.aulas.find(y => y.id === el.dataset.id); if (x) { E.form = formAulaDe(x); renderEstudos(); } }
       else if (a === "es-alterar-prova") { const p = E.provas.find(y => y.id === el.dataset.id); if (p) { E.form = formProvaDe(p); renderEstudos(); } }
       else if (a === "es-dia") { const c = el.dataset.campo, i = Number(el.dataset.i); E.sem[c] = (E.sem[c] || []).includes(i) ? E.sem[c].filter(x => x !== i) : (E.sem[c] || []).concat([i]); renderEstudos(); }
@@ -2779,6 +2809,9 @@
       else if (a === "es-aula-del") {
         if (!(await confirmar("Excluir esta aula?"))) return;
         await colecao("aulas").doc(el.dataset.id).delete();
+        const idsAula = RV.lista.filter(r => r.aulaId === el.dataset.id).map(r => r.id);
+        await Promise.all(idsAula.map(x => colecao("revisoes").doc(x).delete()));
+        RV.lista = RV.lista.filter(r => r.aulaId !== el.dataset.id);
         E.aulas = E.aulas.filter(x => x.id !== el.dataset.id);
         E.view = null; E.form = null;
         renderEstudos();
@@ -2788,6 +2821,9 @@
       else if (a === "es-prova-del") {
         if (!(await confirmar("Excluir esta prova?"))) return;
         await colecao("provas").doc(el.dataset.id).delete();
+        const idsProva = RV.lista.filter(r => r.provaId === el.dataset.id).map(r => r.id);
+        await Promise.all(idsProva.map(x => colecao("revisoes").doc(x).delete()));
+        RV.lista = RV.lista.filter(r => r.provaId !== el.dataset.id);
         E.provas = E.provas.filter(x => x.id !== el.dataset.id);
         E.view = null; E.form = null;
         renderEstudos();
@@ -2797,8 +2833,9 @@
       else if (a === "es-texto-add" && f) { const t = (f.textoNovo || "").trim(); if (t) { f.textos.push(t); f.textoNovo = ""; renderEstudos(); } }
       else if (a === "es-texto-del" && f) { f.textos.splice(Number(el.dataset.i), 1); renderEstudos(); }
       else if (a === "es-cancelar") { E.form = null; renderEstudos(); }
-      else if (a === "rev-nav") { RV.revDia = addDiasISO(RV.revDia || hojeISO(), Number(el.dataset.d)); renderEstudos(); }
+      else if (a === "rev-nav") { RV.revDia = addDiasISO(RV.revDia || hojeEstudo(), Number(el.dataset.d)); renderEstudos(); }
       else if (a === "rev-feito") await revFeito(el.dataset.id);
+      else if (a === "pos-decidir") await decidirPosProva(el.dataset.prova, el.dataset.aula, el.dataset.v);
       else if (a === "rev-nao") await revNao(el.dataset.id);
       else if (a === "ei-feito") await marcarEstudoInicial(el.dataset.id, "feito");
       else if (a === "ei-nao") await marcarEstudoInicial(el.dataset.id, "nao");
@@ -2814,6 +2851,7 @@
     const mudaForm = e.type === "change";
     if (c === "es-inicio") { E.sem.inicio = e.target.value; return; }
     if (c === "es-fim") { E.sem.fim = e.target.value; return; }
+    if (c === "es-teste-data") { E.testeTmp = e.target.value; return; }
     if (c === "es-mat-nome") { E.novaMat.nome = e.target.value; return; }
     if (c === "es-mat-cor") { E.novaMat.cor = e.target.value; return; }
     const f = E.form;
@@ -2858,14 +2896,19 @@
   }
 
   // ---------- Estudos: revisões espaçadas (fase 2) ----------
-  const RV = { revDia: null, lista: [] };
+  const RV = { revDia: null, lista: [], pos: [] };
   const REV_TIPOS = {
     D1: { nome: "Revisão D+1", dias: 1, min: 10, metodo: "Feche o material e escreva ou fale tudo o que lembrar. Depois, confira e corrija as lacunas." },
     D3: { nome: "Revisão D+3", dias: 3, min: 15, metodo: "Responda flashcards e explique os conceitos sem consultar. Consulte o material só depois da tentativa." },
     D7: { nome: "Revisão D+7", dias: 7, min: 25, metodo: "Resolva questões e casos clínicos, e analise cada erro." },
     D14: { nome: "Revisão D+14", dias: 14, min: 20, metodo: "Explique sem consultar, faça mapas mentais e revise as questões que errou." },
-    D30: { nome: "Revisão D+30", dias: 30, min: 25, metodo: "Faça um teste de conhecimento e recupere o conteúdo de forma global." }
+    D30: { nome: "Revisão D+30", dias: 30, min: 25, metodo: "Faça um teste de conhecimento e recupere o conteúdo de forma global." },
+    P14: { nome: "Pré-prova · faltam 14 dias", dias: 14, min: 20, metodo: "Revisão geral dos conteúdos da prova e identificação das lacunas." },
+    P7: { nome: "Pré-prova · faltam 7 dias", dias: 7, min: 25, metodo: "Revisão geral com questões e recuperação ativa." },
+    P3: { nome: "Pré-prova · faltam 3 dias", dias: 3, min: 30, metodo: "Reforce o que ainda não está consolidado: erros e pontos mais difíceis." },
+    P1: { nome: "Pré-prova · falta 1 dia", dias: 1, min: 15, metodo: "Revisão leve: flashcards e conceitos essenciais, sem sessão exaustiva." }
   };
+  const PRE_DIAS = [14, 7, 3, 1];
 
   function addDiasISO(iso, n) {
     const [y, m, d] = iso.split("-").map(Number);
@@ -2875,20 +2918,24 @@
   // Cria as revisões de cada estudo inicial válido. Ids únicos (aula + tipo), para não duplicar ao recalcular.
   function dataEstudoDe(a) { return a.dataEstudo || a.reestudoEm || a.dataISO; }
 
+  // Data usada pelas revisões: a data de teste, se estiver ligada, ou a data de hoje.
+  function hojeEstudo() { return E.dataTeste || hojeISO(); }
+
   // Revisões só existem depois de um estudo inicial feito. D0 é o dia em que o estudo foi feito.
+  // Revisões D+ só existem depois de um estudo inicial feito. D0 é o dia em que o estudo foi feito.
+  // Revisões pré-prova existem para cada conteúdo cobrado, 14, 7, 3 e 1 dia antes da prova.
   async function gerarRevisoes() {
     const ops = [];
+    const tiposD = Object.keys(REV_TIPOS).filter(t => t.startsWith("D"));
     const removerPendentes = aulaId => {
-      RV.lista.filter(r => r.aulaId === aulaId && r.status === "pendente").forEach(r => {
-        ops.push(colecao("revisoes").doc(r.id).delete());
-      });
-      RV.lista = RV.lista.filter(r => !(r.aulaId === aulaId && r.status === "pendente"));
+      RV.lista.filter(r => r.aulaId === aulaId && !r.provaId && r.status === "pendente").forEach(r => ops.push(colecao("revisoes").doc(r.id).delete()));
+      RV.lista = RV.lista.filter(r => !(r.aulaId === aulaId && !r.provaId && r.status === "pendente"));
     };
     E.aulas.forEach(a => {
       const materiaExiste = E.materias.some(m => m.id === a.materiaId);
       if (!materiaExiste || a.estudoInicial !== "feito") { removerPendentes(a.id); return; }
       const base = a.dataEstudo || a.dataISO;
-      Object.keys(REV_TIPOS).forEach(t => {
+      tiposD.forEach(t => {
         const id = a.id + "_" + t;
         const existente = RV.lista.find(r => r.id === id);
         if (existente) {
@@ -2904,13 +2951,42 @@
         ops.push(colecao("revisoes").doc(id).set(obj).then(() => { RV.lista.push({ id: id, ...obj }); }));
       });
     });
+
+    // Remove revisões pré-prova de provas que já foram excluídas
+    const idsProvas = E.provas.map(p => p.id);
+    RV.lista.filter(r => r.provaId && !idsProvas.includes(r.provaId) && r.status === "pendente").forEach(r => ops.push(colecao("revisoes").doc(r.id).delete()));
+    RV.lista = RV.lista.filter(r => !(r.provaId && !idsProvas.includes(r.provaId) && r.status === "pendente"));
+
+    E.provas.forEach(p => {
+      conteudosDaProva(p).forEach(aulaId => {
+        const aula = E.aulas.find(x => x.id === aulaId);
+        if (!aula) return;
+        PRE_DIAS.forEach(d => {
+          const t = "P" + d;
+          const id = "pre_" + p.id + "_" + aulaId + "_" + d;
+          const existente = RV.lista.find(r => r.id === id);
+          const dataPrevista = addDiasISO(p.dataISO, -d);
+          if (existente) {
+            if (existente.status === "pendente" && existente.dataBase !== p.dataISO) {
+              existente.dataBase = p.dataISO;
+              existente.dataPrevista = dataPrevista;
+              ops.push(colecao("revisoes").doc(id).update({ dataBase: p.dataISO, dataPrevista: dataPrevista }));
+            }
+            return;
+          }
+          const obj = { aulaId: aulaId, materiaId: aula.materiaId, provaId: p.id, provaNome: p.nome, tipo: t, dataBase: p.dataISO, dataPrevista: dataPrevista, status: "pendente", reprog: 0 };
+          ops.push(colecao("revisoes").doc(id).set(obj).then(() => { RV.lista.push({ id: id, ...obj }); }));
+        });
+      });
+    });
+
     try { await Promise.all(ops); } catch (e) { mostrarErro(e.message); }
   }
 
   function htmlRevisoes() {
-    if (!RV.revDia) RV.revDia = hojeISO();
+    if (!RV.revDia) RV.revDia = hojeEstudo();
     const dia = RV.revDia;
-    const hoje = hojeISO();
+    const hoje = hojeEstudo();
     const doDia = RV.lista.filter(r => r.dataPrevista === dia || (dia === hoje && r.status === "pendente" && r.dataPrevista < hoje));
     const pend = doDia.filter(r => r.status === "pendente");
     const feitas = doDia.filter(r => r.status === "feito").length;
@@ -2934,13 +3010,24 @@
         itens.map(r => {
           const feito = r.status === "feito";
           return "<div class='rev-item" + (feito ? " rev-feito" : "") + "'><div class='rev-texto'><strong>" + esc(nomeAula(r.aulaId)) + "</strong>" +
-            "<small>" + REV_TIPOS[r.tipo].nome + " · " + REV_TIPOS[r.tipo].min + " min" + (!feito && r.dataPrevista < hoje ? " · <b class='rev-atrasada'>atrasada</b>" : "") + "</small>" +
+            "<small>" + REV_TIPOS[r.tipo].nome + (r.provaNome ? " · " + esc(r.provaNome) : "") + " · " + REV_TIPOS[r.tipo].min + " min" + (!feito && r.dataPrevista < hoje ? " · <b class='rev-atrasada'>atrasada</b>" : "") + "</small>" +
             "<small class='rev-metodo'>" + REV_TIPOS[r.tipo].metodo + "</small></div>" +
             "<div class='es-chips'><button class='chip-acao" + (feito ? " ok" : "") + "' data-acao='rev-feito' data-id='" + r.id + "'>" + (feito ? "Feito ✓" : "Feito") + "</button>" +
             "<button class='chip-acao" + (!feito && r.reprog ? "" : "") + "' data-acao='rev-nao' data-id='" + r.id + "'>Não consegui</button></div></div>";
         }).join("") +
         "</div>";
     }).join("");
+
+    const posHtml = E.provas.filter(p => addDiasISO(p.dataISO, 1) === dia).map(p =>
+      "<div class='bloco'><h3>Pós-prova · " + esc(p.nome) + "</h3><p class='vazio' style='text-align:left'>Esse conteúdo ainda precisa de revisão? Responda para cada um.</p>" +
+      conteudosDaProva(p).map(id => {
+        const a = E.aulas.find(x => x.id === id);
+        if (!a) return "";
+        const dec = (RV.pos.find(x => x.id === p.id + "_" + a.id) || {}).decisao;
+        return "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(a.conteudo) + "</strong><small>" + esc(nomeMateria(a.materiaId)) + "</small></span><div class='es-chips'>" +
+          "<button class='chip-acao" + (dec === "sim" ? " ok" : "") + "' data-acao='pos-decidir' data-prova='" + p.id + "' data-aula='" + a.id + "' data-v='sim'>Continuar revisando</button>" +
+          "<button class='chip-acao" + (dec === "nao" ? " ruim" : "") + "' data-acao='pos-decidir' data-prova='" + p.id + "' data-aula='" + a.id + "' data-v='nao'>Não preciso mais</button></div></div>";
+      }).join("") + "</div>").join("");
 
     return "<div class='bloco'><div class='nav'>" +
       "<button class='icone' data-acao='rev-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
@@ -2949,8 +3036,24 @@
       "<div class='rev-resumo'><div><strong>" + feitas + " de " + doDia.length + "</strong><small>feitas</small></div>" +
       "<div><strong>" + minutos + " min</strong><small>restantes</small></div>" +
       "<div><strong class='" + (atrasadas ? "rev-atrasada" : "") + "'>" + atrasadas + "</strong><small>atrasadas</small></div></div></div>" +
+      posHtml +
       (estudo ? "<div class='bloco'><h3>Estudo inicial das aulas</h3>" + estudo + "</div>" : "") +
       (grupos || "<div class='bloco'><p class='vazio'>Nenhuma revisão para este dia.</p></div>");
+  }
+
+  async function decidirPosProva(provaId, aulaId, v) {
+    const id = provaId + "_" + aulaId;
+    const obj = { provaId: provaId, aulaId: aulaId, decisao: v, dataISO: hojeEstudo() };
+    await colecao("posProva").doc(id).set(obj);
+    const idx = RV.pos.findIndex(x => x.id === id);
+    if (idx >= 0) RV.pos[idx] = { id: id, ...obj }; else RV.pos.push({ id: id, ...obj });
+    if (v === "nao") {
+      const ids = RV.lista.filter(r => r.provaId === provaId && r.aulaId === aulaId && r.status === "pendente").map(r => r.id);
+      await Promise.all(ids.map(x => colecao("revisoes").doc(x).delete()));
+      RV.lista = RV.lista.filter(r => !ids.includes(r.id));
+    }
+    renderEstudos();
+    renderRevHoje();
   }
 
   async function revFeito(id) {
@@ -2961,7 +3064,7 @@
       await colecao("revisoes").doc(id).update({ status: "pendente" });
     } else {
       r.status = "feito";
-      r.dataFeito = hojeISO();
+      r.dataFeito = hojeEstudo();
       await colecao("revisoes").doc(id).update({ status: "feito", dataFeito: r.dataFeito });
     }
     renderEstudos();
@@ -2972,7 +3075,7 @@
   async function revNao(id) {
     const r = RV.lista.find(x => x.id === id);
     if (!r) return;
-    const base = r.dataPrevista < hojeISO() ? hojeISO() : r.dataPrevista;
+    const base = r.dataPrevista < hojeEstudo() ? hojeEstudo() : r.dataPrevista;
     r.dataPrevista = addDiasISO(base, 1);
     r.reprog = (r.reprog || 0) + 1;
     await colecao("revisoes").doc(id).update({ dataPrevista: r.dataPrevista, reprog: r.reprog });
@@ -2988,7 +3091,7 @@
       a.dataEstudo = agendado;
       a.reestudoEm = null;
     } else if (valor === "nao") {
-      const base = agendado < hojeISO() ? hojeISO() : agendado;
+      const base = agendado < hojeEstudo() ? hojeEstudo() : agendado;
       a.estudoInicial = null;
       a.dataEstudo = null;
       a.reestudoEm = addDiasISO(base, 1);
