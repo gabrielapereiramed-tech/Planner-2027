@@ -613,6 +613,10 @@
   .ag-linha > input, .ag-linha > select, .ag-form > input, .ag-form > select { min-width: 0; height: 44px; box-sizing: border-box; }
   .ag-linha > * { flex: 1 1 0; min-width: 0; }
   .ag-form input[type='date'], .ag-form input[type='month'] { width: 100%; max-width: 100%; }
+
+  .rev-topo-pre { background: #FAD2E1; border-left: 4px solid #D81A67; }
+  .rev-topo-pre strong { color: #770523; }
+  .rev-pre { border: 2px solid #D81A67; }
 </style>
 </head>
 <body>
@@ -2952,6 +2956,11 @@
       });
     });
 
+    // Remove revisões de conteúdos que não existem mais (ex.: excluídos antes da correção)
+    const idsAulas = E.aulas.map(a => a.id);
+    RV.lista.filter(r => !idsAulas.includes(r.aulaId)).forEach(r => ops.push(colecao("revisoes").doc(r.id).delete()));
+    RV.lista = RV.lista.filter(r => idsAulas.includes(r.aulaId));
+
     // Remove revisões pré-prova de provas que já foram excluídas
     const idsProvas = E.provas.map(p => p.id);
     RV.lista.filter(r => r.provaId && !idsProvas.includes(r.provaId) && r.status === "pendente").forEach(r => ops.push(colecao("revisoes").doc(r.id).delete()));
@@ -2988,6 +2997,8 @@
     const dia = RV.revDia;
     const hoje = hojeEstudo();
     const doDia = RV.lista.filter(r => r.dataPrevista === dia || (dia === hoje && r.status === "pendente" && r.dataPrevista < hoje));
+    const doDiaNormal = doDia.filter(r => !r.provaId);
+    const doDiaPre = doDia.filter(r => !!r.provaId);
     const pend = doDia.filter(r => r.status === "pendente");
     const feitas = doDia.filter(r => r.status === "feito").length;
     const atrasadas = pend.filter(r => r.dataPrevista < dia).length;
@@ -3000,8 +3011,8 @@
       "<span class='es-texto'><strong>" + esc(a.conteudo) + "</strong><small>" + esc(nomeMateria(a.materiaId)) + " · Estudo inicial desta aula</small>" +
       "<div class='es-chips'>" + htmlEstudoInicialChips(a) + "</div></span></div>").join("");
 
-    const grupos = [...new Set(doDia.map(r => r.materiaId))].map(mid => {
-      const itens = doDia.filter(r => r.materiaId === mid);
+    const grupos = [...new Set(doDiaNormal.map(r => r.materiaId))].map(mid => {
+      const itens = doDiaNormal.filter(r => r.materiaId === mid);
       const cor = corMateria(mid);
       const feitasM = itens.filter(r => r.status === "feito").length;
       const minM = itens.filter(r => r.status === "pendente").reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
@@ -3029,6 +3040,26 @@
           "<button class='chip-acao" + (dec === "nao" ? " ruim" : "") + "' data-acao='pos-decidir' data-prova='" + p.id + "' data-aula='" + a.id + "' data-v='nao'>Não preciso mais</button></div></div>";
       }).join("") + "</div>").join("");
 
+    const provasPreHtml = [...new Set(doDiaPre.map(r => r.provaId))].map(pid => {
+      const prova = E.provas.find(p => p.id === pid);
+      if (!prova) return "";
+      const itens = doDiaPre.filter(r => r.provaId === pid);
+      const feitasP = itens.filter(r => r.status === "feito").length;
+      let faltam = 0, cur = dia;
+      while (cur < prova.dataISO && faltam < 366) { cur = addDiasISO(cur, 1); faltam++; }
+      return "<div class='rev-bloco rev-pre'><div class='rev-topo rev-topo-pre'>" +
+        "<strong><b class='es-prova-marca'>⚑</b> Pré-prova · " + esc(prova.nome) + "</strong>" +
+        "<small>" + esc(nomeMateria(prova.materiaId)) + " · prova em " + dataCurta(prova.dataISO) + " · faltam " + faltam + (faltam === 1 ? " dia" : " dias") + " · " + feitasP + " de " + itens.length + " feitas</small></div>" +
+        itens.map(r => {
+          const feito = r.status === "feito";
+          return "<div class='rev-item" + (feito ? " rev-feito" : "") + "'><div class='rev-texto'><strong>" + esc(nomeAula(r.aulaId)) + "</strong>" +
+            "<small>" + REV_TIPOS[r.tipo].nome + " · " + REV_TIPOS[r.tipo].min + " min</small>" +
+            "<small class='rev-metodo'>" + REV_TIPOS[r.tipo].metodo + "</small></div>" +
+            "<div class='es-chips'><button class='chip-acao" + (feito ? " ok" : "") + "' data-acao='rev-feito' data-id='" + r.id + "'>" + (feito ? "Feito ✓" : "Feito") + "</button>" +
+            "<button class='chip-acao' data-acao='rev-nao' data-id='" + r.id + "'>Não consegui</button></div></div>";
+        }).join("") + "</div>";
+    }).join("");
+
     return "<div class='bloco'><div class='nav'>" +
       "<button class='icone' data-acao='rev-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
       "<strong>" + (dia === hoje ? "Hoje · " : "") + tituloDia(dia) + "</strong>" +
@@ -3038,7 +3069,7 @@
       "<div><strong class='" + (atrasadas ? "rev-atrasada" : "") + "'>" + atrasadas + "</strong><small>atrasadas</small></div></div></div>" +
       posHtml +
       (estudo ? "<div class='bloco'><h3>Estudo inicial das aulas</h3>" + estudo + "</div>" : "") +
-      (grupos || "<div class='bloco'><p class='vazio'>Nenhuma revisão para este dia.</p></div>");
+      provasPreHtml + (grupos || (provasPreHtml ? "" : "<div class='bloco'><p class='vazio'>Nenhuma revisão para este dia.</p></div>"));
   }
 
   async function decidirPosProva(provaId, aulaId, v) {
