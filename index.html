@@ -2110,7 +2110,8 @@
   }
 
   function valorExibido(x) {
-    return x.recorr && x.recorr.tipo === "parcelas" ? valorExibido(x) / Math.max(1, x.recorr.total) : valorExibido(x);
+    const v = Number(x.valor) || 0;
+    return x.recorr && x.recorr.tipo === "parcelas" ? v / Math.max(1, x.recorr.total) : v;
   }
 
   function dataPadraoFN() {
