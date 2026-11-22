@@ -1958,7 +1958,8 @@
     el.innerHTML = "<div class='fin-cards'>" +
       "<div class='fin-card'><small>Ganhos</small><strong>" + fmt(ganhos) + "</strong></div>" +
       "<div class='fin-card'><small>Gastos</small><strong>" + fmt(gastos) + "</strong></div>" +
-      "<div class='fin-card saldo'><small>Saldo</small><strong>" + fmt(ganhos - gastos) + "</strong></div></div>" +
+      "<div class='fin-card saldo'><small>Saldo do dia</small><strong>" + fmt(ganhos - gastos) + "</strong></div>" +
+      "<div class='fin-card saldo'><small>Saldo total</small><strong>" + fmt(saldoAcumulado(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1)) + "</strong></div></div>" +
       "<div class='cx-form'><div class='cx-tipo'>" + tipos.map(([v, n]) =>
         "<button class='chip" + (CX.tipo === v ? " ativo" : "") + "' data-acao='cx-tipo' data-tipo='" + v + "'>" + n + "</button>").join("") + "</div>" +
       "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='cx-valor' value='" + esc(CX.valor) + "'>" +
@@ -2056,7 +2057,7 @@
     const total = CARDIO.lista.filter(x => x.dataISO === iso).reduce((a, x) => a + Number(x.minutos || 0), 0);
     return "<div class='bloco cardio-form'><div class='habitos-topo'><h3>Registrar cardio</h3><span class='resumo'>" + total + " min no dia</span></div>" +
       "<div class='chips'>" + Object.keys(ICONES_CARDIO).map(k =>
-        "<button class='icone-opcao" + (CARDIO.novoTipo === k ? " ativo" : "") + "' data-acao='cardio-tipo' data-tipo='" + k + "' aria-label='" + NOMES_CARDIO[k] + "'>" + ICONES_CARDIO[k] + "</button>").join("") + "</div>" +
+        "<button class='chip-acao" + (CARDIO.novoTipo === k ? " ok" : "") + "' data-acao='cardio-tipo' data-tipo='" + k + "'>" + NOMES_CARDIO[k] + "</button>").join("") + "</div>" +
       "<div class='ag-linha'><input type='number' inputmode='numeric' placeholder='Minutos' data-campo='cardio-min' value='" + CARDIO.novoMin + "'>" +
       "<button class='secundario' data-acao='cardio-add'>Adicionar</button></div></div>";
   }
@@ -2064,7 +2065,7 @@
   function htmlCardioFeito(c) {
     const nome = NOMES_CARDIO[c.tipo] || "Cardio";
     return "<div class='feito-card'><div class='ex-topo'><span class='etiqueta'>" + ICONE_CHECK + " Cardio concluído</span><span>" + c.minutos + " min</span></div>" +
-      "<p class='nome-feito cardio-nome'><span class='cardio-icone'>" + (ICONES_CARDIO[c.tipo] || "") + "</span>" + nome + "</p>" +
+      "<p class='nome-feito cardio-nome'>" + nome + "</p>" +
       "<button class='excluir-sessao' data-acao='cardio-del' data-id='" + c.id + "'>Excluir</button></div>";
   }
 
@@ -2387,7 +2388,7 @@
         off += len;
         return arco;
       }).join("");
-      donut = "<div style='display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center'><svg viewBox='0 0 120 120' width='200' height='200'>" + arcos + "</svg><div style='font-size:0.8rem'>" +
+      donut = "<div style='display:flex;flex-direction:column;gap:12px;align-items:center'><svg viewBox='0 0 120 120' width='240' height='240'>" + arcos + "</svg><div style='font-size:0.9rem;text-align:left'>" +
         donutDados.map(d => "<div><span style='color:" + d.c.cor + "'>●</span> " + esc(d.c.nome) + " " + Math.round(d.v / totalDonut * 100) + "%</div>").join("") + "</div></div>";
     }
 
@@ -3487,13 +3488,13 @@
     const pct = meta ? Math.min(1, feitos / meta) : 0;
     const centro = meta ? feitos + "/" + meta : String(feitos);
     const linhas = String(rotulo).split("|");
-    const altura = 124 + linhas.length * 12 + 4;
-    const textos = linhas.map((t, i) => "<text x='60' y='" + (124 + i * 12) + "' text-anchor='middle' font-size='10' fill='#6B6259'>" + t + "</text>").join("");
-    return "<svg viewBox='0 0 120 " + altura + "' width='150' height='" + Math.round(150 * altura / 120) + "' style='display:block;margin:0 auto' role='img' aria-label='Progresso: " + centro + "'>" +
+    const textos = linhas.map((t, i) => "<text x='60' y='" + (72 + i * 11) + "' text-anchor='middle' font-size='8.5' fill='#6B6259'>" + t + "</text>").join("");
+    return "<svg viewBox='0 0 120 120' width='150' height='150' style='display:block;margin:0 auto' role='img' aria-label='Progresso: " + centro + "'>" +
       "<circle cx='60' cy='60' r='50' fill='none' stroke='#EFECE6' stroke-width='12'/>" +
       "<circle cx='60' cy='60' r='50' fill='none' stroke='#770523' stroke-width='12' stroke-linecap='round' stroke-dasharray='" + (pct * C) + " " + C + "' transform='rotate(-90 60 60)'/>" +
-      "<text x='60' y='62' text-anchor='middle' font-size='20' font-weight='600' fill='#2B2420'>" + centro + "</text>" + textos + "</svg>";
+      "<text x='60' y='" + (linhas.length > 1 ? 54 : 58) + "' text-anchor='middle' font-size='18' font-weight='600' fill='#2B2420'>" + centro + "</text>" + textos + "</svg>";
   }
+
 
   function anelSemana(feitos, meta) {
     return anel(feitos, meta, "treinos");
