@@ -1495,8 +1495,8 @@
       const linhas = linhasTarefas(n);
       const espaco = Math.max(0, alt - 60);
       const alvo = linhas > 0 ? espaco / linhas : 0;
-      const fontePx = 11;
-      const bolinha = 16;
+      const fontePx = 12;
+      const bolinha = 17;
       const curto = alt < 64;
       const todas = n > 0 && c.tarefas.every(t => t.feita);
       const L = lay[c.id] || { col: 0, n: 1 };
@@ -3271,6 +3271,23 @@
       (CR.aba === "clientes" ? htmlCrClientes() : (CR.aba === "produtos" ? htmlCrProdutosTab() : htmlCrEncomendas()));
   }
 
+  function crItens(e) {
+    if (Array.isArray(e.itens) && e.itens.length) return e.itens;
+    return e.produtoId ? [{ produtoId: e.produtoId, qtd: Number(e.qtd) || 1 }] : [];
+  }
+  function crNomeItens(e) {
+    const its = crItens(e);
+    if (!its.length) return e.descricao || "Encomenda";
+    return its.map(i => { const p = crProduto(i.produtoId); return (p ? p.nome : "Produto removido") + (i.qtd > 1 ? " × " + i.qtd : ""); }).join(" + ");
+  }
+  function crValorItens(itens) { return itens.reduce((a, i) => { const p = crProduto(i.produtoId); return a + (p ? (Number(p.preco) || 0) * (Number(i.qtd) || 1) : 0); }, 0); }
+  function crCustoItens(itens) { return itens.reduce((a, i) => { const p = crProduto(i.produtoId); return a + (p ? (Number(p.custo) || 0) * (Number(i.qtd) || 1) : 0); }, 0); }
+  function formDeEncomenda(e) {
+    return { kind: "encomenda", id: e.id, itens: crItens(e).map(i => ({ produtoId: i.produtoId, qtd: i.qtd })), clienteId: e.clienteId || "", dataEntrega: e.dataEntrega || hojeISO(),
+      frete: !!e.frete, valorFrete: e.valorFrete || "", endereco: e.endereco || "", extras: (e.extras || []).map(x => ({ nome: x.nome, valor: x.valor })),
+      custo: e.custo != null ? e.custo : "", sinalPago: !!e.sinalPago, valorSinal: e.valorSinal || "", obs: e.obs || "" };
+  }
+
   function crDiasAte(iso) {
     const [y, m, d] = String(iso).split("-").map(Number);
     const [hy, hm, hd] = hojeEstudo().split("-").map(Number);
@@ -3281,56 +3298,65 @@
   function crPago(e) { return e.paga ? crNum(e.valor) : (e.sinalPago ? crNum(e.valorSinal) : 0); }
 
   function htmlCrEncomendas() {
-    const lista = CR.encomendas.slice().sort((a, b) => String(a.dataEntrega || "").localeCompare(String(b.dataEntrega || "")));
-    const lucro = lista.reduce((a, e) => a + (crNum(e.valor) - crCustoTotal(e)), 0);
-    const aReceber = lista.reduce((a, e) => a + (crNum(e.valor) - crPago(e)), 0);
-    const andamento = lista.filter(e => !e.entregue);
-    const proxima = andamento.filter(e => e.dataEntrega).sort((a, b) => crDiasAte(a.dataEntrega) - crDiasAte(b.dataEntrega))[0];
+    const numOf = e => (e.numero ? "#" + String(e.numero).padStart(3, "0") + " · " : "");
+    const andamento = CR.encomendas.filter(e => !e.entregue).sort((a, b) => {
+      if (!a.dataEntrega && !b.dataEntrega) return 0;
+      if (!a.dataEntrega) return 1;
+      if (!b.dataEntrega) return -1;
+      return String(a.dataEntrega).localeCompare(String(b.dataEntrega));
+    });
+    const finalizados = CR.encomendas.filter(e => e.entregue).sort((a, b) => String(b.dataEntrega || "").localeCompare(String(a.dataEntrega || "")));
+    const lucro = CR.encomendas.reduce((a, e) => a + (crNum(e.valor) - crCustoTotal(e)), 0);
+    const aReceber = CR.encomendas.reduce((a, e) => a + (crNum(e.valor) - crPago(e)), 0);
+    const proxima = andamento.find(e => e.dataEntrega);
     const txtProxima = () => {
       if (!proxima) return "—";
-      const p = crProduto(proxima.produtoId);
       const d = crDiasAte(proxima.dataEntrega);
       const quando = d === 0 ? "hoje" : (d < 0 ? "atrasada" : "faltam " + d + (d === 1 ? " dia" : " dias"));
-      return esc(p ? p.nome : (proxima.descricao || "Encomenda")) + " · " + quando;
+      return numOf(proxima) + esc(crNomeItens(proxima)) + " · " + quando;
     };
-    const f = CR.form && CR.form.kind === "encomenda" ? CR.form : null;
-    const encs = lista.map(e => {
-      const prod = crProduto(e.produtoId);
+    const linha = e => {
       const cli = crCliente(e.clienteId);
       const pagar = crNum(e.valor) - crPago(e);
       const tags = (e.paga ? "<span class='cr-tag pago'>Total pago " + crFmt(e.valor) + "</span>" : "") +
         (!e.paga && e.sinalPago ? "<span class='cr-tag sinal'>Sinal pago " + crFmt(e.valorSinal) + "</span>" : "") +
         (!e.paga && pagar > 0 ? "<span class='cr-tag pagar'>A pagar " + crFmt(pagar) + "</span>" : "");
       return "<div class='es-linha es-info'><span class='es-texto'>" + tags +
-        "<strong>" + esc(prod ? prod.nome : (e.descricao || "Encomenda")) + (e.qtd > 1 ? " × " + e.qtd : "") + "</strong>" +
+        "<strong>" + numOf(e) + esc(crNomeItens(e)) + "</strong>" +
         "<small>" + (cli ? esc(cli.nome) : "") + (e.dataEntrega ? " · entrega " + dataCurta(e.dataEntrega) : "") + (e.frete ? " · com frete" : "") + "</small>" +
         "<small>valor " + crFmt(e.valor) + " · custo " + crFmt(crCustoTotal(e)) + " · lucro " + crFmt(crNum(e.valor) - crCustoTotal(e)) + "</small>" +
         "<div class='es-chips'><button class='chip-acao" + (e.entregue ? " ok" : "") + "' data-acao='cr-entregue' data-id='" + e.id + "'>" + (e.entregue ? "Entregue ✓" : "Entregue") + "</button>" +
         "<button class='chip-acao" + (e.paga ? " ok" : "") + "' data-acao='cr-paga' data-id='" + e.id + "'>" + (e.paga ? "Paga ✓" : "Paga") + "</button></div></span>" +
+        "<button class='excluir' data-acao='cr-enc-edit' data-id='" + e.id + "' aria-label='Editar encomenda'>✎</button>" +
         "<button class='excluir' data-acao='cr-del-enc' data-id='" + e.id + "' aria-label='Excluir encomenda'>×</button></div>";
-    }).join("") || "<p class='vazio'>Nenhuma encomenda ainda.</p>";
+    };
+    const f = CR.form && CR.form.kind === "encomenda" ? CR.form : null;
     return "<div class='fin-cards'>" +
       "<div class='fin-card'><small>Lucro das encomendas</small><strong>" + crFmt(lucro) + "</strong></div>" +
       "<div class='fin-card'><small>A receber</small><strong>" + crFmt(aReceber) + "</strong></div>" +
       "<div class='fin-card'><small>Em andamento</small><strong>" + andamento.length + "</strong></div>" +
       "<div class='fin-card'><small>Próxima entrega</small><strong>" + txtProxima() + "</strong></div></div>" +
       (f ? formCrEncomenda(f) : "") +
-      "<div class='bloco'><h3>Encomendas</h3>" + encs + "</div>";
+      "<div class='bloco'><h3>Em andamento</h3>" + (andamento.map(linha).join("") || "<p class='vazio'>Nenhuma encomenda em andamento.</p>") + "</div>" +
+      "<div class='bloco'><h3>Finalizados</h3>" + (finalizados.map(linha).join("") || "<p class='vazio'>Nenhuma encomenda finalizada ainda.</p>") + "</div>";
   }
 
   function formCrEncomenda(f) {
-    const prod = crProduto(f.produtoId);
-    const valor = (prod ? (Number(prod.preco) || 0) * (Number(f.qtd) || 1) : 0) + (f.frete ? crNum(f.valorFrete) : 0);
+    const valor = crValorItens(f.itens) + (f.frete ? crNum(f.valorFrete) : 0);
+    const itensHtml = f.itens.map((it, i) =>
+      "<div class='ag-linha'><select data-campo='cr-item-prod' data-i='" + i + "'><option value=''>Escolha o produto</option>" +
+        CR.produtos.map(p => "<option value='" + p.id + "'" + (it.produtoId === p.id ? " selected" : "") + ">" + esc(p.nome) + (p.codigo ? " (" + esc(p.codigo) + ")" : "") + "</option>").join("") + "</select>" +
+      "<input type='number' inputmode='numeric' placeholder='Qtd' data-campo='cr-item-qtd' data-i='" + i + "' value='" + it.qtd + "'>" +
+      "<button class='excluir' data-acao='cr-item-del' data-i='" + i + "' aria-label='Remover produto'>×</button></div>").join("");
     const extras = (f.extras || []).map((x, i) =>
       "<div class='ag-linha'><input placeholder='Ex.: embalagem' data-campo='cr-extra-nome' data-i='" + i + "' value='" + esc(x.nome) + "'>" +
       "<input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='cr-extra-valor' data-i='" + i + "' value='" + x.valor + "'>" +
       "<button class='excluir' data-acao='cr-extra-del' data-i='" + i + "' aria-label='Remover'>×</button></div>").join("");
-    return "<div class='ag-form'><h3>Nova encomenda</h3>" +
-      "<label>Produto</label><select data-campo='cr-produto'><option value=''>Sem produto cadastrado</option>" +
-        CR.produtos.map(p => "<option value='" + p.id + "'" + (f.produtoId === p.id ? " selected" : "") + ">" + esc(p.nome) + (p.codigo ? " (" + esc(p.codigo) + ")" : "") + "</option>").join("") + "</select>" +
-      "<div class='ag-linha'><input type='number' inputmode='numeric' placeholder='Quantidade' data-campo='cr-qtd' value='" + f.qtd + "'>" +
-      "<select data-campo='cr-cliente'><option value=''>Sem cliente</option>" +
-        CR.clientes.map(c => "<option value='" + c.id + "'" + (f.clienteId === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select></div>" +
+    return "<div class='ag-form'><h3>" + (f.id ? "Editar encomenda" : "Nova encomenda") + "</h3>" +
+      "<label>Produtos</label>" + itensHtml +
+      "<div class='centro'><button class='secundario' data-acao='cr-item-add'>+ Produto</button></div>" +
+      "<label>Cliente</label><select data-campo='cr-cliente'><option value=''>Sem cliente</option>" +
+        CR.clientes.map(c => "<option value='" + c.id + "'" + (f.clienteId === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>" +
       "<label>Data de entrega</label><input type='date' data-campo='cr-data' value='" + f.dataEntrega + "'>" +
       "<label style='display:flex;gap:6px;align-items:center'><input type='checkbox' data-campo='cr-frete' style='width:auto;margin:0' " + (f.frete ? "checked" : "") + "> Tem frete</label>" +
       (f.frete ? "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor do frete' data-campo='cr-valor-frete' value='" + f.valorFrete + "'>" +
@@ -3346,7 +3372,7 @@
   }
 
   function formCrProduto(f) {
-    return "<div class='ag-form'><h3>Novo produto</h3>" +
+    return "<div class='ag-form'><h3>" + (f.id ? "Editar produto" : "Novo produto") + "</h3>" +
       "<input placeholder='Nome do produto' data-campo='cr-prod-nome' value='" + esc(f.nome) + "'>" +
       "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='cr-prod-preco' value='" + f.preco + "'>" +
       "<input type='number' inputmode='decimal' step='0.01' placeholder='Custo para produzir' data-campo='cr-prod-custo' value='" + f.custo + "'></div>" +
@@ -3370,6 +3396,7 @@
       "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(p.nome) + "</strong>" +
       "<small>Código " + esc(p.codigo || "—") + " · valor " + crFmt(p.preco) + " · custo " + crFmt(p.custo) + (p.tempo ? " · " + p.tempo + " min" : "") + "</small>" +
       ((p.itens && p.itens.length) ? "<small>Itens: " + p.itens.map(esc).join(", ") + "</small>" : "") + "</span>" +
+      "<button class='excluir' data-acao='cr-prod-edit' data-id='" + p.id + "' aria-label='Editar produto'>✎</button>" +
       "<button class='excluir' data-acao='cr-del-prod' data-id='" + p.id + "' aria-label='Excluir produto'>×</button></div>").join("") || "<p class='vazio'>Nenhum produto cadastrado.</p>";
     return (f ? formCrProduto(f) : "") +
       "<div class='bloco'><h3>Produtos</h3>" + lista + "</div>";
@@ -3392,13 +3419,13 @@
     const linhas = compras.map(e => {
       const prod = crProduto(e.produtoId);
       return "<div class='es-linha es-info' data-acao='cr-enc-sel' data-id='" + e.id + "' style='cursor:pointer'><span class='es-texto'><strong>" + (e.dataEntrega ? dataCurta(e.dataEntrega) : "sem data") + "</strong>" +
-        "<small>" + esc(prod ? prod.nome : (e.descricao || "Encomenda")) + "</small></span><strong>" + crFmt(e.valor) + "</strong></div>";
+        "<small>" + esc(crNomeItens(e)) + "</small></span><strong>" + crFmt(e.valor) + "</strong></div>";
     }).join("") || "<p class='vazio'>Nenhuma compra ainda.</p>";
     let detalhe = "";
     if (enc) {
       const prod = crProduto(enc.produtoId);
       detalhe = "<div class='bloco'><h3>Detalhes da encomenda</h3>" +
-        "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(prod ? prod.nome : (enc.descricao || "Encomenda")) + "</strong>" +
+        "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(crNomeItens(enc)) + "</strong>" +
         "<small>Entrega: " + (enc.dataEntrega ? dataCurta(enc.dataEntrega) : "sem data") + "</small>" +
         "<small>Valor: " + crFmt(enc.valor) + " · Custo: " + crFmt(enc.custo) + " · Lucro: " + crFmt(crNum(enc.valor) - crNum(enc.custo)) + "</small>" +
         (enc.obs ? "<small>Observações: " + esc(enc.obs) + "</small>" : "") +
@@ -3414,7 +3441,7 @@
   function htmlCrClientes() {
     if (CR.cliSel) return htmlCrClienteDetalhe();
     const f = CR.form && CR.form.kind === "cliente" ? CR.form : null;
-    const form = f ? "<div class='ag-form'><h3>Novo cliente</h3>" +
+    const form = f ? "<div class='ag-form'><h3>" + (f.id ? "Editar cliente" : "Novo cliente") + "</h3>" +
       "<input placeholder='Nome' data-campo='cr-cli-nome' value='" + esc(f.nome) + "'>" +
       "<input placeholder='WhatsApp / contato' data-campo='cr-cli-tel' value='" + esc(f.telefone) + "'>" +
       "<input placeholder='Instagram (@)' data-campo='cr-cli-insta' value='" + esc(f.instagram) + "'>" +
@@ -3426,6 +3453,7 @@
       return "<div class='es-linha es-info' data-acao='cr-cli-sel' data-id='" + c.id + "' style='cursor:pointer'><span class='es-texto'><strong>" + esc(c.nome) + "</strong>" +
         "<small>" + (c.cidade ? esc(c.cidade) : "") + (c.instagram ? " · @" + esc(String(c.instagram).replace(/^@/, "")) : "") + "</small>" +
         "<small>Última compra: " + (ult ? dataCurta(ult) : "nenhuma ainda") + "</small></span>" +
+        "<button class='excluir' data-acao='cr-cli-edit' data-id='" + c.id + "' aria-label='Editar cliente'>✎</button>" +
         "<button class='excluir' data-acao='cr-del-cli' data-id='" + c.id + "' aria-label='Excluir cliente'>×</button></div>";
     }).join("") || "<p class='vazio'>Nenhum cliente cadastrado.</p>";
     return form + "<div class='bloco'><h3>Clientes</h3>" + lista + "</div>";
@@ -3437,7 +3465,12 @@
       if (!el) return;
       const a = el.dataset.acao;
       if (a === "cr-aba") { CR.aba = el.dataset.v; CR.form = null; renderCrochet(); }
-      else if (a === "cr-novo-enc") { CR.form = { kind: "encomenda", produtoId: "", clienteId: "", qtd: 1, dataEntrega: hojeISO(), frete: false, valorFrete: "", endereco: "", extras: [], custo: "", sinalPago: false, valorSinal: "", obs: "" }; renderCrochet(); }
+      else if (a === "cr-novo-enc") { CR.form = { kind: "encomenda", itens: [{ produtoId: "", qtd: 1 }], clienteId: "", dataEntrega: hojeISO(), frete: false, valorFrete: "", endereco: "", extras: [], custo: "", sinalPago: false, valorSinal: "", obs: "" }; renderCrochet(); }
+      else if (a === "cr-enc-edit") { const x = CR.encomendas.find(y => y.id === el.dataset.id); if (x) { CR.form = formDeEncomenda(x); renderCrochet(); } }
+      else if (a === "cr-prod-edit") { const p = CR.produtos.find(y => y.id === el.dataset.id); if (p) { CR.form = { kind: "produto", id: p.id, nome: p.nome, preco: p.preco || "", custo: p.custo || "", tempo: p.tempo || "", itens: (p.itens || []).join(", ") }; renderCrochet(); } }
+      else if (a === "cr-cli-edit") { const c = CR.clientes.find(y => y.id === el.dataset.id); if (c) { CR.form = { kind: "cliente", id: c.id, nome: c.nome, telefone: c.telefone || "", instagram: c.instagram || "", cidade: c.cidade || "", obs: c.obs || "" }; CR.cliSel = null; renderCrochet(); } }
+      else if (a === "cr-item-add") { CR.form.itens.push({ produtoId: "", qtd: 1 }); renderCrochet(); }
+      else if (a === "cr-item-del") { CR.form.itens.splice(Number(el.dataset.i), 1); renderCrochet(); }
       else if (a === "cr-extra-add") { CR.form.extras.push({ nome: "", valor: "" }); renderCrochet(); }
       else if (a === "cr-extra-del") { CR.form.extras.splice(Number(el.dataset.i), 1); renderCrochet(); }
       else if (a === "cr-novo-prod") { CR.form = { kind: "produto", nome: "", preco: "", custo: "" , tempo: "", itens: ""}; renderCrochet(); }
@@ -3473,14 +3506,13 @@
     const f = CR.form;
     if (!c || !f) return;
     const muda = e.type === "change";
-    if (c === "cr-produto") {
-      f.produtoId = e.target.value;
-      const p = crProduto(f.produtoId);
-      if (p) f.custo = String((Number(p.custo) || 0) * (Number(f.qtd) || 1));
-      if (muda) renderCrochet();
+    if (c === "cr-item-prod" || c === "cr-item-qtd") {
+      const it = f.itens[Number(e.target.dataset.i)];
+      if (c === "cr-item-prod") it.produtoId = e.target.value; else it.qtd = e.target.value;
+      if (muda) { f.custo = String(crCustoItens(f.itens)); renderCrochet(); }
+      return;
     }
     else if (c === "cr-cliente") { f.clienteId = e.target.value; }
-    else if (c === "cr-qtd") { f.qtd = e.target.value; if (muda) renderCrochet(); }
     else if (c === "cr-frete") { f.frete = e.target.checked; renderCrochet(); }
     else if (c === "cr-valor-frete") { f.valorFrete = e.target.value; if (muda) renderCrochet(); }
     else if (c === "cr-endereco") f.endereco = e.target.value;
@@ -3506,35 +3538,58 @@
     if (muda && c === "cr-cliente") renderCrochet();
   }
 
+  function proximoNumeroEncomenda() {
+    return CR.encomendas.reduce((m, e) => Math.max(m, Number(e.numero) || 0), 0) + 1;
+  }
+
   async function salvarCrochet() {
     const f = CR.form;
     if (!f) return;
     try {
       if (f.kind === "encomenda") {
-        if (!f.produtoId) { mostrarErro("Escolha um produto."); return; }
-        const prod = crProduto(f.produtoId);
-        const qtd = Math.max(1, Number(f.qtd) || 1);
-        const valor = (Number(prod.preco) || 0) * qtd + (f.frete ? crNum(f.valorFrete) : 0);
-        const obj = {
-          produtoId: f.produtoId, qtd: qtd, clienteId: f.clienteId || null, dataEntrega: f.dataEntrega || null,
-          frete: !!f.frete, valorFrete: f.frete ? crNum(f.valorFrete) : 0, endereco: f.frete ? ((f.endereco || "").trim() || null) : null,
+        const itens = (f.itens || []).filter(i => i.produtoId).map(i => ({ produtoId: i.produtoId, qtd: Math.max(1, Number(i.qtd) || 1) }));
+        if (!itens.length) { mostrarErro("Adicione pelo menos um produto."); return; }
+        const base = {
+          itens: itens, clienteId: f.clienteId || null, dataEntrega: f.dataEntrega || null,
+          frete: !!f.frete, valorFrete: f.frete ? crNum(f.valorFrete) : 0,
+          endereco: f.frete ? ((f.endereco || "").trim() || null) : null,
           extras: (f.extras || []).filter(x => x.nome || x.valor).map(x => ({ nome: (x.nome || "").trim(), valor: crNum(x.valor) })),
-          custo: crNum(f.custo), valor: valor, sinalPago: !!f.sinalPago, valorSinal: f.sinalPago ? crNum(f.valorSinal) : 0,
-          obs: (f.obs || "").trim() || null, entregue: false, paga: false
+          custo: crNum(f.custo), valor: crValorItens(itens) + (f.frete ? crNum(f.valorFrete) : 0),
+          sinalPago: !!f.sinalPago, valorSinal: f.sinalPago ? crNum(f.valorSinal) : 0, obs: (f.obs || "").trim() || null
         };
-        const ref = await colecao("crochetEncomendas").add(obj);
-        CR.encomendas.push({ id: ref.id, ...obj });
+        if (f.id) {
+          await colecao("crochetEncomendas").doc(f.id).update(base);
+          const x = CR.encomendas.find(y => y.id === f.id);
+          if (x) Object.assign(x, base);
+        } else {
+          const obj = { ...base, numero: proximoNumeroEncomenda(), entregue: false, paga: false };
+          const ref = await colecao("crochetEncomendas").add(obj);
+          CR.encomendas.push({ id: ref.id, ...obj });
+        }
       } else if (f.kind === "produto") {
         if (!f.nome.trim()) { mostrarErro("Dê um nome ao produto."); return; }
         const itens = String(f.itens || "").split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
-        const obj = { codigo: gerarCodigoProduto(f.nome), nome: f.nome.trim(), preco: crNum(f.preco), custo: crNum(f.custo), tempo: Number(f.tempo) || 0, itens: itens };
-        const ref = await colecao("crochetProdutos").add(obj);
-        CR.produtos.push({ id: ref.id, ...obj });
+        if (f.id) {
+          const base = { nome: f.nome.trim(), preco: crNum(f.preco), custo: crNum(f.custo), tempo: Number(f.tempo) || 0, itens: itens };
+          await colecao("crochetProdutos").doc(f.id).update(base);
+          const x = CR.produtos.find(y => y.id === f.id);
+          if (x) Object.assign(x, base);
+        } else {
+          const obj = { codigo: gerarCodigoProduto(f.nome), nome: f.nome.trim(), preco: crNum(f.preco), custo: crNum(f.custo), tempo: Number(f.tempo) || 0, itens: itens };
+          const ref = await colecao("crochetProdutos").add(obj);
+          CR.produtos.push({ id: ref.id, ...obj });
+        }
       } else if (f.kind === "cliente") {
         if (!f.nome.trim()) { mostrarErro("Dê um nome ao cliente."); return; }
-        const obj = { nome: f.nome.trim(), telefone: (f.telefone || "").trim() || null, instagram: (f.instagram || "").trim() || null, cidade: (f.cidade || "").trim() || null, obs: (f.obs || "").trim() || null };
-        const ref = await colecao("crochetClientes").add(obj);
-        CR.clientes.push({ id: ref.id, ...obj });
+        const base = { nome: f.nome.trim(), telefone: (f.telefone || "").trim() || null, instagram: (f.instagram || "").trim() || null, cidade: (f.cidade || "").trim() || null, obs: (f.obs || "").trim() || null };
+        if (f.id) {
+          await colecao("crochetClientes").doc(f.id).update(base);
+          const x = CR.clientes.find(y => y.id === f.id);
+          if (x) Object.assign(x, base);
+        } else {
+          const ref = await colecao("crochetClientes").add(base);
+          CR.clientes.push({ id: ref.id, ...base });
+        }
       }
       CR.form = null;
       renderCrochet();
