@@ -617,6 +617,7 @@
   .rev-topo-pre { background: #FAD2E1; border-left: 4px solid #D81A67; }
   .rev-topo-pre strong { color: #770523; }
   .rev-pre { border: 2px solid #D81A67; }
+  .fin-cols-conta { grid-template-columns: auto 2fr 1.2fr 1fr 1fr 28px !important; }
 </style>
 </head>
 <body>
@@ -1416,7 +1417,7 @@
     const el = document.getElementById("rev-hoje");
     if (!el) return;
     const hoje = hojeEstudo();
-    const doDia = RV.lista.filter(r => (r.dataPrevista === hoje || (r.status === "pendente" && r.dataPrevista < hoje)) && (!r.provaId || revPreAtiva(r, hoje)));
+    const doDia = RV.lista.filter(r => (r.status === "pendente" ? (r.dataPrevista === hoje || r.dataPrevista < hoje) : ((r.dataFeito || r.dataPrevista) === hoje)) && (!r.provaId || revPreAtiva(r, hoje)));
     const feitas = doDia.filter(r => r.status === "feito").length;
     const pend = doDia.filter(r => r.status === "pendente");
     const minutos = pend.reduce((a, r) => a + REV_TIPOS[r.tipo].min, 0);
@@ -2244,7 +2245,7 @@
   }
 
   // ---------- Financeiro ----------
-  const FN = { ano: null, mes: null, lista: [], tipos: [], categorias: [], form: null };
+  const FN = { ano: null, mes: null, lista: [], tipos: [], categorias: [], form: null, delParc: null };
   const TIPOS_LANC = { entrada: "Entrada", variavel: "Gasto variável", conta: "Conta fixa", invest: "Investimento", outro: "Outro gasto" };
   const KIND_GASTO = ["variavel", "conta", "invest", "outro"];
 
@@ -2271,9 +2272,30 @@
       if (ym < inicio) return;
       if (x.recorr.tipo === "fixo" && x.recorr.ate !== "sempre" && ym > x.recorr.ate) return;
       if (x.recorr.tipo === "parcelas" && mesesEntre(inicio, ym) >= x.recorr.total) return;
+      if ((x.excluidas || []).includes(ym)) return;
       out.push({ ...x, dataISO: ym + "-" + x.recorr.inicio.slice(8, 10), ym: ym });
     });
     return out;
+  }
+
+  // Saldo cumulativo: soma o saldo de todos os meses desde o primeiro lançamento até o mês visualizado.
+  function saldoAcumulado(ano, mes) {
+    const alvo = ano + "-" + pad(mes + 1);
+    const meses = FN.lista.map(x => x.dataISO.slice(0, 7)).concat(FN.lista.filter(x => x.recorr).map(x => x.recorr.inicio.slice(0, 7)));
+    if (!meses.length) return 0;
+    const inicio = meses.reduce((a, b) => (b < a ? b : a));
+    let y = Number(inicio.slice(0, 4)), m = Number(inicio.slice(5, 7));
+    let cur = y + "-" + pad(m);
+    let total = 0, guarda = 0;
+    while (cur <= alvo && guarda < 1200) {
+      const lista = lancamentosDoMes(y, m - 1);
+      const soma = t => lista.filter(x => x.tipo === t).reduce((a, x) => a + valorExibido(x), 0);
+      total += soma("entrada") - soma("conta") - soma("variavel") - soma("outro") - soma("invest");
+      m++; if (m > 12) { m = 1; y++; }
+      cur = y + "-" + pad(m);
+      guarda++;
+    }
+    return total;
   }
 
   function parcelaTexto(x, ym) {
@@ -2301,21 +2323,22 @@
     const lista = lancamentosDoMes(FN.ano, FN.mes);
     const soma = t => lista.filter(x => x.tipo === t).reduce((a, x) => a + valorExibido(x), 0);
     const entradas = soma("entrada"), contas = soma("conta"), variaveis = soma("variavel"), invest = soma("invest"), outros = soma("outro");
-    const gastos = variaveis + outros;
-    const saldo = entradas - contas - gastos - invest;
+    const gastos = variaveis + outros + invest;
+    const saldo = saldoAcumulado(FN.ano, FN.mes);
     const fmt = v => "R$ " + Number(v).toFixed(2).replace(".", ",");
     const dc = d => d.slice(8, 10) + "/" + d.slice(5, 7);
-    const del = x => "<button class='excluir' data-acao='fin-del' data-id='" + x.id + "' aria-label='Excluir'>×</button>";
+    const del = x => "<button class='excluir' data-acao='fin-del' data-id='" + x.id + "' data-ym='" + ym + "' aria-label='Excluir'>×</button>";
+    const delCard = FN.delParc ? "<div class='ag-form'><h3>Excluir parcela</h3><p class='vazio' style='text-align:left'>Quer apagar só esta parcela ou todas as parcelas deste gasto?</p><div class='centro'><button class='secundario' data-acao='fin-del-cancel'>Cancelar</button><button class='secundario' data-acao='fin-del-so'>Só esta parcela</button><button class='grande' data-acao='fin-del-todas'>Todas as parcelas</button></div></div>" : "";
     const cabs = {
-      conta: ["Paga", "Conta", "Valor", "Vencimento", ""],
+      conta: ["Paga", "Conta", "Categoria", "Valor", "Vencimento", ""],
       variavel: ["Data", "Descrição", "Categoria", "Valor", ""],
       entrada: ["Data", "Descrição", "Categoria", "Valor", ""],
-      invest: ["Data", "Descrição", "Valor", ""],
+      invest: ["Data", "Descrição", "Categoria", "Valor", ""],
       outro: ["Data", "Descrição", "Categoria", "Valor", ""]
     };
 
     const secao = (titulo, tipo, total) => {
-      const cls = tipo === "conta" ? "fin-cols-conta" : (["variavel", "entrada", "outro"].includes(tipo) ? "fin-cols-variavel" : "fin-cols-simple");
+      const cls = tipo === "conta" ? "fin-cols-conta" : (["variavel", "entrada", "outro", "invest"].includes(tipo) ? "fin-cols-variavel" : "fin-cols-simple");
       const cab = "<div class='fin-linha fin-cab " + cls + "'>" + cabs[tipo].map(t => "<span>" + t + "</span>").join("") + "</div>";
       const linhas = lista.filter(x => x.tipo === tipo).sort((a, b) => a.dataISO.localeCompare(b.dataISO)).map(x => {
         const cat = FN.categorias.find(c => c.id === x.categoria);
@@ -2324,9 +2347,10 @@
           return "<div class='fin-linha fin-cols-conta'>" +
             "<button class='bolinha" + (pago ? " feita" : "") + "' data-acao='fin-pago' data-id='" + x.id + "' data-ym='" + ym + "' aria-label='Marcar como paga'>" + (pago ? ICONE_CHECK : "") + "</button>" +
             "<span class='fin-desc'>" + esc(x.descricao) + " <small>" + parcelaTexto(x, ym) + "</small></span>" +
+            "<span class='fin-cat' style='color:" + (cat ? cat.cor : "#6B6259") + "'>" + (cat ? esc(cat.nome) : "—") + "</span>" +
             "<span>" + fmt(valorExibido(x)) + "</span><span>" + dc(x.dataISO) + "</span>" + del(x) + "</div>";
         }
-        if (["variavel", "entrada", "outro"].includes(tipo)) {
+        if (["variavel", "entrada", "outro", "invest"].includes(tipo)) {
           return "<div class='fin-linha fin-cols-variavel'><span>" + dc(x.dataISO) + "</span>" +
             "<span class='fin-desc'>" + esc(x.descricao) + " <small>" + parcelaTexto(x, ym) + "</small></span>" +
             "<span class='fin-cat' style='color:" + (cat ? cat.cor : "#6B6259") + "'>" + (cat ? esc(cat.nome) : "—") + "</span>" +
@@ -2363,7 +2387,7 @@
         off += len;
         return arco;
       }).join("");
-      donut = "<div style='display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center'><svg viewBox='0 0 120 120' width='120' height='120'>" + arcos + "</svg><div style='font-size:0.8rem'>" +
+      donut = "<div style='display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center'><svg viewBox='0 0 120 120' width='200' height='200'>" + arcos + "</svg><div style='font-size:0.8rem'>" +
         donutDados.map(d => "<div><span style='color:" + d.c.cor + "'>●</span> " + esc(d.c.nome) + " " + Math.round(d.v / totalDonut * 100) + "%</div>").join("") + "</div></div>";
     }
 
@@ -2375,7 +2399,7 @@
         "<input placeholder='Descrição' data-campo='f-desc' value='" + esc(f.descricao) + "'>" +
         "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='f-valor' value='" + f.valor + "'>" +
         "<input type='date' data-campo='f-data' value='" + f.dataISO + "'></div>" +
-        (f.tipo === "invest" ? "" : "<label>Categoria</label><select data-campo='f-cat'><option value=''>Sem categoria</option>" + cats.map(c => "<option value='" + c.id + "'" + (f.categoria === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>") +
+        ("<label>Categoria</label><select data-campo='f-cat'><option value=''>Sem categoria</option>" + cats.map(c => "<option value='" + c.id + "'" + (f.categoria === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>") +
         "<label>Repetir</label><select data-campo='f-rep'>" +
           "<option value='nao'" + (f.rep === "nao" ? " selected" : "") + ">Não repete</option>" +
           "<option value='fixo'" + (f.rep === "fixo" ? " selected" : "") + ">Fixo (todo mês)</option>" +
@@ -2399,8 +2423,8 @@
         "<div class='fin-card'><small>Entradas</small><strong>" + fmt(entradas) + "</strong></div>" +
         "<div class='fin-card'><small>Gastos</small><strong>" + fmt(gastos) + "</strong></div>" +
         "<div class='fin-card'><small>Contas fixas</small><strong>" + fmt(contas) + "</strong></div>" +
-        "<div class='fin-card saldo'><small>Saldo disponível</small><strong>" + fmt(saldo) + "</strong></div></div>" +
-      form +
+        "<div class='fin-card saldo'><small>Saldo acumulado</small><strong>" + fmt(saldo) + "</strong></div></div>" +
+      delCard + form +
       "<div class='fin-grade'>" +
         secao("Entradas", "entrada", entradas) +
         secao("Contas e vencimentos", "conta", contas) +
@@ -2443,9 +2467,27 @@
         await colecao("financas").doc(x.id).update({ ["pagos." + ym]: x.pagos[ym] });
       }
       else if (a === "fin-del") {
+        const x = FN.lista.find(y => y.id === el.dataset.id);
+        if (x && x.recorr && x.recorr.tipo === "parcelas") { FN.delParc = { id: x.id, ym: el.dataset.ym }; renderFinanceiro(); return; }
         if (!(await confirmar("Excluir este lançamento? Se ele se repete, todos os meses serão removidos."))) return;
         await colecao("financas").doc(el.dataset.id).delete();
         FN.lista = FN.lista.filter(x => x.id !== el.dataset.id);
+        renderFinanceiro();
+      }
+      else if (a === "fin-del-cancel") { FN.delParc = null; renderFinanceiro(); }
+      else if (a === "fin-del-so") {
+        const x = FN.lista.find(y => y.id === FN.delParc.id);
+        if (x) {
+          x.excluidas = (x.excluidas || []).concat([FN.delParc.ym]);
+          await colecao("financas").doc(x.id).update({ excluidas: x.excluidas });
+        }
+        FN.delParc = null;
+        renderFinanceiro();
+      }
+      else if (a === "fin-del-todas") {
+        await colecao("financas").doc(FN.delParc.id).delete();
+        FN.lista = FN.lista.filter(x => x.id !== FN.delParc.id);
+        FN.delParc = null;
         renderFinanceiro();
       }
       else if (a === "fin-tipo-del") {
@@ -3016,7 +3058,7 @@
     if (!RV.revDia) RV.revDia = hojeEstudo();
     const dia = RV.revDia;
     const hoje = hojeEstudo();
-    const doDia = RV.lista.filter(r => (r.dataPrevista === dia || (dia === hoje && r.status === "pendente" && r.dataPrevista < hoje)) && (!r.provaId || revPreAtiva(r, dia)));
+    const doDia = RV.lista.filter(r => (r.status === "pendente" ? (r.dataPrevista === dia || (dia === hoje && r.dataPrevista < hoje)) : ((r.dataFeito || r.dataPrevista) === dia)) && (!r.provaId || revPreAtiva(r, dia)));
     const doDiaNormal = doDia.filter(r => !r.provaId);
     const doDiaPre = doDia.filter(r => !!r.provaId);
     const pend = doDia.filter(r => r.status === "pendente");
@@ -3122,7 +3164,8 @@
     if (!r) return;
     if (r.status === "feito") {
       r.status = "pendente";
-      await colecao("revisoes").doc(id).update({ status: "pendente" });
+      r.dataFeito = null;
+      await colecao("revisoes").doc(id).update({ status: "pendente", dataFeito: null });
     } else {
       r.status = "feito";
       r.dataFeito = hojeEstudo();
