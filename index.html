@@ -490,6 +490,30 @@
   .ponto i { display: block; width: 10px; height: 10px; border-radius: 50%; background: #D6D3CE; }
   .ponto.ativo { color: #2B2420; font-weight: 700; }
   .ponto.ativo i { background: var(--burgundy); }
+
+  .lb-linha .bolinha, .ne-item .bolinha { width: 22px !important; height: 22px !important; border-radius: 50%; padding: 0; min-width: 0; flex-shrink: 0; }
+  .lb-linha .bolinha svg, .ne-item .bolinha svg { width: 12px; height: 12px; }
+  .hab-texto { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; flex: 1; }
+  .hab-desc { font-size: 0.72rem; color: #6B6259; font-weight: 400; }
+  .fin-linha { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #EFECE6; font-size: 0.85rem; flex-wrap: wrap; }
+  .fin-linha .fin-desc { flex: 1; min-width: 100px; }
+  .fin-linha .excluir { width: auto; padding: 0.2rem 0.55rem; }
+  .fin-cat { font-size: 0.75rem; font-weight: 600; }
+  .fin-total { display: flex; justify-content: space-between; font-weight: 700; padding-top: 8px; font-size: 0.9rem; }
+  .fin-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .fin-card { border: 1px solid #E7E5E4; border-radius: 14px; padding: 10px; background: #FFFFFF; }
+  .fin-card small { display: block; color: #6B6259; font-size: 0.72rem; }
+  .fin-card strong { font-size: 0.95rem; }
+  .fin-card.saldo { border: 2px solid #D0D996; }
+  .fin-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fin-grade > .bloco { margin-bottom: 0; }
+  .add-bordo-sm { width: 30px !important; height: 30px; border-radius: 50%; padding: 0; background: var(--burgundy); color: #FFFFFF; font-size: 18px; border: none; display: flex; align-items: center; justify-content: center; }
+  .cat-linha { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #EFECE6; font-size: 0.85rem; }
+  .cat-linha .swatch { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .cat-linha span:nth-child(2) { flex: 1; }
+  .tipo-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #D6D3CE; border-radius: 999px; padding: 4px 10px; font-size: 0.8rem; margin: 3px; }
+  .tipo-chip button { width: auto; padding: 0 4px; background: none; border: none; color: #6B6259; }
+  @media (max-width: 719px) { .fin-grade { grid-template-columns: 1fr; } .fin-cards { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
@@ -745,6 +769,14 @@
       md.onchange = tratarEntradaGeral;
       renderMeuDia();
       Promise.all([carregarNaoEsquecer(), carregarCaixa()]).then(() => renderMeuDia());
+    } else if (secao.id === "financeiro") {
+      main.innerHTML = voltar + "<div id='financeiro'></div>";
+      const fi = document.getElementById("financeiro");
+      fi.onclick = tratarCliqueFin;
+      fi.oninput = tratarEntradaFin;
+      fi.onchange = tratarEntradaFin;
+      renderFinanceiro();
+      carregarFinanceiro().then(renderFinanceiro);
     } else if (secao.id === "lembretes") {
       main.innerHTML = voltar + "<div id='lembretes'></div>";
       const lb = document.getElementById("lembretes");
@@ -1032,7 +1064,8 @@
   }
 
   function renderAtual() {
-    if (secaoAtual === "lembretes") renderLembretes();
+    if (secaoAtual === "financeiro") renderFinanceiro();
+    else if (secaoAtual === "lembretes") renderLembretes();
     else if (secaoAtual === "bora") renderMeuDia();
     else if (secaoAtual === "pessoal") renderHabitTracker();
     else renderGeral();
@@ -1102,7 +1135,7 @@
       const icone = hb.icone && ICONES_HABITO[hb.icone] ? ICONES_HABITO[hb.icone] : "";
       return "<div class='hab-barra'>" +
         "<div class='hab-barra-topo'><span class='hab-icone' style='color:" + cor + "'>" + icone + "</span>" +
-          "<span class='hab-nome'>" + esc(hb.nome) + "</span>" +
+          "<span class='hab-nome'>" + esc(hb.nome) + "</span>" + (hb.desc ? "<span class='hab-desc'>" + esc(hb.desc) + "</span>" : "") +
           "<span class='hab-num'>" + atual + "/" + meta + " " + seta + "</span>" +
           (H.adicionando ? "<button class='excluir' data-acao='habito-del' data-id='" + hb.id + "' aria-label='Excluir hábito'>×</button>" : "") +
         "</div>" +
@@ -1118,7 +1151,7 @@
         "<strong>" + capitalizar(MESES[HT.mes]) + " de " + HT.ano + "</strong>" +
         "<button class='icone' data-acao='tr-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
       (k ? "<svg viewBox='0 0 380 380' width='100%' style='max-width:380px;display:block;margin:4px auto'>" + fatias + rotulos + "</svg>" +
-           "<p class='ht-resumo'>Semana atual x anterior: <strong>" + totalAtual + "</strong> de " + totalMeta + " cumpridos · semana passada: " + totalAnt + "</p>" +
+           "<p class='ht-resumo'>Semana atual x anterior</p>" +
            "<div class='hab-lista'>" + barras + "</div>"
          : "<p class='vazio'>Nenhum hábito cadastrado ainda. Toque no lápis para adicionar.</p>") +
       (H.adicionando ? htmlNovoHabito() : "") +
@@ -1231,7 +1264,7 @@
           (feito ? "background:" + cor + ";border-color:" + cor + ";color:" + textoSobre(cor) : "border-color:" + cor) +
           "' aria-label='Marcar hábito'>" + (feito ? ICONE_CHECK : "") + "</button>" +
           (hb.icone && ICONES_HABITO[hb.icone] ? "<span class='hab-icone' style='color:" + (hb.cor || "#770523") + "'>" + ICONES_HABITO[hb.icone] + "</span>" : "") +
-          "<span class='" + (feito ? "riscado" : "") + "'>" + esc(hb.nome) + "</span>" + (hb.desc ? "<span class='hab-desc'>" + esc(hb.desc) + "</span>" : "") +
+          "<span class='hab-texto'><span class='" + (feito ? "riscado" : "") + "'>" + esc(hb.nome) + "</span>" + (hb.desc ? "<span class='hab-desc'>" + esc(hb.desc) + "</span>" : "") + "</span>" +
 
         "</div>";
       }).join("") : "<p class='vazio'>Nenhum hábito cadastrado ainda.</p>") +
@@ -2020,6 +2053,244 @@
     } catch (err) { if (st) st.textContent = "Erro ao salvar: " + err.message; }
   }
 
+  // ---------- Financeiro ----------
+  const FN = { ano: null, mes: null, lista: [], tipos: [], categorias: [], form: null };
+  const TIPOS_LANC = { entrada: "Entrada", variavel: "Gasto variável", conta: "Conta fixa", invest: "Investimento", outro: "Outro gasto" };
+  const KIND_GASTO = ["variavel", "conta", "invest", "outro"];
+
+  async function carregarFinanceiro() {
+    try {
+      const [a, t, c] = await Promise.all([colecao("financas").get(), colecao("tiposFin").get(), colecao("categoriasFin").get()]);
+      FN.lista = a.docs.map(d => ({ id: d.id, ...d.data() }));
+      FN.tipos = t.docs.map(d => ({ id: d.id, ...d.data() }));
+      FN.categorias = c.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) { mostrarErro(e.message); }
+  }
+
+  function mesesEntre(a, b) {
+    const [ay, am] = a.split("-").map(Number), [by, bm] = b.split("-").map(Number);
+    return (by - ay) * 12 + (bm - am);
+  }
+
+  function lancamentosDoMes(ano, mes) {
+    const ym = ano + "-" + pad(mes + 1);
+    const out = [];
+    FN.lista.forEach(x => {
+      if (!x.recorr) { if (x.dataISO.slice(0, 7) === ym) out.push(x); return; }
+      const inicio = x.recorr.inicio.slice(0, 7);
+      if (ym < inicio) return;
+      if (x.recorr.tipo === "fixo" && x.recorr.ate !== "sempre" && ym > x.recorr.ate) return;
+      if (x.recorr.tipo === "parcelas" && mesesEntre(inicio, ym) >= x.recorr.total) return;
+      out.push({ ...x, dataISO: ym + "-" + x.recorr.inicio.slice(8, 10), ym: ym });
+    });
+    return out;
+  }
+
+  function parcelaTexto(x, ym) {
+    if (!x.recorr) return "";
+    if (x.recorr.tipo === "fixo") return "(fixo)";
+    return "(" + (mesesEntre(x.recorr.inicio.slice(0, 7), ym) + 1) + "/" + x.recorr.total + ")";
+  }
+
+  function dataPadraoFN() {
+    const h = new Date();
+    if (h.getFullYear() === FN.ano && h.getMonth() === FN.mes) return hojeISO();
+    return FN.ano + "-" + pad(FN.mes + 1) + "-01";
+  }
+
+  function renderFinanceiro() {
+    const el = document.getElementById("financeiro");
+    if (!el) return;
+    if (FN.ano === null) { const h = new Date(); FN.ano = h.getFullYear(); FN.mes = h.getMonth(); }
+    const ym = FN.ano + "-" + pad(FN.mes + 1);
+    const lista = lancamentosDoMes(FN.ano, FN.mes);
+    const soma = t => lista.filter(x => x.tipo === t).reduce((a, x) => a + Number(x.valor || 0), 0);
+    const entradas = soma("entrada"), contas = soma("conta"), variaveis = soma("variavel"), invest = soma("invest"), outros = soma("outro");
+    const gastos = variaveis + outros + invest;
+    const saldo = entradas - contas - gastos;
+    const fmt = v => "R$ " + Number(v).toFixed(2).replace(".", ",");
+    const dataCurtaFin = d => d.slice(8, 10) + "/" + d.slice(5, 7);
+
+    const secao = (titulo, tipo, total) => {
+      const linhas = lista.filter(x => x.tipo === tipo).sort((a, b) => a.dataISO.localeCompare(b.dataISO)).map(x => {
+        const cat = FN.categorias.find(c => c.id === x.categoria);
+        const pago = x.pagos && x.pagos[ym];
+        return "<div class='fin-linha'>" +
+          (tipo === "conta" ? "<button class='bolinha" + (pago ? " feita" : "") + "' data-acao='fin-pago' data-id='" + x.id + "' data-ym='" + ym + "' aria-label='Marcar como paga'>" + (pago ? ICONE_CHECK : "") + "</button>" : "") +
+          "<span>" + dataCurtaFin(x.dataISO) + "</span>" +
+          "<span class='fin-desc'>" + esc(x.descricao) + " <small>" + parcelaTexto(x, ym) + "</small></span>" +
+          (cat ? "<span class='fin-cat' style='color:" + cat.cor + "'>" + esc(cat.nome) + "</span>" : "") +
+          "<span>" + fmt(x.valor) + "</span>" +
+          "<button class='excluir' data-acao='fin-del' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>";
+      }).join("");
+      return "<div class='bloco'><div class='habitos-topo'><h3>" + titulo + "</h3>" +
+        "<button class='add-bordo-sm' data-acao='fin-add' data-tipo='" + tipo + "' aria-label='Adicionar'>+</button></div>" +
+        (linhas || "<p class='vazio'>Nenhum lançamento.</p>") +
+        "<div class='fin-total'><span>Total</span><span>" + fmt(total) + "</span></div></div>";
+    };
+
+    const cats = FN.categorias.map(c => {
+      const kind = c.kind === "ganho" ? "entrada" : null;
+      const total = lista.filter(x => c.kind === "ganho" ? x.tipo === "entrada" && x.categoria === c.id : (KIND_GASTO.includes(x.tipo) && x.categoria === c.id)).reduce((a, x) => a + Number(x.valor || 0), 0);
+      return "<div class='cat-linha'><span class='swatch' style='background:" + c.cor + "'></span><span>" + esc(c.nome) + (c.kind === "ganho" ? " (recebido)" : " (gasto)") + "</span><strong>" + fmt(total) + "</strong></div>";
+    }).join("") || "<p class='vazio'>Nenhuma categoria.</p>";
+
+    const tipos = FN.tipos.map(t => "<span class='tipo-chip'>" + esc(t.nome) + " <small>" + (t.kind === "ganho" ? "ganho" : "gasto") + "</small><button data-acao='fin-tipo-del' data-id='" + t.id + "' aria-label='Excluir'>×</button></span>").join("") || "<p class='vazio'>Nenhum tipo cadastrado.</p>";
+
+    const donutDados = FN.categorias.filter(c => c.kind !== "ganho").map(c => ({ c, v: lista.filter(x => KIND_GASTO.includes(x.tipo) && x.categoria === c.id).reduce((a, x) => a + Number(x.valor || 0), 0) })).filter(d => d.v > 0);
+    const totalDonut = donutDados.reduce((a, d) => a + d.v, 0);
+    let donut = "<p class='vazio'>Sem gastos categorizados.</p>";
+    if (totalDonut > 0) {
+      const C = 2 * Math.PI * 40;
+      let off = 0;
+      const arcos = donutDados.map(d => {
+        const len = d.v / totalDonut * C;
+        const arco = "<circle cx='60' cy='60' r='40' fill='none' stroke='" + d.c.cor + "' stroke-width='18' stroke-dasharray='" + len + " " + C + "' stroke-dashoffset='" + (-off) + "' transform='rotate(-90 60 60)'/>";
+        off += len;
+        return arco;
+      }).join("");
+      donut = "<div style='display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center'><svg viewBox='0 0 120 120' width='120' height='120'>" + arcos + "</svg><div style='font-size:0.8rem'>" +
+        donutDados.map(d => "<div><span style='color:" + d.c.cor + "'>●</span> " + esc(d.c.nome) + " " + Math.round(d.v / totalDonut * 100) + "%</div>").join("") + "</div></div>";
+    }
+
+    let form = "";
+    const f = FN.form;
+    if (f && f.kind === "lanc") {
+      const cats = FN.categorias.filter(c => f.tipo === "entrada" ? c.kind === "ganho" : c.kind !== "ganho");
+      const tipos = FN.tipos.filter(t => f.tipo === "entrada" ? t.kind === "ganho" : t.kind !== "ganho");
+      form = "<div class='ag-form'><h3>Novo: " + TIPOS_LANC[f.tipo] + "</h3>" +
+        "<input placeholder='Descrição' data-campo='f-desc' value='" + esc(f.descricao) + "'>" +
+        "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='f-valor' value='" + f.valor + "'>" +
+        "<input type='date' data-campo='f-data' value='" + f.dataISO + "'></div>" +
+        "<label>Categoria</label><select data-campo='f-cat'><option value=''>Sem categoria</option>" + cats.map(c => "<option value='" + c.id + "'" + (f.categoria === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>" +
+        "<label>Tipo</label><select data-campo='f-tipo'><option value=''>Sem tipo</option>" + tipos.map(t => "<option value='" + t.id + "'" + (f.tipoId === t.id ? " selected" : "") + ">" + esc(t.nome) + "</option>").join("") + "</select>" +
+        "<label>Repetir</label><select data-campo='f-rep'>" +
+          "<option value='nao'" + (f.rep === "nao" ? " selected" : "") + ">Não repete</option>" +
+          "<option value='fixo'" + (f.rep === "fixo" ? " selected" : "") + ">Fixo (todo mês)</option>" +
+          "<option value='parcelas'" + (f.rep === "parcelas" ? " selected" : "") + ">Parcelado</option></select>" +
+        (f.rep === "fixo" ? "<label style='display:flex;gap:6px;align-items:center'><input type='checkbox' data-campo='f-sempre' style='width:auto;margin:0' " + (f.sempre ? "checked" : "") + ">Repetir para sempre</label>" +
+          (f.sempre ? "" : "<label>Repetir até</label><input type='month' data-campo='f-ate' value='" + f.ate + "'>") : "") +
+        (f.rep === "parcelas" ? "<input type='number' inputmode='numeric' placeholder='Número de parcelas' data-campo='f-parc' value='" + f.parc + "'>" : "") +
+        "<div class='centro'><button class='secundario' data-acao='fin-cancelar'>Cancelar</button><button class='grande' data-acao='fin-salvar'>Salvar</button></div></div>";
+    } else if (f && f.kind === "cat") {
+      form = "<div class='ag-form'><h3>Nova categoria</h3><input placeholder='Nome' data-campo='c-nome' value='" + esc(f.nome) + "'>" +
+        "<label>Tipo</label><select data-campo='c-kind'><option value='gasto'" + (f.kindC === "gasto" ? " selected" : "") + ">Gasto</option><option value='ganho'" + (f.kindC === "ganho" ? " selected" : "") + ">Ganho</option></select>" +
+        "<label>Cor</label><input type='color' data-campo='c-cor' value='" + f.cor + "' style='height:44px'>" +
+        "<div class='centro'><button class='secundario' data-acao='fin-cancelar'>Cancelar</button><button class='grande' data-acao='fin-salvar'>Salvar</button></div></div>";
+    } else if (f && f.kind === "tipo") {
+      form = "<div class='ag-form'><h3>Novo tipo</h3><input placeholder='Nome do tipo' data-campo='t-nome' value='" + esc(f.nome) + "'>" +
+        "<label>Tipo</label><select data-campo='t-kind'><option value='gasto'" + (f.kindT === "gasto" ? " selected" : "") + ">Gasto</option><option value='ganho'" + (f.kindT === "ganho" ? " selected" : "") + ">Ganho</option></select>" +
+        "<div class='centro'><button class='secundario' data-acao='fin-cancelar'>Cancelar</button><button class='grande' data-acao='fin-salvar'>Salvar</button></div></div>";
+    }
+
+    el.innerHTML = "<div class='nav'><button class='icone' data-acao='fin-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
+      "<strong>" + capitalizar(MESES[FN.mes]) + " de " + FN.ano + "</strong>" +
+      "<button class='icone' data-acao='fin-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
+      "<div class='fin-cards'>" +
+        "<div class='fin-card'><small>Entradas</small><strong>" + fmt(entradas) + "</strong></div>" +
+        "<div class='fin-card'><small>Gastos</small><strong>" + fmt(gastos) + "</strong></div>" +
+        "<div class='fin-card'><small>Contas fixas</small><strong>" + fmt(contas) + "</strong></div>" +
+        "<div class='fin-card saldo'><small>Saldo disponível</small><strong>" + fmt(saldo) + "</strong></div></div>" +
+      form +
+      "<div class='fin-grade'>" +
+        secao("Entradas", "entrada", entradas) +
+        secao("Contas e vencimentos", "conta", contas) +
+        secao("Gastos variáveis", "variavel", variaveis) +
+        secao("Investimentos e reservas", "invest", invest) +
+        secao("Outros gastos", "outro", outros) +
+        "<div class='bloco'><div class='habitos-topo'><h3>Categorias</h3><button class='add-bordo-sm' data-acao='fin-add-cat' aria-label='Nova categoria'>+</button></div>" + cats + "</div>" +
+        "<div class='bloco'><div class='habitos-topo'><h3>Tipos de gasto e ganho</h3><button class='add-bordo-sm' data-acao='fin-add-tipo' aria-label='Novo tipo'>+</button></div>" + tipos + "</div>" +
+        "<div class='bloco'><h3>Como está meu dinheiro</h3>" + donut + "</div>" +
+      "</div>";
+  }
+
+  function htmlFinForm() { return ""; }
+
+  async function tratarCliqueFin(e) {
+    try {
+      const el = e.target.closest("[data-acao]");
+      if (!el) return;
+      const a = el.dataset.acao;
+      if (a === "fin-nav") { const m = FN.mes + Number(el.dataset.d); FN.ano += Math.floor(m / 12); FN.mes = ((m % 12) + 12) % 12; FN.form = null; renderFinanceiro(); }
+      else if (a === "fin-add") { FN.form = { kind: "lanc", tipo: el.dataset.tipo, descricao: "", valor: "", dataISO: dataPadraoFN(), categoria: "", tipoId: "", rep: "nao", sempre: false, ate: "", parc: "" }; renderFinanceiro(); }
+      else if (a === "fin-add-cat") { FN.form = { kind: "cat", nome: "", kindC: "gasto", cor: "#770523" }; renderFinanceiro(); }
+      else if (a === "fin-add-tipo") { FN.form = { kind: "tipo", nome: "", kindT: "gasto" }; renderFinanceiro(); }
+      else if (a === "fin-cancelar") { FN.form = null; renderFinanceiro(); }
+      else if (a === "fin-salvar") await salvarFinanceiro();
+      else if (a === "fin-pago") {
+        const x = FN.lista.find(y => y.id === el.dataset.id);
+        if (!x) return;
+        x.pagos = x.pagos || {};
+        const ym = el.dataset.ym;
+        x.pagos[ym] = !x.pagos[ym];
+        renderFinanceiro();
+        await colecao("financas").doc(x.id).update({ ["pagos." + ym]: x.pagos[ym] });
+      }
+      else if (a === "fin-del") {
+        if (!(await confirmar("Excluir este lançamento? Se ele se repete, todos os meses serão removidos."))) return;
+        await colecao("financas").doc(el.dataset.id).delete();
+        FN.lista = FN.lista.filter(x => x.id !== el.dataset.id);
+        renderFinanceiro();
+      }
+      else if (a === "fin-tipo-del") {
+        if (!(await confirmar("Excluir este tipo?"))) return;
+        await colecao("tiposFin").doc(el.dataset.id).delete();
+        FN.tipos = FN.tipos.filter(t => t.id !== el.dataset.id);
+        renderFinanceiro();
+      }
+    } catch (err) { mostrarErro(err.message); }
+  }
+
+  function tratarEntradaFin(e) {
+    const d = e.target.dataset;
+    const f = FN.form;
+    if (!f || !d.campo) return;
+    const mudaForm = e.type === "change";
+    if (d.campo === "f-desc") f.descricao = e.target.value;
+    else if (d.campo === "f-valor") f.valor = e.target.value;
+    else if (d.campo === "f-data") f.dataISO = e.target.value;
+    else if (d.campo === "f-cat") f.categoria = e.target.value;
+    else if (d.campo === "f-tipo") f.tipoId = e.target.value;
+    else if (d.campo === "f-parc") f.parc = e.target.value;
+    else if (d.campo === "f-ate") f.ate = e.target.value;
+    else if (d.campo === "f-rep" && mudaForm) { f.rep = e.target.value; renderFinanceiro(); }
+    else if (d.campo === "f-sempre" && mudaForm) { f.sempre = e.target.checked; renderFinanceiro(); }
+    else if (d.campo === "c-nome") f.nome = e.target.value;
+    else if (d.campo === "c-kind" && mudaForm) f.kindC = e.target.value;
+    else if (d.campo === "c-cor") f.cor = e.target.value;
+    else if (d.campo === "t-nome") f.nome = e.target.value;
+    else if (d.campo === "t-kind" && mudaForm) f.kindT = e.target.value;
+  }
+
+  async function salvarFinanceiro() {
+    const f = FN.form;
+    const st = document.getElementById("ag-status");
+    try {
+      if (f.kind === "lanc") {
+        const valor = Number(String(f.valor).replace(",", "."));
+        if (!valor || valor <= 0) { mostrarErro("Digite um valor maior que zero."); return; }
+        if (!f.dataISO) { mostrarErro("Escolha a data."); return; }
+        const obj = { tipo: f.tipo, descricao: (f.descricao || "").trim(), valor: valor, dataISO: f.dataISO, categoria: f.categoria || null, tipoId: f.tipoId || null, pagos: {} };
+        if (f.rep === "fixo") obj.recorr = { tipo: "fixo", inicio: f.dataISO, ate: f.sempre ? "sempre" : (f.ate || "sempre") };
+        if (f.rep === "parcelas") obj.recorr = { tipo: "parcelas", inicio: f.dataISO, total: Math.max(1, Number(f.parc) || 1) };
+        const ref = await colecao("financas").add(obj);
+        FN.lista.push({ id: ref.id, ...obj });
+      } else if (f.kind === "cat") {
+        if (!f.nome.trim()) { mostrarErro("Dê um nome à categoria."); return; }
+        const obj = { nome: f.nome.trim(), kind: f.kindC, cor: f.cor };
+        const ref = await colecao("categoriasFin").add(obj);
+        FN.categorias.push({ id: ref.id, ...obj });
+      } else if (f.kind === "tipo") {
+        if (!f.nome.trim()) { mostrarErro("Dê um nome ao tipo."); return; }
+        const obj = { nome: f.nome.trim(), kind: f.kindT };
+        const ref = await colecao("tiposFin").add(obj);
+        FN.tipos.push({ id: ref.id, ...obj });
+      }
+      FN.form = null;
+      renderFinanceiro();
+    } catch (err) { mostrarErro(err.message); }
+  }
+
   // ---------- lembretes de compromissos ----------
   const AVISADOS = new Set();
 
@@ -2321,6 +2592,10 @@
     return "<div class='calendario'>" + grade + "</div>";
   }
 
+  function SESSOES_ANO(ano) {
+    return T.sessoes.filter(x => String(x.dataISO || "").startsWith(String(ano))).length;
+  }
+
   function htmlAbaHistorico() {
     const agora = new Date();
     const ref = somar(hojeISO(), T.offsetSemana * 7);
@@ -2340,16 +2615,10 @@
     h += "<section class='bloco'><h3>Mês</h3>" + navegacao(capitalizar(MESES[mref.getMonth()]) + " de " + mref.getFullYear(), "mes") +
       htmlCalendario(mref.getFullYear(), mref.getMonth()) + "</section>";
 
-    const tot = T.histTotal || "anual";
-    const diasAno = diasTreinados(anoAtual + "-01-01", anoAtual + "-12-31");
-    const diasMes = diasTreinados(isoDe(new Date(anoAtual, agora.getMonth(), 1)), isoDe(new Date(anoAtual, agora.getMonth() + 1, 0)));
-    let corpo;
-    if (tot === "semanal") corpo = anelSemana(dias, meta) + "<p class='resumo'>Semana atual</p>";
-    else if (tot === "mensal") corpo = "<p class='resumo'><strong>" + diasMes + "</strong> dias treinados neste mês</p>";
-    else corpo = anel(diasAno, T.metas.anual, "dias") + "<p class='resumo'>Total desde o início: <strong>" + diasTreinados("0000-01-01", "9999-12-31") + "</strong> dias</p>";
-    const pontos = [["semanal", "Semanal"], ["mensal", "Mensal"], ["anual", "Anual"]].map(([v, n]) =>
-      "<button class='ponto" + (tot === v ? " ativo" : "") + "' data-acao='hist-total' data-v='" + v + "'><i></i><span>" + n + "</span></button>").join("");
-    h += "<section class='bloco'><h3>Total de " + anoAtual + "</h3>" + corpo + "<div class='pontos'>" + pontos + "</div></section>";
+    const cardioAno = Math.round(CARDIO.lista.filter(x => x.dataISO.startsWith(String(anoAtual))).reduce((a, x) => a + Number(x.minutos || 0), 0) / 6) / 10;
+    const treinosAno = SESSOES_ANO(anoAtual);
+    h += "<section class='bloco'><h3>Ano: " + anoAtual + "</h3>" +
+      "<div class='aneis'>" + anel(treinosAno, T.metas.anual, "treinos") + anel(cardioAno, T.metas.cardioAno || null, "horas de cardio") + "</div></section>";
     return h;
   }
 
