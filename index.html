@@ -623,6 +623,7 @@
   .ht-duas svg { max-width: 100%; height: auto; }
   @media (max-width: 599px) { .ht-duas { grid-template-columns: 1fr; } }
   .es-info .es-texto small { display: block; }
+  .es-sub { font-size: 0.75rem; font-weight: 600; color: #770523; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
 </style>
 </head>
 <body>
@@ -3226,7 +3227,7 @@
   }
 
   // ---------- It's Crochê (antiga aba Trabalho) ----------
-  const CR = { aba: "encomendas", produtos: [], clientes: [], encomendas: [], form: null };
+  const CR = { aba: "encomendas", produtos: [], clientes: [], encomendas: [], form: null, cliSel: null, encSel: null };
 
   async function carregarCrochet() {
     try {
@@ -3245,9 +3246,9 @@
   function renderCrochet() {
     const el = document.getElementById("crochet");
     if (!el) return;
-    const abas = [["encomendas", "Encomendas"], ["clientes", "Clientes"]].map(([v, n]) =>
+    const abas = [["encomendas", "Encomendas"], ["produtos", "Produtos"], ["clientes", "Clientes"]].map(([v, n]) =>
       "<button class='aba" + (CR.aba === v ? " ativo" : "") + "' data-acao='cr-aba' data-v='" + v + "'>" + n + "</button>").join("");
-    el.innerHTML = "<h2>It's Crochê</h2><div class='abas'>" + abas + "</div>" + (CR.aba === "clientes" ? htmlCrClientes() : htmlCrEncomendas());
+    el.innerHTML = "<h2>It's Crochê</h2><div class='abas'>" + abas + "</div>" + (CR.aba === "clientes" ? htmlCrClientes() : (CR.aba === "produtos" ? htmlCrProdutosTab() : htmlCrEncomendas()));
   }
 
   function htmlCrEncomendas() {
@@ -3255,9 +3256,7 @@
     const lucro = lista.reduce((a, e) => a + (crNum(e.valor) - crNum(e.custo)), 0);
     const aReceber = lista.filter(e => !e.paga).reduce((a, e) => a + crNum(e.valor), 0);
     const f = CR.form;
-    const form = f && f.kind === "encomenda" ? formCrEncomenda(f) : (f && f.kind === "produto" ? formCrProduto(f) : "");
-    const produtos = CR.produtos.map(p => "<div class='es-linha'><span class='es-texto'><strong>" + esc(p.nome) + "</strong><small>preço " + crFmt(p.preco) + " · custo " + crFmt(p.custo) + "</small></span>" +
-      "<button class='excluir' data-acao='cr-del-prod' data-id='" + p.id + "' aria-label='Excluir produto'>×</button></div>").join("") || "<p class='vazio'>Nenhum produto cadastrado.</p>";
+    const form = f && f.kind === "encomenda" ? formCrEncomenda(f) : "";
     const encs = lista.map(e => "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(crProduto(e.produtoId) ? crProduto(e.produtoId).nome : (e.descricao || "Encomenda")) + "</strong>" +
       "<small>" + (e.clienteId ? esc(crCliente(e.clienteId) ? crCliente(e.clienteId).nome : "") : "") + (e.dataEntrega ? " · entrega " + dataCurta(e.dataEntrega) : "") + "</small>" +
       "<small>valor " + crFmt(e.valor) + " · custo " + crFmt(e.custo) + " · lucro " + crFmt(crNum(e.valor) - crNum(e.custo)) + "</small>" +
@@ -3267,10 +3266,9 @@
     return "<div class='fin-cards'>" +
       "<div class='fin-card'><small>Lucro das encomendas</small><strong>" + crFmt(lucro) + "</strong></div>" +
       "<div class='fin-card'><small>A receber</small><strong>" + crFmt(aReceber) + "</strong></div></div>" +
-      "<div class='es-acoes'><button class='secundario' data-acao='cr-novo-enc'>+ Encomenda</button><button class='secundario' data-acao='cr-novo-prod'>+ Produto</button></div>" +
+      "<div class='es-acoes'><button class='secundario' data-acao='cr-novo-enc'>+ Encomenda</button></div>" +
       form +
-      "<div class='bloco'><h3>Encomendas</h3>" + encs + "</div>" +
-      "<div class='bloco'><h3>Produtos</h3>" + produtos + "</div>";
+      "<div class='bloco'><h3>Encomendas</h3>" + encs + "</div>";
   }
 
   function formCrEncomenda(f) {
@@ -3289,20 +3287,86 @@
   function formCrProduto(f) {
     return "<div class='ag-form'><h3>Novo produto</h3>" +
       "<input placeholder='Nome do produto' data-campo='cr-prod-nome' value='" + esc(f.nome) + "'>" +
-      "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Preço padrão' data-campo='cr-prod-preco' value='" + f.preco + "'>" +
-      "<input type='number' inputmode='decimal' step='0.01' placeholder='Custo de materiais' data-campo='cr-prod-custo' value='" + f.custo + "'></div>" +
+      "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='cr-prod-preco' value='" + f.preco + "'>" +
+      "<input type='number' inputmode='decimal' step='0.01' placeholder='Custo para produzir' data-campo='cr-prod-custo' value='" + f.custo + "'></div>" +
+      "<div class='ag-linha'><input type='number' inputmode='numeric' placeholder='Tempo (minutos)' data-campo='cr-prod-tempo' value='" + f.tempo + "'>" +
+      "<input placeholder='Código: gerado automaticamente' value='" + esc(gerarCodigoProduto(f.nome)) + "' disabled></div>" +
+      "<input placeholder='Itens para produzir (separe por vírgula)' data-campo='cr-prod-itens' value='" + esc(f.itens) + "'>" +
       "<div class='centro'><button class='secundario' data-acao='cr-cancelar'>Cancelar</button><button class='grande' data-acao='cr-salvar'>Salvar</button></div></div>";
   }
 
+  // Código automático: duas letras do nome + número sequencial (ex.: AM001).
+  function gerarCodigoProduto(nome) {
+    const letras = String(nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2).padEnd(2, "X");
+    const usados = CR.produtos.filter(p => String(p.codigo || "").startsWith(letras)).map(p => Number(String(p.codigo).slice(2)) || 0);
+    const prox = (usados.length ? Math.max(...usados) : 0) + 1;
+    return letras + String(prox).padStart(3, "0");
+  }
+
+  function htmlCrProdutosTab() {
+    const f = CR.form && CR.form.kind === "produto" ? CR.form : null;
+    const lista = CR.produtos.slice().sort((a, b) => String(a.codigo || "").localeCompare(String(b.codigo || ""))).map(p =>
+      "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(p.nome) + "</strong>" +
+      "<small>Código " + esc(p.codigo || "—") + " · valor " + crFmt(p.preco) + " · custo " + crFmt(p.custo) + (p.tempo ? " · " + p.tempo + " min" : "") + "</small>" +
+      ((p.itens && p.itens.length) ? "<small>Itens: " + p.itens.map(esc).join(", ") + "</small>" : "") + "</span>" +
+      "<button class='excluir' data-acao='cr-del-prod' data-id='" + p.id + "' aria-label='Excluir produto'>×</button></div>").join("") || "<p class='vazio'>Nenhum produto cadastrado.</p>";
+    return "<div class='es-acoes'><button class='secundario' data-acao='cr-novo-prod'>+ Produto</button></div>" + (f ? formCrProduto(f) : "") +
+      "<div class='bloco'><h3>Produtos</h3>" + lista + "</div>";
+  }
+
+  function encomendasDoCliente(id) {
+    return CR.encomendas.filter(e => e.clienteId === id).sort((a, b) => String(b.dataEntrega || "").localeCompare(String(a.dataEntrega || "")));
+  }
+
+  function ultimaCompra(id) {
+    const l = encomendasDoCliente(id);
+    return l.length && l[0].dataEntrega ? l[0].dataEntrega : null;
+  }
+
+  function htmlCrClienteDetalhe() {
+    const c = crCliente(CR.cliSel);
+    if (!c) { CR.cliSel = null; return htmlCrClientes(); }
+    const compras = encomendasDoCliente(c.id);
+    const enc = CR.encSel ? compras.find(x => x.id === CR.encSel) : null;
+    const linhas = compras.map(e => {
+      const prod = crProduto(e.produtoId);
+      return "<div class='es-linha es-info' data-acao='cr-enc-sel' data-id='" + e.id + "' style='cursor:pointer'><span class='es-texto'><strong>" + (e.dataEntrega ? dataCurta(e.dataEntrega) : "sem data") + "</strong>" +
+        "<small>" + esc(prod ? prod.nome : (e.descricao || "Encomenda")) + "</small></span><strong>" + crFmt(e.valor) + "</strong></div>";
+    }).join("") || "<p class='vazio'>Nenhuma compra ainda.</p>";
+    let detalhe = "";
+    if (enc) {
+      const prod = crProduto(enc.produtoId);
+      detalhe = "<div class='bloco'><h3>Detalhes da encomenda</h3>" +
+        "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(prod ? prod.nome : (enc.descricao || "Encomenda")) + "</strong>" +
+        "<small>Entrega: " + (enc.dataEntrega ? dataCurta(enc.dataEntrega) : "sem data") + "</small>" +
+        "<small>Valor: " + crFmt(enc.valor) + " · Custo: " + crFmt(enc.custo) + " · Lucro: " + crFmt(crNum(enc.valor) - crNum(enc.custo)) + "</small>" +
+        (enc.obs ? "<small>Observações: " + esc(enc.obs) + "</small>" : "") +
+        "<div class='es-chips'><button class='chip-acao" + (enc.entregue ? " ok" : "") + "' data-acao='cr-entregue' data-id='" + enc.id + "'>" + (enc.entregue ? "Entregue ✓" : "Entregue") + "</button>" +
+        "<button class='chip-acao" + (enc.paga ? " ok" : "") + "' data-acao='cr-paga' data-id='" + enc.id + "'>" + (enc.paga ? "Paga ✓" : "Paga") + "</button></div></span></div></div>";
+    }
+    return "<div class='es-acoes'><button class='secundario' data-acao='cr-cli-voltar'>← Clientes</button></div>" +
+      "<div class='bloco'><h3>" + esc(c.nome) + "</h3>" +
+      "<small class='vazio' style='text-align:left;display:block'>" + (c.telefone ? "WhatsApp: " + esc(c.telefone) + "<br>" : "") + (c.instagram ? "Instagram: @" + esc(String(c.instagram).replace(/^@/, "")) + "<br>" : "") + (c.cidade ? "Cidade: " + esc(c.cidade) + "<br>" : "") + (c.obs ? "Observações: " + esc(c.obs) : "") + "</small>" +
+      "<p class='es-sub'>Histórico de compras</p>" + linhas + "</div>" + detalhe;
+  }
+
   function htmlCrClientes() {
+    if (CR.cliSel) return htmlCrClienteDetalhe();
     const f = CR.form && CR.form.kind === "cliente" ? CR.form : null;
     const form = f ? "<div class='ag-form'><h3>Novo cliente</h3>" +
       "<input placeholder='Nome' data-campo='cr-cli-nome' value='" + esc(f.nome) + "'>" +
-      "<input placeholder='Telefone (opcional)' data-campo='cr-cli-tel' value='" + esc(f.telefone) + "'>" +
-      "<input placeholder='Observações (opcional)' data-campo='cr-cli-obs' value='" + esc(f.obs) + "'>" +
+      "<input placeholder='WhatsApp / contato' data-campo='cr-cli-tel' value='" + esc(f.telefone) + "'>" +
+      "<input placeholder='Instagram (@)' data-campo='cr-cli-insta' value='" + esc(f.instagram) + "'>" +
+      "<input placeholder='Cidade de residência' data-campo='cr-cli-cidade' value='" + esc(f.cidade) + "'>" +
+      "<input placeholder='Observações' data-campo='cr-cli-obs' value='" + esc(f.obs) + "'>" +
       "<div class='centro'><button class='secundario' data-acao='cr-cancelar'>Cancelar</button><button class='grande' data-acao='cr-salvar'>Salvar</button></div></div>" : "";
-    const lista = CR.clientes.map(c => "<div class='es-linha'><span class='es-texto'><strong>" + esc(c.nome) + "</strong><small>" + esc(c.telefone || "") + (c.obs ? " · " + esc(c.obs) : "") + "</small></span>" +
-      "<button class='excluir' data-acao='cr-del-cli' data-id='" + c.id + "' aria-label='Excluir cliente'>×</button></div>").join("") || "<p class='vazio'>Nenhum cliente cadastrado.</p>";
+    const lista = CR.clientes.slice().sort((a, b) => String(a.nome).localeCompare(String(b.nome))).map(c => {
+      const ult = ultimaCompra(c.id);
+      return "<div class='es-linha es-info' data-acao='cr-cli-sel' data-id='" + c.id + "' style='cursor:pointer'><span class='es-texto'><strong>" + esc(c.nome) + "</strong>" +
+        "<small>" + (c.cidade ? esc(c.cidade) : "") + (c.instagram ? " · @" + esc(String(c.instagram).replace(/^@/, "")) : "") + "</small>" +
+        "<small>Última compra: " + (ult ? dataCurta(ult) : "nenhuma ainda") + "</small></span>" +
+        "<button class='excluir' data-acao='cr-del-cli' data-id='" + c.id + "' aria-label='Excluir cliente'>×</button></div>";
+    }).join("") || "<p class='vazio'>Nenhum cliente cadastrado.</p>";
     return "<div class='es-acoes'><button class='secundario' data-acao='cr-novo-cli'>+ Cliente</button></div>" + form + "<div class='bloco'><h3>Clientes</h3>" + lista + "</div>";
   }
 
@@ -3313,9 +3377,13 @@
       const a = el.dataset.acao;
       if (a === "cr-aba") { CR.aba = el.dataset.v; CR.form = null; renderCrochet(); }
       else if (a === "cr-novo-enc") { CR.form = { kind: "encomenda", produtoId: "", clienteId: "", descricao: "", dataEntrega: hojeISO(), valor: "", custo: "", obs: "" }; renderCrochet(); }
-      else if (a === "cr-novo-prod") { CR.form = { kind: "produto", nome: "", preco: "", custo: "" }; renderCrochet(); }
-      else if (a === "cr-novo-cli") { CR.form = { kind: "cliente", nome: "", telefone: "", obs: "" }; renderCrochet(); }
+      else if (a === "cr-novo-prod") { CR.form = { kind: "produto", nome: "", preco: "", custo: "" , tempo: "", itens: ""}; renderCrochet(); }
+      else if (a === "cr-novo-cli") { CR.form = { kind: "cliente", nome: "", telefone: "", obs: "" , instagram: "", cidade: ""}; renderCrochet(); }
       else if (a === "cr-cancelar") { CR.form = null; renderCrochet(); }
+      else if (a === "cr-aba") { CR.aba = el.dataset.v; CR.cliSel = null; CR.encSel = null; CR.form = null; renderCrochet(); }
+      else if (a === "cr-cli-sel") { CR.cliSel = el.dataset.id; CR.encSel = null; renderCrochet(); }
+      else if (a === "cr-cli-voltar") { CR.cliSel = null; CR.encSel = null; renderCrochet(); }
+      else if (a === "cr-enc-sel") { CR.encSel = CR.encSel === el.dataset.id ? null : el.dataset.id; renderCrochet(); }
       else if (a === "cr-salvar") await salvarCrochet();
       else if (a === "cr-entregue" || a === "cr-paga") {
         const campo = a === "cr-entregue" ? "entregue" : "paga";
@@ -3360,6 +3428,10 @@
     else if (c === "cr-cli-nome") f.nome = e.target.value;
     else if (c === "cr-cli-tel") f.telefone = e.target.value;
     else if (c === "cr-cli-obs") f.obs = e.target.value;
+    else if (c === "cr-cli-insta") f.instagram = e.target.value;
+    else if (c === "cr-cli-cidade") f.cidade = e.target.value;
+    else if (c === "cr-prod-tempo") f.tempo = e.target.value;
+    else if (c === "cr-prod-itens") f.itens = e.target.value;
     if (muda && c === "cr-cliente") renderCrochet();
   }
 
@@ -3374,12 +3446,13 @@
         CR.encomendas.push({ id: ref.id, ...obj });
       } else if (f.kind === "produto") {
         if (!f.nome.trim()) { mostrarErro("Dê um nome ao produto."); return; }
-        const obj = { nome: f.nome.trim(), preco: crNum(f.preco), custo: crNum(f.custo) };
+        const itens = String(f.itens || "").split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
+        const obj = { codigo: gerarCodigoProduto(f.nome), nome: f.nome.trim(), preco: crNum(f.preco), custo: crNum(f.custo), tempo: Number(f.tempo) || 0, itens: itens };
         const ref = await colecao("crochetProdutos").add(obj);
         CR.produtos.push({ id: ref.id, ...obj });
       } else if (f.kind === "cliente") {
         if (!f.nome.trim()) { mostrarErro("Dê um nome ao cliente."); return; }
-        const obj = { nome: f.nome.trim(), telefone: f.telefone.trim() || null, obs: f.obs.trim() || null };
+        const obj = { nome: f.nome.trim(), telefone: (f.telefone || "").trim() || null, instagram: (f.instagram || "").trim() || null, cidade: (f.cidade || "").trim() || null, obs: (f.obs || "").trim() || null };
         const ref = await colecao("crochetClientes").add(obj);
         CR.clientes.push({ id: ref.id, ...obj });
       }
