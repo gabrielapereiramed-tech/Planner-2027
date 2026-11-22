@@ -2839,7 +2839,7 @@
       else if (a === "es-cancelar") { E.form = null; renderEstudos(); }
       else if (a === "rev-nav") { RV.revDia = addDiasISO(RV.revDia || hojeEstudo(), Number(el.dataset.d)); renderEstudos(); }
       else if (a === "rev-feito") await revFeito(el.dataset.id);
-      else if (a === "pos-decidir") await decidirPosProva(el.dataset.prova, el.dataset.aula, el.dataset.v);
+      else if (a === "pos-decidir") await decidirPosProva(el.dataset.prova, el.dataset.aula, el.dataset.v, RV.revDia);
       else if (a === "rev-nao") await revNao(el.dataset.id);
       else if (a === "ei-feito") await marcarEstudoInicial(el.dataset.id, "feito");
       else if (a === "ei-nao") await marcarEstudoInicial(el.dataset.id, "nao");
@@ -2923,9 +2923,12 @@
 
   function preRevisaoValida(r) {
     const p = E.provas.find(x => x.id === r.provaId);
-    if (!p || r.dataPrevista >= p.dataISO) return false;
-    const dec = (RV.pos.find(x => x.id === r.provaId + "_" + r.aulaId) || {}).decisao;
-    return dec !== "nao";
+    return !!p && r.dataPrevista < p.dataISO;
+  }
+
+  // "Não preciso mais" (pós-prova) vale para as revisões de dia a dia desse conteúdo.
+  function naoPrecisaMais(aulaId) {
+    return RV.pos.some(x => x.aulaId === aulaId && x.decisao === "nao");
   }
 
   function addDiasISO(iso, n) {
@@ -2951,7 +2954,7 @@
     };
     E.aulas.forEach(a => {
       const materiaExiste = E.materias.some(m => m.id === a.materiaId);
-      if (!materiaExiste || a.estudoInicial !== "feito") { removerPendentes(a.id); return; }
+      if (!materiaExiste || a.estudoInicial !== "feito" || naoPrecisaMais(a.id)) { removerPendentes(a.id); return; }
       const base = a.dataEstudo || a.dataISO;
       tiposD.forEach(t => {
         const id = a.id + "_" + t;
@@ -2987,8 +2990,6 @@
       conteudosDaProva(p).forEach(aulaId => {
         const aula = E.aulas.find(x => x.id === aulaId);
         if (!aula) return;
-        const decisao = (RV.pos.find(x => x.id === p.id + "_" + aulaId) || {}).decisao;
-        if (decisao === "nao") return;
         PRE_DIAS.forEach(d => {
           const t = "P" + d;
           const id = "pre_" + p.id + "_" + aulaId + "_" + d;
@@ -3096,20 +3097,25 @@
       provasPreHtml + (grupos || (provasPreHtml ? "" : "<div class='bloco'><p class='vazio'>Nenhuma revisão para este dia.</p></div>"));
   }
 
-  async function decidirPosProva(provaId, aulaId, v) {
+  // Marca, troca ou desmarca a resposta pós-prova. A escolha fica no dia em que foi feita (não no dia de hoje).
+  async function decidirPosProva(provaId, aulaId, v, diaVisto) {
+    const dia = diaVisto || hojeEstudo();
     const id = provaId + "_" + aulaId;
-    const obj = { provaId: provaId, aulaId: aulaId, decisao: v, dataISO: hojeEstudo() };
-    await colecao("posProva").doc(id).set(obj);
-    const idx = RV.pos.findIndex(x => x.id === id);
-    if (idx >= 0) RV.pos[idx] = { id: id, ...obj }; else RV.pos.push({ id: id, ...obj });
-    if (v === "nao") {
-      const ids = RV.lista.filter(r => r.provaId === provaId && r.aulaId === aulaId && r.status === "pendente").map(r => r.id);
-      await Promise.all(ids.map(x => colecao("revisoes").doc(x).delete()));
-      RV.lista = RV.lista.filter(r => !ids.includes(r.id));
+    const atual = RV.pos.find(x => x.id === id);
+    if (atual && atual.decisao === v) {
+      await colecao("posProva").doc(id).delete();
+      RV.pos = RV.pos.filter(x => x.id !== id);
+    } else {
+      const obj = { provaId: provaId, aulaId: aulaId, decisao: v, dataISO: dia };
+      await colecao("posProva").doc(id).set(obj);
+      RV.pos = RV.pos.filter(x => x.id !== id).concat([{ id: id, ...obj }]);
     }
+    // Recalcula as revisões: "não preciso mais" remove as de dia a dia pendentes, e desmarcar devolve.
+    await gerarRevisoes();
     renderEstudos();
     renderRevHoje();
   }
+
 
   async function revFeito(id) {
     const r = RV.lista.find(x => x.id === id);
