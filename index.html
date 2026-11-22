@@ -523,14 +523,15 @@
   .hab-barra-topo .hab-desc { margin-left: 0; }
   .fin-cab { font-size: 0.72rem; color: #6B6259; font-weight: 600; border-bottom: 1px solid #E7E5E4; }
   .fin-linha.fin-cols-conta, .fin-linha.fin-cols-variavel, .fin-linha.fin-cols-simple { display: grid; align-items: center; gap: 8px; }
-  .fin-cols-conta { grid-template-columns: auto 2fr 1fr 1fr auto; }
-  .fin-cols-variavel { grid-template-columns: 1fr 2fr 1.3fr 1fr auto; }
-  .fin-cols-simple { grid-template-columns: 1fr 2fr 1fr auto; }
+  .fin-cols-conta { grid-template-columns: auto 2fr 1fr 1fr 28px; }
+  .fin-cols-variavel { grid-template-columns: 1fr 2fr 1.3fr 1fr 28px; }
+  .fin-cols-simple { grid-template-columns: 1fr 2fr 1fr 28px; }
   .fin-linha .fin-desc { flex: none; min-width: 0; }
 
   .fin-cab > span, .fin-linha > span { text-align: center; }
   .fin-linha > .fin-desc { text-align: left; }
   .fin-linha > .bolinha { justify-self: center; }
+  .fin-linha > .excluir { width: 28px !important; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
@@ -1535,6 +1536,7 @@
     if (d.campo === "ne-texto") { NE.novoTexto = e.target.value; return; }
     if (d.campo === "cx-valor") { CX.valor = e.target.value; return; }
     if (d.campo === "cx-desc") { CX.descricao = e.target.value; return; }
+    if (d.campo === "cx-cat") { CX.categoria = e.target.value; return; }
     if (d.campo === "leg-nome") { G.novaLegenda.nome = e.target.value; return; }
     if (d.campo === "leg-renomear") {
       const cor = G.legenda.find(l => l.id === d.id);
@@ -1799,57 +1801,46 @@
   }
 
   // ---------- Caixa do dia ----------
-  const CX = { dia: null, lista: [], tipo: "gasto", valor: "", descricao: "" };
-
-  async function carregarCaixa() {
-    try {
-      const snap = await colecao("caixa").get();
-      CX.lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch (e) { mostrarErro(e.message); }
-  }
+  const CX = { dia: null, tipo: "variavel", valor: "", descricao: "", categoria: "" };
 
   function renderCaixa() {
     const el = document.getElementById("caixa");
     if (!el) return;
     CX.dia = MD.dia || hojeISO();
-    const dia = CX.lista.filter(x => x.dataISO === CX.dia);
-    const ganhos = dia.filter(x => x.tipo === "ganho").reduce((a, x) => a + Number(x.valor), 0);
-    const gastos = dia.filter(x => x.tipo === "gasto").reduce((a, x) => a + Number(x.valor), 0);
-    const fmt = v => "R$ " + v.toFixed(2).replace(".", ",");
-
-    el.innerHTML = "<p class='sub'>" + tituloDia(CX.dia) + "</p>" +
-      "<div class='cx-resumo'>" +
-        "<div class='cx-card ganho'><small>Ganhos</small><strong>" + fmt(ganhos) + "</strong></div>" +
-        "<div class='cx-card gasto'><small>Gastos</small><strong>" + fmt(gastos) + "</strong></div>" +
-        "<div class='cx-card'><small>Saldo</small><strong>" + fmt(ganhos - gastos) + "</strong></div>" +
-      "</div>" +
-      "<div class='cx-form'>" +
-        "<div class='cx-tipo'>" +
-          "<button class='chip" + (CX.tipo === "gasto" ? " ativo" : "") + "' data-acao='cx-tipo' data-tipo='gasto'>Gasto</button>" +
-          "<button class='chip" + (CX.tipo === "ganho" ? " ativo" : "") + "' data-acao='cx-tipo' data-tipo='ganho'>Ganho</button>" +
-        "</div>" +
-        "<div class='cx-linha'>" +
-          "<input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='cx-valor' value='" + esc(CX.valor) + "'>" +
-          "<input placeholder='Descrição' data-campo='cx-desc' value='" + esc(CX.descricao) + "'>" +
-          "<button class='secundario' data-acao='cx-add'>Adicionar</button>" +
-        "</div>" +
-      "</div>" +
-      (dia.length
-        ? dia.map(x =>
-            "<div class='cx-item " + x.tipo + "'><span>" + esc(x.descricao || (x.tipo === "gasto" ? "Gasto" : "Ganho")) + "</span>" +
-            "<strong>" + (x.tipo === "gasto" ? "− " : "+ ") + fmt(Number(x.valor)) + "</strong>" +
-            "<button class='excluir' data-acao='cx-del' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>"
-          ).join("")
-        : "<p class='vazio'>Nenhum lançamento neste dia.</p>");
+    const d = CX.dia;
+    const lista = lancamentosDoMes(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1).filter(x => x.dataISO === d && x.tipo !== "invest");
+    const ganhos = lista.filter(x => x.tipo === "entrada").reduce((a, x) => a + valorExibido(x), 0);
+    const gastos = lista.filter(x => x.tipo !== "entrada").reduce((a, x) => a + valorExibido(x), 0);
+    const fmt = v => "R$ " + Number(v).toFixed(2).replace(".", ",");
+    const cats = FN.categorias.filter(c => CX.tipo === "entrada" ? c.kind === "ganho" : c.kind !== "ganho");
+    const tipos = [["entrada", "Entrada"], ["variavel", "Gasto variável"], ["conta", "Conta fixa"], ["outro", "Outro gasto"]];
+    el.innerHTML = "<div class='fin-cards'>" +
+      "<div class='fin-card'><small>Ganhos</small><strong>" + fmt(ganhos) + "</strong></div>" +
+      "<div class='fin-card'><small>Gastos</small><strong>" + fmt(gastos) + "</strong></div>" +
+      "<div class='fin-card saldo'><small>Saldo</small><strong>" + fmt(ganhos - gastos) + "</strong></div></div>" +
+      "<div class='cx-form'><div class='cx-tipo'>" + tipos.map(([v, n]) =>
+        "<button class='chip" + (CX.tipo === v ? " ativo" : "") + "' data-acao='cx-tipo' data-tipo='" + v + "'>" + n + "</button>").join("") + "</div>" +
+      "<div class='ag-linha'><input type='number' inputmode='decimal' step='0.01' placeholder='Valor' data-campo='cx-valor' value='" + esc(CX.valor) + "'>" +
+      "<input placeholder='Descrição' data-campo='cx-desc' value='" + esc(CX.descricao) + "'></div>" +
+      "<label>Categoria</label><select data-campo='cx-cat'><option value=''>Sem categoria</option>" + cats.map(c => "<option value='" + c.id + "'" + (CX.categoria === c.id ? " selected" : "") + ">" + esc(c.nome) + "</option>").join("") + "</select>" +
+      "<div class='centro'><button class='grande' data-acao='cx-add'>Adicionar</button></div></div>" +
+      (lista.length ? lista.map(x => {
+        const cat = FN.categorias.find(c => c.id === x.categoria);
+        return "<div class='fin-linha fin-cols-variavel'><span>" + (x.tipo === "entrada" ? "Entrada" : "Gasto") + "</span>" +
+          "<span class='fin-desc'>" + esc(x.descricao) + "</span>" +
+          "<span class='fin-cat' style='color:" + (cat ? cat.cor : "#6B6259") + "'>" + (cat ? esc(cat.nome) : "—") + "</span>" +
+          "<span>" + fmt(valorExibido(x)) + "</span>" +
+          "<button class='excluir' data-acao='cx-del' data-id='" + x.id + "' aria-label='Excluir'>×</button></div>";
+      }).join("") : "<p class='vazio'>Nenhum lançamento neste dia.</p>");
   }
 
   async function cxAdicionar() {
     const valor = Number(String(CX.valor).replace(",", "."));
     if (!valor || valor <= 0) { mostrarErro("Digite um valor maior que zero."); return; }
-    const obj = { dataISO: CX.dia, tipo: CX.tipo, valor: valor, descricao: (CX.descricao || "").trim() };
+    const obj = { tipo: CX.tipo, descricao: (CX.descricao || "").trim(), valor: valor, dataISO: CX.dia, categoria: CX.categoria || null, tipoId: null, pagos: {} };
     try {
-      const ref = await colecao("caixa").add(obj);
-      CX.lista.push({ id: ref.id, ...obj });
+      const ref = await colecao("financas").add(obj);
+      FN.lista.push({ id: ref.id, ...obj });
       CX.valor = "";
       CX.descricao = "";
       renderCaixa();
@@ -1859,11 +1850,16 @@
   async function cxExcluir(id) {
     if (!(await confirmar("Excluir este lançamento?"))) return;
     try {
-      await colecao("caixa").doc(id).delete();
-      CX.lista = CX.lista.filter(x => x.id !== id);
+      await colecao("financas").doc(id).delete();
+      FN.lista = FN.lista.filter(x => x.id !== id);
       renderCaixa();
     } catch (err) { mostrarErro(err.message); }
   }
+
+  async function carregarCaixa() {
+    await carregarFinanceiro();
+  }
+
 
   async function tratarCliqueSecoes(e) {
     try {
@@ -2231,13 +2227,11 @@
         secao("Entradas", "entrada", entradas) +
         secao("Contas e vencimentos", "conta", contas) +
         secao("Gastos variáveis", "variavel", variaveis) +
-        "<div class='bloco'><div class='habitos-topo'><h3>Investimentos e reservas</h3>" +
-        "<button class='add-bordo-sm' data-acao='fin-add' data-tipo='invest' aria-label='Adicionar investimento'>+</button></div>" +
-        "<div class='fin-total'><span>Total investido</span><span>" + fmt(invest) + "</span></div></div>" +
+        secao("Investimentos e reservas", "invest", invest) +
         secao("Outros gastos", "outro", outros) +
         "<div class='bloco'><div class='habitos-topo'><h3>Categorias de entrada</h3><button class='add-bordo-sm' data-acao='fin-add-cat' data-kind='ganho' aria-label='Nova categoria de entrada'>+</button></div>" + catsEntrada + "</div>" +
-        "<div class='bloco'><div class='habitos-topo'><h3>Categorias de gasto</h3><button class='add-bordo-sm' data-acao='fin-add-cat' data-kind='gasto' aria-label='Nova categoria de gasto'>+</button></div>" + catsGasto + "</div>" +
         "<div class='bloco'><h3>Quais são os meus gastos</h3>" + donut + "</div>" +
+        "<div class='bloco'><div class='habitos-topo'><h3>Categorias de gasto</h3><button class='add-bordo-sm' data-acao='fin-add-cat' data-kind='gasto' aria-label='Nova categoria de gasto'>+</button></div>" + catsGasto + "</div>" +
       "</div>";
   }
 
