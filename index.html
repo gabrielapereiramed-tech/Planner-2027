@@ -652,6 +652,10 @@
   .geral-data-faixa { display: block; font-size: 11px; opacity: 0.85; text-transform: capitalize; }
   .geral-frase-faixa { font-family: Georgia, serif; font-size: 17px; line-height: 1.35; margin: 4px 0 0; color: #FFFFFF; }
   .geral-btn-faixa { border: 1.5px solid #FFFFFF; background: transparent; color: #FFFFFF; border-radius: 999px; padding: 5px 12px; font-family: inherit; font-size: 11px; cursor: pointer; width: auto; }
+  .linha-agora-cheia { position: absolute; left: 0; right: 0; height: 2px; background: #770523; z-index: 3; pointer-events: none; }
+  .agenda-grade, .md-grade { position: relative; }
+  .ag-dia-cab { height: 44px; box-sizing: border-box; }
+  .marca-agora span { position: absolute; left: -4px; top: -9px; background: #770523; color: #FFFFFF; border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 600; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -1115,7 +1119,11 @@
       const meia = m + 60 > FIM_MIN;
       h += "<div style='height:" + (meia ? PX / 2 : PX) + "px'>" + Math.floor(m / 60) + "h" + (m % 60 ? "30" : "00") + "</div>";
     }
-    if (marcaY !== null && marcaY !== undefined) h += "<div class='marca-agora' style='top:" + marcaY + "px'></div>";
+    if (marcaY !== null && marcaY !== undefined) {
+      const ag = new Date();
+      const hh = String(ag.getHours()).padStart(2, "0"), mm = String(ag.getMinutes()).padStart(2, "0");
+      h += "<div class='marca-agora' style='top:" + marcaY + "px'><span>" + hh + ":" + mm + "</span></div>";
+    }
     return h + "</div>";
   }
 
@@ -1395,15 +1403,19 @@
         "<strong class='intervalo" + (atual ? " semana" : "") + "'>" + dataCurta(ini) + " a " + dataCurta(fim) + "</strong>" +
         "<div style='display:flex;gap:6px;align-items:center'><button class='icone' data-acao='agenda-nav' data-d='1' aria-label='Próxima semana'>›</button><button class='add-bordo' data-acao='agenda-novo' aria-label='Novo compromisso'>+</button></div></div>";
     if (G.formAberto && G.rascunho) h += htmlFormCompromisso(false);
+    const agG = new Date();
+    const minG = agG.getHours() * 60 + agG.getMinutes();
+    const marcaG = (dias.includes(hoje) && atual && minG >= INICIO_MIN && minG <= FIM_MIN) ? (minG - INICIO_MIN) * PX / 60 : null;
     h += "<div class='agenda-grade'><div></div>";
     dias.forEach(d => {
       h += "<div class='ag-dia-cab" + (d === hoje ? " hoje" : "") + "' data-acao='agenda-dia' data-iso='" + d + "'><small>" + NOMES[diaSemana(d)] + "</small><b>" + dePara(d).getDate() + "</b></div>";
     });
-    h += gradeHoras(PX, null);
+    h += gradeHoras(PX, marcaG);
     dias.forEach(d => {
       const evs = G.compromissos.filter(c => c.dataISO === d);
       h += "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosHTML(evs, PX) + "</div>";
     });
+    if (marcaG !== null) h += "<div class='linha-agora-cheia' style='top:" + (44 + marcaG) + "px'></div>";
     h += "</div></div></div></div>";
     el.innerHTML = h;
   }
@@ -1462,7 +1474,7 @@
       "<div class='agenda-topo'><span></span><button class='icone' data-acao='md-novo' aria-label='Novo compromisso'>+</button></div>";
     if (G.formAberto && G.rascunho) agenda += htmlFormCompromisso(true);
     agenda += "<div class='md-scroll' style='max-height:" + maxAlt + "px'><div class='md-grade'>" + gradeHoras(PX, marcaY) +
-      "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosMeuDia(evs, PX) + "</div></div></div>";
+      "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosMeuDia(evs, PX) + "</div>" + (marcaY !== null ? "<div class='linha-agora-cheia' style='top:" + marcaY + "px'></div>" : "") + "</div></div>";
 
     const naoEsqueco = "<div class='bloco faixa faixa-nao'><div class='habitos-topo'><h3>Não esquecer</h3><button class='btn-lapis' data-acao='ne-editar' aria-label='Editar lista'>" + ICONES.lapis + "</button></div><div id='nao'></div></div>";
 
