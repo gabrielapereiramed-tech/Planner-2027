@@ -648,6 +648,10 @@
   .geral-esq { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .geral-dir { min-width: 0; }
   @media (max-width: 719px) { .geral-layout { grid-template-columns: 1fr; } }
+  .geral-faixa { background: #770523; color: #FFFFFF; border-radius: 16px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .geral-data-faixa { display: block; font-size: 11px; opacity: 0.85; text-transform: capitalize; }
+  .geral-frase-faixa { font-family: Georgia, serif; font-size: 17px; line-height: 1.35; margin: 4px 0 0; color: #FFFFFF; }
+  .geral-btn-faixa { border: 1.5px solid #FFFFFF; background: transparent; color: #FFFFFF; border-radius: 999px; padding: 5px 12px; font-family: inherit; font-size: 11px; cursor: pointer; width: auto; }
 </style>
 </head>
 <body>
@@ -1362,9 +1366,9 @@
     if (!el) return;
     const hoje = new Date();
     const data = capitalizar(hoje.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
-    el.innerHTML = "<div class='geral-topo'><small class='geral-data'>" + data + "</small>" +
-      "<p class='geral-frase'>" + esc(G.frase) + "</p>" +
-      "<button class='chip-acao' data-acao='frase-nova'>✦ Outra frase</button></div>";
+    el.innerHTML = "<div class='geral-faixa'><div><small class='geral-data-faixa'>" + data + "</small>" +
+      "<p class='geral-frase-faixa'>" + esc(G.frase) + "</p></div>" +
+      "<button class='geral-btn-faixa' data-acao='frase-nova'>✦ Outra frase</button></div>";
   }
 
   function renderGeral() {
