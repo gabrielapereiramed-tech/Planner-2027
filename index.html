@@ -640,6 +640,10 @@
   .cr-tag.pago { background: #D0D996; color: #2B2420; }
   .cr-tag.sinal { background: #F4A261; color: #2B2420; }
   .cr-tag.pagar { background: #770523; color: #FFFFFF; }
+  .geral-topo { border: 1px solid #E7E5E4; border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; background: #FFFFFF; }
+  .geral-data { display: block; color: #6B6259; font-size: 0.78rem; text-transform: capitalize; }
+  .geral-frase { font-family: Georgia, serif; font-size: 1.1rem; color: #770523; margin: 6px 0 10px; line-height: 1.35; }
+  .cr-busca { margin: 6px 0 12px; }
 </style>
 </head>
 <body>
@@ -879,7 +883,11 @@
 
     const voltar = "<button class='voltar' id='voltar'>← Voltar</button>";
     if (secao.id === "geral") {
-      main.innerHTML = voltar + "<h2>Geral</h2><div id='geral'></div>";
+      main.innerHTML = voltar + "<h2>Geral</h2><div id='geral-topo'></div><div id='geral'></div>";
+      const gt = document.getElementById("geral-topo");
+      G.frase = escolherFraseDia();
+      renderFraseGeral();
+      gt.onclick = e => { if (e.target.closest("[data-acao='frase-nova']")) { G.frase = escolherFraseDia(G.frase); renderFraseGeral(); } };
       const g = document.getElementById("geral");
       g.onclick = tratarCliqueGeral;
       g.oninput = tratarEntradaGeral;
@@ -1312,6 +1320,47 @@
       (H.adicionando ? htmlNovoHabito() : "") +
       "<div class='ht-rodape'><button class='btn-lapis' data-acao='habito-editar' aria-label='Editar hábitos'>" + ICONES.lapis + "</button></div>" +
     "</div>";
+  }
+
+
+  const FRASES_GERAL = [
+    "Um dia de cada vez, e alguns dias um pouco mais.",
+    "Pequenos passos também chegam.",
+    "Você não precisa fazer tudo hoje, só o próximo passo.",
+    "Organizar também é cuidar de você.",
+    "O que é feito com calma costuma ficar bem feito.",
+    "Hoje é um bom dia para começar de novo.",
+    "Descansar também faz parte do plano.",
+    "Constância vence intensidade.",
+    "Laço por laço, a peça vai tomando forma.",
+    "Não precisa ser perfeito, precisa ser seu.",
+    "Uma tarefa de cada vez, e o dia rende.",
+    "O que você fizer hoje já conta.",
+    "Respire, escolha uma coisa e comece por ela.",
+    "Fazer a metade do que foi planejado ainda é avançar.",
+    "Sua agenda serve você, não o contrário.",
+    "Pausas bem colocadas dão fôlego para o resto.",
+    "Cuide do hoje, que o amanhã se arruma sozinho.",
+    "Terminar também é uma forma de começar.",
+    "Você está mais organizada do que imagina.",
+    "Cada ponto dado é um pedaço da obra pronta."
+  ];
+
+  // Frase "surpresa": sorteia uma diferente da anterior a cada vez que a aba Geral abre ou que se pede outra.
+  function escolherFraseDia(anterior) {
+    let f;
+    do { f = FRASES_GERAL[Math.floor(Math.random() * FRASES_GERAL.length)]; } while (f === anterior && FRASES_GERAL.length > 1);
+    return f;
+  }
+
+  function renderFraseGeral() {
+    const el = document.getElementById("geral-topo");
+    if (!el) return;
+    const hoje = new Date();
+    const data = capitalizar(hoje.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+    el.innerHTML = "<div class='geral-topo'><small class='geral-data'>" + data + "</small>" +
+      "<p class='geral-frase'>" + esc(G.frase) + "</p>" +
+      "<button class='chip-acao' data-acao='frase-nova'>✦ Outra frase</button></div>";
   }
 
   function renderGeral() {
@@ -3244,7 +3293,7 @@
   }
 
   // ---------- It's Crochet (antiga aba Trabalho) ----------
-  const CR = { aba: "encomendas", produtos: [], clientes: [], encomendas: [], form: null, cliSel: null, encSel: null };
+  const CR = { aba: "encomendas", produtos: [], clientes: [], encomendas: [], form: null, cliSel: null, encSel: null, busca: "" };
 
   async function carregarCrochet() {
     try {
@@ -3268,6 +3317,7 @@
     const acaoAdd = CR.aba === "clientes" ? "cr-novo-cli" : (CR.aba === "produtos" ? "cr-novo-prod" : "cr-novo-enc");
     el.innerHTML = "<h2>It's Crochet</h2><div class='cr-linha-abas'><div class='abas'>" + abas + "</div>" +
       "<button class='add-bordo-sm cr-add' data-acao='" + acaoAdd + "' aria-label='Adicionar'>+</button></div>" +
+      "<input class='cr-busca' placeholder='Buscar por código, nome, número ou cidade' data-campo='cr-busca' value='" + esc(CR.busca || "") + "'>" +
       (CR.aba === "clientes" ? htmlCrClientes() : (CR.aba === "produtos" ? htmlCrProdutosTab() : htmlCrEncomendas()));
   }
 
@@ -3299,13 +3349,13 @@
 
   function htmlCrEncomendas() {
     const numOf = e => (e.numero ? "#" + String(e.numero).padStart(3, "0") + " · " : "");
-    const andamento = CR.encomendas.filter(e => !e.entregue).sort((a, b) => {
+    const andamento = CR.encomendas.filter(e => !e.entregue && crBuscaOk(crTextoEnc(e))).sort((a, b) => {
       if (!a.dataEntrega && !b.dataEntrega) return 0;
       if (!a.dataEntrega) return 1;
       if (!b.dataEntrega) return -1;
       return String(a.dataEntrega).localeCompare(String(b.dataEntrega));
     });
-    const finalizados = CR.encomendas.filter(e => e.entregue).sort((a, b) => String(b.dataEntrega || "").localeCompare(String(a.dataEntrega || "")));
+    const finalizados = CR.encomendas.filter(e => e.entregue && crBuscaOk(crTextoEnc(e))).sort((a, b) => String(b.dataEntrega || "").localeCompare(String(a.dataEntrega || "")));
     const lucro = CR.encomendas.reduce((a, e) => a + (crNum(e.valor) - crCustoTotal(e)), 0);
     const aReceber = CR.encomendas.reduce((a, e) => a + (crNum(e.valor) - crPago(e)), 0);
     const proxima = andamento.find(e => e.dataEntrega);
@@ -3392,7 +3442,7 @@
 
   function htmlCrProdutosTab() {
     const f = CR.form && CR.form.kind === "produto" ? CR.form : null;
-    const lista = CR.produtos.slice().sort((a, b) => String(a.codigo || "").localeCompare(String(b.codigo || ""))).map(p =>
+    const lista = CR.produtos.filter(p => crBuscaOk(p.codigo + " " + p.nome)).slice().sort((a, b) => String(a.codigo || "").localeCompare(String(b.codigo || ""))).map(p =>
       "<div class='es-linha es-info'><span class='es-texto'><strong>" + esc(p.nome) + "</strong>" +
       "<small>Código " + esc(p.codigo || "—") + " · valor " + crFmt(p.preco) + " · custo " + crFmt(p.custo) + (p.tempo ? " · " + p.tempo + " min" : "") + "</small>" +
       ((p.itens && p.itens.length) ? "<small>Itens: " + p.itens.map(esc).join(", ") + "</small>" : "") + "</span>" +
@@ -3438,6 +3488,16 @@
       "<p class='es-sub'>Histórico de compras</p>" + linhas + "</div>" + detalhe;
   }
 
+  function crBuscaOk(texto) {
+    const b = (CR.busca || "").trim().toLowerCase();
+    return !b || String(texto || "").toLowerCase().includes(b);
+  }
+
+  function crTextoEnc(e) {
+    const cli = crCliente(e.clienteId);
+    return "#" + String(e.numero || "").padStart(3, "0") + " " + crNomeItens(e) + " " + (cli ? cli.nome : "");
+  }
+
   function htmlCrClientes() {
     if (CR.cliSel) return htmlCrClienteDetalhe();
     const f = CR.form && CR.form.kind === "cliente" ? CR.form : null;
@@ -3448,7 +3508,7 @@
       "<input placeholder='Cidade de residência' data-campo='cr-cli-cidade' value='" + esc(f.cidade) + "'>" +
       "<input placeholder='Observações' data-campo='cr-cli-obs' value='" + esc(f.obs) + "'>" +
       "<div class='centro'><button class='secundario' data-acao='cr-cancelar'>Cancelar</button><button class='grande' data-acao='cr-salvar'>Salvar</button></div></div>" : "";
-    const lista = CR.clientes.slice().sort((a, b) => String(a.nome).localeCompare(String(b.nome))).map(c => {
+    const lista = CR.clientes.filter(c => crBuscaOk(c.nome + " " + (c.instagram || "") + " " + (c.cidade || ""))).slice().sort((a, b) => String(a.nome).localeCompare(String(b.nome))).map(c => {
       const ult = ultimaCompra(c.id);
       return "<div class='es-linha es-info' data-acao='cr-cli-sel' data-id='" + c.id + "' style='cursor:pointer'><span class='es-texto'><strong>" + esc(c.nome) + "</strong>" +
         "<small>" + (c.cidade ? esc(c.cidade) : "") + (c.instagram ? " · @" + esc(String(c.instagram).replace(/^@/, "")) : "") + "</small>" +
@@ -3503,6 +3563,7 @@
 
   function tratarEntradaCrochet(e) {
     const c = e.target.dataset.campo;
+    if (c === "cr-busca") { CR.busca = e.target.value; renderCrochet(); const b = document.querySelector("[data-campo='cr-busca']"); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } return; }
     const f = CR.form;
     if (!c || !f) return;
     const muda = e.type === "change";
