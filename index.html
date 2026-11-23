@@ -644,6 +644,10 @@
   .geral-data { display: block; color: #6B6259; font-size: 0.78rem; text-transform: capitalize; }
   .geral-frase { font-family: Georgia, serif; font-size: 1.1rem; color: #770523; margin: 6px 0 10px; line-height: 1.35; }
   .cr-busca { margin: 6px 0 12px; }
+  .geral-layout { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .geral-esq { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .geral-dir { min-width: 0; }
+  @media (max-width: 719px) { .geral-layout { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -1375,13 +1379,13 @@
     const PX = pxParaTopo(el, 150);
     const altura = (FIM_MIN - INICIO_MIN) / 60 * PX;
 
-    let h = "<div class='geral-topo'>" + htmlLembretesResumo() +
+    let h = "<div class='geral-layout'><div class='geral-esq'>" + htmlLembretesResumo() +
       "<div class='bloco'><div class='habitos-topo'><div class='nav' style='margin:0;flex:1'>" +
         "<button class='icone' data-acao='cal-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
         "<strong>" + capitalizar(MESES[MC.mes]) + " de " + MC.ano + "</strong>" +
         "<button class='icone' data-acao='cal-nav' data-d='1' aria-label='Próximo mês'>›</button></div></div>" +
         "<div class='calendario'>" + htmlCalMini(MC.ano, MC.mes) + "</div></div></div>" +
-      "<div id='agenda'>" +
+      "<div class='geral-dir'><div id='agenda'>" +
       "<div class='agenda-topo'><h3>Agenda semanal</h3></div>" +
       "<div class='nav'><button class='icone' data-acao='agenda-nav' data-d='-1' aria-label='Semana anterior'>‹</button>" +
         "<strong class='intervalo" + (atual ? " semana" : "") + "'>" + dataCurta(ini) + " a " + dataCurta(fim) + "</strong>" +
@@ -1396,7 +1400,7 @@
       const evs = G.compromissos.filter(c => c.dataISO === d);
       h += "<div class='ag-coluna' style='height:" + altura + "px'>" + eventosHTML(evs, PX) + "</div>";
     });
-    h += "</div></div></div>";
+    h += "</div></div></div></div>";
     el.innerHTML = h;
   }
 
