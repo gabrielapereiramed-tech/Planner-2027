@@ -667,6 +667,11 @@
   .rev-topo { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; margin-bottom: 12px; }
   .rev-topo > * { min-width: 0; }
   @media (min-width: 720px) { .rev-topo { grid-template-columns: 1fr 1fr; } }
+  .sem-barras { display: flex; gap: 8px; align-items: flex-end; height: 84px; margin-top: 8px; }
+  .sem-barra { flex: 1; text-align: center; font-size: 9px; color: #6B6259; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+  .sem-barra i { display: block; width: 100%; border-radius: 6px 6px 0 0; background: #770523; opacity: 0.85; margin-bottom: 3px; }
+  .sem-barra i.zero { background: #EFECE6; opacity: 1; }
+  .es-tempo { display: block; font-size: 9px; color: #770523; font-weight: 600; text-align: center; }
 </style>
 </head>
 <body>
@@ -2816,13 +2821,16 @@
         return lista.length ? "<div class='es-periodo'><small>" + nome + "</small>" + lista.map(blocoAula).join("") + "</div>" : "";
       };
       const conteudo = provasDia.map(blocoProva).join("") + periodo("manha", "Manhã") + periodo("tarde", "Tarde") + periodo("noite", "Noite");
+      const tDia = msDoDia(iso);
       grade += "<div class='es-dia" + (iso === hoje ? " hoje" : "") + (iso === E.dia ? " sel" : "") + "' data-acao='es-dia-cal' data-iso='" + iso + "'>" +
-        "<span class='es-numero'>" + d + "</span>" + conteudo + "</div>";
+        "<span class='es-numero'>" + d + "</span>" + (tDia ? "<small class='es-tempo'>" + tmHumano(tDia) + "</small>" : "") + conteudo + "</div>";
     }
+    const rm = resumoMes(E.ano, E.mes);
     const calendario = "<div class='bloco'><div class='nav'>" +
       "<button class='icone' data-acao='es-nav' data-d='-1' aria-label='Mês anterior'>‹</button>" +
       "<strong>" + capitalizar(MESES[E.mes]) + " de " + E.ano + "</strong>" +
       "<button class='icone' data-acao='es-nav' data-d='1' aria-label='Próximo mês'>›</button></div>" +
+      "<p class='ses-total'>" + tmHumano(rm.total) + " estudados no mês · média de " + tmHumano(rm.media) + " por dia útil</p>" +
       "<div class='calendario'>" + grade + "</div></div>";
 
     if (E.view && E.view.tipo === "aula") {
@@ -3243,7 +3251,7 @@
         }).join("") + "</div>";
     }).join("");
 
-    return "<div class='rev-topo'><div class='bloco'><h3>Temporizador de estudo</h3><div class='tm-box'>" + htmlTmInner() + "</div></div>" + htmlSessoesDia(dia) + "</div>" +
+    return htmlResumoSemana(dia) + "<div class='rev-topo'><div class='bloco'><h3>Temporizador de estudo</h3><div class='tm-box'>" + htmlTmInner() + "</div></div>" + htmlSessoesDia(dia) + "</div>" +
       "<div class='rev-esq'><div class='bloco'><div class='nav'>" +
       "<button class='icone' data-acao='rev-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
       "<strong>" + (dia === hoje ? "Hoje · " : "") + tituloDia(dia) + "</strong>" +
@@ -3765,7 +3773,40 @@
   function htmlSessoesDia(dia) {
     return "<div class='bloco'><h3>Tempo de estudo do dia</h3><div class='ses-box' data-dia='" + dia + "'>" + htmlSessoesInner(dia) + "</div></div>";
   }
+  function msDoDia(iso) {
+    return ES.lista.filter(x => x.dataISO === iso).reduce((a, x) => a + Number(x.ms || 0), 0);
+  }
+  function inicioSemanaISO(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dow = (new Date(y, m - 1, d).getDay() + 6) % 7;
+    return addDiasISO(iso, -dow);
+  }
+  function htmlResumoSemana(ref) {
+    const ini = inicioSemanaISO(ref);
+    const dias = [0, 1, 2, 3, 4, 5, 6].map(i => addDiasISO(ini, i));
+    const nomes = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+    const tempos = dias.map(msDoDia);
+    const max = Math.max(...tempos, 1);
+    const total = tempos.reduce((a, b) => a + b, 0);
+    const barras = dias.map((d, i) => {
+      const alt = tempos[i] ? Math.max(6, Math.round(tempos[i] / max * 64)) : 4;
+      return "<div class='sem-barra' title='" + tmHumano(tempos[i]) + "'><i class='" + (tempos[i] ? "" : "zero") + "' style='height:" + alt + "px'></i>" + nomes[i] + "</div>";
+    }).join("");
+    return "<div class='bloco'><div class='habitos-topo'><h3>Semana de " + dataCurta(ini) + " a " + dataCurta(addDiasISO(ini, 6)) + "</h3>" +
+      "<small class='ses-total' style='margin:0'>" + tmHumano(total) + " estudados</small></div>" +
+      "<div class='sem-barras'>" + barras + "</div></div>";
+  }
+  function resumoMes(ano, mes) {
+    const ym = ano + "-" + pad(mes + 1);
+    const total = ES.lista.filter(x => x.dataISO.slice(0, 7) === ym).reduce((a, x) => a + Number(x.ms || 0), 0);
+    const diasUteis = new Date(ano, mes + 1, 0).getDate();
+    let uteis = 0;
+    for (let d = 1; d <= diasUteis; d++) { const w = new Date(ano, mes, d).getDay(); if (w !== 0 && w !== 6) uteis++; }
+    return { total: total, media: uteis ? total / uteis : 0 };
+  }
+
   function atualizarSessoes() {
+    if (document.getElementById("estudos") && typeof renderEstudos === "function") renderEstudos();
     document.querySelectorAll(".ses-box").forEach(b => { b.innerHTML = htmlSessoesInner(b.dataset.dia); });
   }
   function tmRedesenhar() {
