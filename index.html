@@ -103,7 +103,7 @@
   .dia b { font-size: 1.05rem; font-weight: 600; }
   .dia i { display: block; height: 14px; }
   .dia svg { width: 14px; height: 14px; color: var(--burgundy); }
-  .dia.hoje { background: var(--pistachio); }
+  .dia.hoje { background: var(--burgundy); color: #FFFFFF; }
   .dia.sel { background: transparent; color: #2B2420; outline: 2px solid var(--burgundy); outline-offset: -2px; }
   .dia.sel svg { color: var(--burgundy); }
   .resumo { font-size: 0.95rem; margin: 0.4rem 0 0.8rem; }
@@ -146,7 +146,7 @@
   .calendario { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
   .cal-cab { font-size: 0.75rem; text-align: center; color: #6B6259; padding: 4px 0; }
   .cal-dia { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; padding: 6px 0; width: 100%; background: var(--branco); color: #2B2420; border: 1px solid #E7E5E4; border-radius: 10px; font-size: 0.9rem; font-weight: 500; }
-  .cal-dia.hoje { background: var(--pistachio); }
+  .cal-dia.hoje { background: var(--burgundy); color: #FFFFFF; }
   .cal-dia.sel { background: var(--burgundy); color: var(--branco); border-color: var(--burgundy); }
   .cal-dia.sel svg { color: var(--branco); }
   .cal-dia i { display: block; height: 14px; }
@@ -191,9 +191,9 @@
   .aba.ativo { color: #2B2420; background: transparent; border-bottom-color: var(--burgundy); }
   .semana, .roleta { gap: 0.25rem; }
   .dia { border-radius: 12px; }
-  .dia.hoje { background: #EEF2DA; }
+  .dia.hoje { background: #F6E3EA; }
   .dia.sel { background: transparent; outline: 2px solid var(--burgundy); outline-offset: -2px; }
-  .dia.hoje.sel { background: #EEF2DA; }
+  .dia.hoje.sel { background: #F6E3EA; }
   .prog, .ex, .feito-card, .treino-item, .treino-item, .descanso {
     border-radius: 14px;
   }
@@ -656,6 +656,7 @@
   .agenda-grade, .md-grade { position: relative; }
   .ag-dia-cab { height: 44px; box-sizing: border-box; }
   .marca-agora span { position: absolute; left: -4px; top: -9px; background: #770523; color: #FFFFFF; border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+  .linha-agora-cheia, .marca-agora { display: none !important; }
 </style>
 </head>
 <body>
@@ -1669,7 +1670,6 @@
         "<div class='ag-linha nova-cor'><input placeholder='Nome da nova cor' data-campo='leg-nome' value='" + esc(nova.nome) + "'>" +
         "<button class='secundario' data-acao='leg-salvar'>Adicionar cor</button></div>" +
         htmlSeletorCor("nova", nova.cor, null) : "") +
-      (G.novaCorAberta ? htmlSeletorCor("ag", r.cor, null) : "") +
       (comTarefas ? "<label>Tarefas</label>" + tarefas + "<button class='secundario' data-acao='tarefa-add'>+ Tarefa</button>" : "") +
       "<div id='ag-status' class='status'></div>" +
       "<div class='centro'>" +
@@ -2158,7 +2158,7 @@
     const total = CARDIO.lista.filter(x => x.dataISO === iso).reduce((a, x) => a + Number(x.minutos || 0), 0);
     return "<div class='bloco cardio-form'><div class='habitos-topo'><h3>Registrar cardio</h3><span class='resumo'>" + total + " min no dia</span></div>" +
       "<div class='chips'>" + Object.keys(ICONES_CARDIO).map(k =>
-        "<button class='chip-acao" + (CARDIO.novoTipo === k ? " ok" : "") + "' data-acao='cardio-tipo' data-tipo='" + k + "'>" + NOMES_CARDIO[k] + "</button>").join("") + "</div>" +
+        "<button class='chip-acao" + (CARDIO.novoTipo === k ? " ruim" : "") + "' data-acao='cardio-tipo' data-tipo='" + k + "'>" + NOMES_CARDIO[k] + "</button>").join("") + "</div>" +
       "<div class='ag-linha'><input type='number' inputmode='numeric' placeholder='Minutos' data-campo='cardio-min' value='" + CARDIO.novoMin + "'>" +
       "<button class='secundario' data-acao='cardio-add'>Adicionar</button></div></div>";
   }
@@ -2733,7 +2733,7 @@
       "<div class='centro'><button class='grande' data-acao='es-salvar-sem'>Salvar semestre</button></div></div>" +
       "<div class='bloco'><h3>Matérias</h3>" + mats +
       "<div class='ag-linha' style='margin-top:10px'><input placeholder='Nova matéria' data-campo='es-mat-nome' value='" + esc(E.novaMat.nome) + "'>" +
-      "<input type='color' data-campo='es-mat-cor' value='" + E.novaMat.cor + "' style='height:44px'></div>" +
+      htmlSeletorCor("es-mat", E.novaMat.cor, null) + "</div>" +
       "<div class='centro'><button class='secundario' data-acao='es-mat-add'>Adicionar matéria</button></div></div>";
   }
 
@@ -3002,6 +3002,7 @@
     if (c === "es-teste-data") { E.testeTmp = e.target.value; return; }
     if (c === "es-mat-nome") { E.novaMat.nome = e.target.value; return; }
     if (c === "es-mat-cor") { E.novaMat.cor = e.target.value; return; }
+    if (c === "es-mat-hex") { const v = e.target.value.trim(); if (/^#[0-9a-fA-F]{6}$/.test(v)) { E.novaMat.cor = v.toLowerCase(); const l = e.target.closest(".cor-linha"); if (l) l.querySelectorAll("input").forEach(x => { if (x !== e.target) x.value = E.novaMat.cor; }); } return; }
     const f = E.form;
     if (!f) return;
     if (c === "ef-materia") { f.materiaId = e.target.value; if (mudaForm) renderEstudos(); return; }
