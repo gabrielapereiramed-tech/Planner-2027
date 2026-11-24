@@ -657,6 +657,9 @@
   .ag-dia-cab { height: 44px; box-sizing: border-box; }
   .marca-agora span { position: absolute; left: -4px; top: -9px; background: #770523; color: #FFFFFF; border-radius: 999px; padding: 1px 6px; font-size: 10px; font-weight: 600; white-space: nowrap; }
   .linha-agora-cheia, .marca-agora { display: none !important; }
+  .tm-visor { text-align: center; margin: 10px 0; }
+  .tm-fase { display: block; color: #6B6259; font-size: 0.78rem; }
+  .tm-tempo { display: block; font-size: 2.2rem; font-weight: 700; color: #770523; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -1500,8 +1503,9 @@
 
     const caixa = "<div class='bloco faixa faixa-caixa'><h3>Caixa do dia</h3><div id='caixa'></div></div>";
 
-    el.innerHTML = "<div class='md-layout'><div class='md-agenda'>" + agenda + "</div>" +
-      "<div class='md-col'>" + naoEsqueco + habitos + revisoesHoje + caixa + "</div></div>";
+    const temporizador = "<div class='bloco faixa'><h3>Temporizador de estudo</h3><div class='tm-box'>" + htmlTmInner() + "</div></div>";
+    el.innerHTML = "<div class='md-layout'><div class='md-agenda'>" + naoEsqueco + agenda + "</div>" +
+      "<div class='md-col'>" + habitos + revisoesHoje + caixa + temporizador + "</div></div>";
 
     const rolagem = el.querySelector(".md-scroll");
     if (rolagem) {
@@ -3230,7 +3234,8 @@
         }).join("") + "</div>";
     }).join("");
 
-    return "<div class='bloco'><div class='nav'>" +
+    return "<div class='bloco'><h3>Temporizador de estudo</h3><div class='tm-box'>" + htmlTmInner() + "</div></div>" +
+      "<div class='bloco'><div class='nav'>" +
       "<button class='icone' data-acao='rev-nav' data-d='-1' aria-label='Dia anterior'>‹</button>" +
       "<strong>" + (dia === hoje ? "Hoje · " : "") + tituloDia(dia) + "</strong>" +
       "<button class='icone' data-acao='rev-nav' data-d='1' aria-label='Próximo dia'>›</button></div>" +
@@ -3677,6 +3682,88 @@
       renderCrochet();
     } catch (err) { mostrarErro(err.message); }
   }
+
+
+  // ---------- Temporizador de estudo (Meu Dia e Revisões) ----------
+  const TM = { metodo: "pomodoro", rodando: false, base: 0, inicio: 0, fase: "estudo", minutos: 50, ciclo: 1 };
+  const TM_METODOS = {
+    pomodoro: { nome: "Pomodoro 25/5", estudo: 25, pausa: 5 },
+    longo: { nome: "50/10", estudo: 50, pausa: 10 },
+    cronometro: { nome: "Cronômetro" },
+    contagem: { nome: "Contagem regressiva" }
+  };
+  function tmEhCiclo() { return TM.metodo === "pomodoro" || TM.metodo === "longo"; }
+  function tmDuracaoMs() {
+    if (tmEhCiclo()) return (TM.fase === "estudo" ? TM_METODOS[TM.metodo].estudo : TM_METODOS[TM.metodo].pausa) * 60000;
+    if (TM.metodo === "contagem") return (Number(TM.minutos) || 0) * 60000;
+    return 0;
+  }
+  function tmDecorridoMs() { return TM.base + (TM.rodando ? Date.now() - TM.inicio : 0); }
+  function tmFormat(ms) {
+    const t = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sg = t % 60;
+    return (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(sg).padStart(2, "0");
+  }
+  function tmTexto() {
+    const dec = tmDecorridoMs();
+    return TM.metodo === "cronometro" ? tmFormat(dec) : tmFormat(tmDuracaoMs() - dec);
+  }
+  function tmRotulo() {
+    if (tmEhCiclo()) return (TM.fase === "estudo" ? "Estudo" : "Pausa") + " · ciclo " + TM.ciclo;
+    return TM.metodo === "cronometro" ? "Tempo livre" : "Contagem regressiva";
+  }
+  function htmlTmInner() {
+    const chips = Object.keys(TM_METODOS).map(k =>
+      "<button class='chip-acao" + (TM.metodo === k ? " ruim" : "") + "' data-acao='tm-metodo' data-v='" + k + "'>" + TM_METODOS[k].nome + "</button>").join("");
+    return "<div class='es-chips' style='justify-content:center'>" + chips + "</div>" +
+      (TM.metodo === "contagem" ? "<div class='ag-linha' style='margin-top:8px'><input type='number' inputmode='numeric' placeholder='Minutos' data-campo='tm-min' value='" + TM.minutos + "'></div>" : "") +
+      "<div class='tm-visor'><small class='tm-fase'>" + tmRotulo() + "</small><strong class='tm-tempo'>" + tmTexto() + "</strong></div>" +
+      "<div class='es-chips' style='justify-content:center'><button class='chip-acao ruim' data-acao='tm-toggle'>" + (TM.rodando ? "Pausar" : "Iniciar") + "</button>" +
+      "<button class='chip-acao' data-acao='tm-reset'>Reiniciar</button></div>";
+  }
+  function tmRedesenhar() {
+    document.querySelectorAll(".tm-box").forEach(b => { b.innerHTML = htmlTmInner(); });
+  }
+  function tmMostrar() {
+    const txt = tmTexto();
+    document.querySelectorAll(".tm-tempo").forEach(el => { el.textContent = txt; });
+    if (TM.rodando && tmEhCiclo() === false && TM.metodo === "contagem" && tmDecorridoMs() >= tmDuracaoMs()) tmFimDeFase();
+    else if (TM.rodando && tmEhCiclo() && tmDecorridoMs() >= tmDuracaoMs()) tmFimDeFase();
+  }
+  function tmFimDeFase() {
+    TM.rodando = false;
+    TM.base = 0;
+    if (tmEhCiclo()) {
+      if (TM.fase === "estudo") TM.fase = "pausa";
+      else { TM.fase = "estudo"; TM.ciclo++; }
+    }
+    try { vibrar(); } catch (e) {}
+    tmRedesenhar();
+  }
+  setInterval(() => { if (TM.rodando) tmMostrar(); }, 1000);
+  document.addEventListener("click", e => {
+    const el = e.target.closest("[data-acao^='tm-']");
+    if (!el) return;
+    const a = el.dataset.acao;
+    if (a === "tm-metodo") {
+      if (TM.rodando) return;
+      TM.metodo = el.dataset.v; TM.base = 0; TM.fase = "estudo"; TM.ciclo = 1;
+      tmRedesenhar();
+    } else if (a === "tm-toggle") {
+      if (TM.rodando) { TM.base = tmDecorridoMs(); TM.rodando = false; }
+      else { TM.inicio = Date.now(); TM.rodando = true; }
+      tmRedesenhar();
+    } else if (a === "tm-reset") {
+      TM.rodando = false; TM.base = 0; TM.fase = "estudo"; TM.ciclo = 1;
+      tmRedesenhar();
+    }
+  });
+  document.addEventListener("change", e => {
+    if (e.target.dataset && e.target.dataset.campo === "tm-min") {
+      TM.minutos = Number(e.target.value) || 50;
+      if (!TM.rodando) tmRedesenhar();
+    }
+  });
 
   // ---------- lembretes de compromissos ----------
   const AVISADOS = new Set();
