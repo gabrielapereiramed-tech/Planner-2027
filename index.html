@@ -682,6 +682,13 @@
   .es-tempo { display: block; font-size: 9px; color: var(--burgundy); font-weight: 600; text-align: center; }
   .cor-box { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: -6px 0 14px; }
   .cor-box small { color: #6B6259; font-size: 0.8rem; }
+  .geral-cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .geral-cabecalho h2 { margin: 0; }
+  .cor-canto { display: flex; align-items: center; gap: 6px; opacity: 0.8; }
+  .cor-canto small { color: #6B6259; font-size: 0.72rem; }
+  .cor-canto .cor-linha { gap: 4px; }
+  .cor-canto input[type='color'] { width: 30px; height: 30px; padding: 0; }
+  .cor-canto input.hex { width: 84px; height: 30px; font-size: 0.8rem; padding: 2px 6px; }
 </style>
 </head>
 <body>
@@ -921,11 +928,12 @@
 
     const voltar = "<button class='voltar' id='voltar'>← Voltar</button>";
     if (secao.id === "geral") {
-      main.innerHTML = voltar + "<h2>Geral</h2><div id='geral-topo'></div><div id='geral'></div>";
+      main.innerHTML = voltar + "<div class='geral-cabecalho'><h2>Geral</h2><div id='geral-cor'></div></div><div id='geral-topo'></div><div id='geral'></div>";
       const gt = document.getElementById("geral-topo");
       G.frase = escolherFraseDia();
-      carregarCorPrincipal().then(() => renderFraseGeral());
+      carregarCorPrincipal().then(() => { renderFraseGeral(); renderCorGeral(); });
       renderFraseGeral();
+      renderCorGeral();
       gt.onclick = e => { if (e.target.closest("[data-acao='frase-nova']")) { G.frase = escolherFraseDia(G.frase); renderFraseGeral(); } };
       const g = document.getElementById("geral");
       g.onclick = tratarCliqueGeral;
@@ -1416,6 +1424,11 @@
     } catch (e) { }
   }
 
+  function renderCorGeral() {
+    const el = document.getElementById("geral-cor");
+    if (el) el.innerHTML = "<div class='cor-canto'><small>Cor principal</small>" + htmlSeletorCor("cp", CP.cor, null) + "</div>";
+  }
+
   function renderFraseGeral() {
     const el = document.getElementById("geral-topo");
     if (!el) return;
@@ -1423,8 +1436,7 @@
     const data = capitalizar(hoje.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
     el.innerHTML = "<div class='geral-faixa'><div><small class='geral-data-faixa'>" + data + "</small>" +
       "<p class='geral-frase-faixa'>" + esc(G.frase) + "</p></div>" +
-      "<button class='geral-btn-faixa' data-acao='frase-nova'>✦ Outra frase</button></div>" +
-      "<div class='cor-box'><small>Cor principal do app</small>" + htmlSeletorCor("cp", CP.cor, null) + "</div>";
+      "<button class='geral-btn-faixa' data-acao='frase-nova'>✦ Outra frase</button></div>";
   }
 
 
@@ -1679,8 +1691,8 @@
     const r = G.rascunho;
     const nova = G.novaLegenda;
     const legenda = G.editandoLegenda
-      ? G.legenda.map(l => "<div class='leg-edit'><span class='swatch' style='background:" + l.cor + "'></span>" +
-          "<input data-campo='leg-renomear' data-id='" + l.id + "' value='" + esc(l.nome) + "'>" +
+      ? G.legenda.map(l => "<div class='leg-edit'>" +
+          "<input data-campo='leg-renomear' data-id='" + l.id + "' value='" + esc(l.nome) + "'>" + htmlSeletorCor("leg", l.cor, l.id) +
           "<button class='excluir' data-acao='leg-excluir' data-id='" + l.id + "' aria-label='Excluir cor'>×</button></div>").join("")
       : "<div class='legenda'>" + G.legenda.map(l =>
           "<button class='legenda-item" + (r.cor === l.cor ? " ativo" : "") + "' data-acao='ag-cor' data-cor='" + l.cor + "'>" +
@@ -1827,6 +1839,18 @@
     if (d.campo === "cx-rep" && e.type === "change") { CX.rep = e.target.value; renderCaixa(); return; }
     if (d.campo === "cx-sempre" && e.type === "change") { CX.sempre = e.target.checked; renderCaixa(); return; }
     if (d.campo === "leg-nome") { G.novaLegenda.nome = e.target.value; return; }
+    if (d.campo === "leg-cor" || d.campo === "leg-hex") {
+      const id = d.i;
+      const v = e.target.value.trim();
+      if (d.campo === "leg-hex" && !/^#[0-9a-fA-F]{6}$/.test(v)) return;
+      const cor = G.legenda.find(l => l.id === id);
+      if (!cor) return;
+      const nova = d.campo === "leg-hex" ? v.toLowerCase() : v;
+      cor.cor = nova;
+      document.querySelectorAll("[data-campo='leg-cor'][data-i='" + id + "'], [data-campo='leg-hex'][data-i='" + id + "']").forEach(x => { x.value = nova; });
+      if (e.type === "change") colecao("legenda").doc(id).update({ cor: nova }).catch(err => mostrarErro(err.message));
+      return;
+    }
     if (d.campo === "leg-renomear") {
       const cor = G.legenda.find(l => l.id === d.id);
       if (cor) cor.nome = e.target.value;
