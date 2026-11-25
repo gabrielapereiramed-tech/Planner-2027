@@ -1402,6 +1402,8 @@
     if (!/^#[0-9a-fA-F]{6}$/.test(cor || "")) return;
     CP.cor = cor.toLowerCase();
     document.documentElement.style.setProperty("--burgundy", CP.cor);
+    const tc = document.querySelector("meta[name='theme-color']");
+    if (tc) tc.setAttribute("content", CP.cor);
     if (salvar && usuario) colecao("config").doc("app").set({ corPrincipal: CP.cor }, { merge: true }).catch(err => mostrarErro(err.message));
   }
 
